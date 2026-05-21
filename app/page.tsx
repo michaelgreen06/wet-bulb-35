@@ -9,57 +9,23 @@ import ErrorDisplay from '../components/ErrorDisplay';
 import Header from '../components/Header';
 import CurrentLocationButton from '../components/CurrentLocationButton';
 import Disclaimer from '../components/Disclaimer';
-import {
-  WeatherDataSchema,
-  type WeatherData,
-  WeatherErrorSchema,
-  getCurrentPosition,
-} from '../lib/utils/weather';
+import type { WeatherLocation } from '../lib/types/weather';
+import { getCurrentPosition } from '../lib/utils/weather';
 
 // Create a client component that uses useSearchParams
 function HomeContent() {
-  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [weatherLocation, setWeatherLocation] = useState<WeatherLocation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
-  const fetchWeather = async (lat: number, lng: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`,
-        {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-          },
-        }
-      );
-
-      if (response.status === 204) {
-        throw new Error('Live weather refresh is unavailable for this visitor.');
-      }
-
-      const payload = await response.json();
-
-      if (!response.ok) {
-        const errorResult = WeatherErrorSchema.safeParse(payload);
-        throw new Error(errorResult.success ? errorResult.data.error : 'Failed to fetch weather data');
-      }
-
-      const data = WeatherDataSchema.parse(payload);
-      setWeatherData(data);
-    } catch (err) {
-      console.error('Weather fetch error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch weather data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleLocationSelect = (lat: number, lng: number) => {
-    fetchWeather(lat, lng);
+    setError(null);
+    setWeatherLocation({
+      locationName: 'Selected Location',
+      lat,
+      lng,
+    });
   };
 
   const getCurrentLocationWeather = async () => {
@@ -67,10 +33,15 @@ function HomeContent() {
     setError(null);
     try {
       const position = await getCurrentPosition();
-      await fetchWeather(position.coords.latitude, position.coords.longitude);
+      setWeatherLocation({
+        locationName: 'Current Location',
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      });
     } catch (err) {
       console.error('Geolocation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to get current location');
+    } finally {
       setLoading(false);
     }
   };
@@ -82,7 +53,7 @@ function HomeContent() {
       const lng = searchParams.get('lng');
       
       if (lat && lng) {
-        fetchWeather(parseFloat(lat), parseFloat(lng));
+        handleLocationSelect(parseFloat(lat), parseFloat(lng));
       } else {
         getCurrentLocationWeather();
       }
@@ -99,7 +70,7 @@ function HomeContent() {
 
       {loading && <LoadingSpinner />}
       {error && <ErrorDisplay error={error} onRetry={getCurrentLocationWeather} />}
-      {weatherData && <WeatherDisplay source="weather-data" data={weatherData} />}
+      {weatherLocation && <WeatherDisplay {...weatherLocation} />}
 
       <Disclaimer />
     </div>

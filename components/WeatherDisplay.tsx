@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
+import type { WeatherLocation } from '../lib/types/weather';
 import { calculateWetBulb } from '../lib/utils/wetbulb';
 import {
   WeatherDataSchema,
@@ -9,38 +10,14 @@ import {
   type WeatherData,
 } from '../lib/utils/weather';
 
-type WeatherDisplayProps =
-  | {
-      source: 'weather-data';
-      data: WeatherData;
-    }
-  | {
-      source: 'coordinates';
-      locationName: string;
-      lat: number;
-      lng: number;
-    };
+type WeatherDisplayProps = WeatherLocation;
 
-export default function WeatherDisplay(props: WeatherDisplayProps) {
-  const initialData = props.source === 'weather-data' ? props.data : null;
-
-  const [data, setData] = useState<WeatherData | null>(initialData);
+export default function WeatherDisplay({ locationName, lat, lng }: WeatherDisplayProps) {
+  const [data, setData] = useState<WeatherData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(initialData == null);
-
-  const locationName = props.source === 'weather-data'
-    ? props.data.location.name
-    : props.locationName;
-  const lat = props.source === 'weather-data' ? props.data.location.lat : props.lat;
-  const lng = props.source === 'weather-data' ? props.data.location.lng : props.lng;
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (initialData != null) {
-      setData(initialData);
-      setIsLoading(false);
-      return;
-    }
-
     let isMounted = true;
 
     async function loadWeather() {
@@ -96,17 +73,19 @@ export default function WeatherDisplay(props: WeatherDisplayProps) {
     return () => {
       isMounted = false;
     };
-  }, [initialData, lat, lng]);
+  }, [lat, lng]);
 
   const wetBulb =
     data == null
       ? null
       : calculateWetBulb(data.weather.temperature, data.weather.humidity);
+  const displayLocationName =
+    isLoading || data == null ? locationName : data.location.name;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">{locationName}</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{displayLocationName}</h2>
         <p className="text-sm text-gray-600">
           {lat.toFixed(4)}°N, {lng.toFixed(4)}°E
         </p>

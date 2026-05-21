@@ -142,7 +142,6 @@ export default function LocationPage({ locationData }: LocationPageProps) {
           </div>
 
           <WeatherDisplay
-            source="coordinates"
             locationName={`${name}, ${resolvedAdmin1Code}, ${resolvedCountryName}`}
             lat={latitude}
             lng={longitude}
