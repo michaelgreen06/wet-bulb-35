@@ -1,13 +1,8 @@
 'use client';
 
-interface FooterProps {
-  contactEmail?: string;
-}
+import { CONTACT_EMAIL } from '../lib/consts';
 
-export default function Footer({ contactEmail }: FooterProps) {
-  // Use the provided email or fall back to the environment variable
-  const email = contactEmail || process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'info@wetbulb35.com';
-  
+export default function Footer() {
   return (
     <footer className="mt-12 py-6 border-t border-gray-200">
       <div className="max-w-4xl mx-auto px-4">
@@ -19,7 +14,7 @@ export default function Footer({ contactEmail }: FooterProps) {
           </div>
           <div>
             <p className="text-sm text-gray-600">
-              Contact us at: <span className="font-medium">{email}</span>
+              Contact us at: <span className="font-medium">{CONTACT_EMAIL}</span>
             </p>
           </div>
         </div>
