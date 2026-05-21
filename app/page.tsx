@@ -9,7 +9,12 @@ import ErrorDisplay from '../components/ErrorDisplay';
 import Header from '../components/Header';
 import CurrentLocationButton from '../components/CurrentLocationButton';
 import Disclaimer from '../components/Disclaimer';
-import { WeatherData, fetchWeatherData, getCurrentPosition } from '../lib/utils/weather';
+import {
+  WeatherData,
+  getCurrentPosition,
+  parseWeatherData,
+  readWeatherError,
+} from '../lib/utils/weather';
 
 // Create a client component that uses useSearchParams
 function HomeContent() {
@@ -22,7 +27,27 @@ function HomeContent() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchWeatherData(lat, lng);
+      const response = await fetch(
+        `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+        }
+      );
+
+      if (response.status === 204) {
+        throw new Error('Live weather refresh is unavailable for this visitor.');
+      }
+
+      const payload: unknown = await response.json();
+
+      if (!response.ok) {
+        throw new Error(readWeatherError(payload) || 'Failed to fetch weather data');
+      }
+
+      const data = parseWeatherData(payload);
       setWeatherData(data);
     } catch (err) {
       console.error('Weather fetch error:', err);
@@ -73,7 +98,7 @@ function HomeContent() {
 
       {loading && <LoadingSpinner />}
       {error && <ErrorDisplay error={error} onRetry={getCurrentLocationWeather} />}
-      {weatherData && <WeatherDisplay data={weatherData} />}
+      {weatherData && <WeatherDisplay source="weather-data" data={weatherData} />}
 
       <Disclaimer />
     </div>

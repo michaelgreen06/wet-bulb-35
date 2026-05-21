@@ -14,8 +14,104 @@ export interface WeatherData {
   };
 }
 
+interface OpenWeatherData {
+  name: string;
+  coord: {
+    lat: number;
+    lon: number;
+  };
+  main: {
+    temp: number;
+    humidity: number;
+  };
+  dt: number;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function parseOpenWeatherData(value: unknown): OpenWeatherData {
+  if (!isRecord(value)) {
+    throw new Error('Weather service response is invalid.');
+  }
+
+  const { name, coord, main, dt } = value;
+
+  if (
+    typeof name !== 'string' ||
+    !isRecord(coord) ||
+    typeof coord.lat !== 'number' ||
+    typeof coord.lon !== 'number' ||
+    !isRecord(main) ||
+    typeof main.temp !== 'number' ||
+    typeof main.humidity !== 'number' ||
+    typeof dt !== 'number'
+  ) {
+    throw new Error('Weather service response is invalid.');
+  }
+
+  return {
+    name,
+    coord: {
+      lat: coord.lat,
+      lon: coord.lon,
+    },
+    main: {
+      temp: main.temp,
+      humidity: main.humidity,
+    },
+    dt,
+  };
+}
+
+export function parseWeatherData(value: unknown): WeatherData {
+  if (!isRecord(value)) {
+    throw new Error('Weather response is invalid.');
+  }
+
+  const { location, weather } = value;
+
+  if (
+    !isRecord(location) ||
+    typeof location.name !== 'string' ||
+    typeof location.lat !== 'number' ||
+    typeof location.lng !== 'number' ||
+    !isRecord(weather) ||
+    typeof weather.wetBulb !== 'number' ||
+    typeof weather.temperature !== 'number' ||
+    typeof weather.humidity !== 'number' ||
+    typeof weather.timestamp !== 'number'
+  ) {
+    throw new Error('Weather response is invalid.');
+  }
+
+  return {
+    location: {
+      name: location.name,
+      lat: location.lat,
+      lng: location.lng,
+    },
+    weather: {
+      wetBulb: weather.wetBulb,
+      temperature: weather.temperature,
+      humidity: weather.humidity,
+      timestamp: weather.timestamp,
+    },
+  };
+}
+
+export function readWeatherError(value: unknown): string | null {
+  if (!isRecord(value) || typeof value.error !== 'string') {
+    return null;
+  }
+
+  return value.error;
+}
+
 export async function fetchWeatherData(lat: number, lon: number): Promise<WeatherData> {
-  const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+  const apiKey =
+    process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
   if (!apiKey) {
     throw new Error('OpenWeather API key is not configured. Please check your environment variables.');
   }
@@ -37,7 +133,8 @@ export async function fetchWeatherData(lat: number, lon: number): Promise<Weathe
       }
     }
 
-    const data = await response.json();
+    const payload: unknown = await response.json();
+    const data = parseOpenWeatherData(payload);
     
     return {
       location: {
