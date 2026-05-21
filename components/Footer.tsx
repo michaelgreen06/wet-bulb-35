@@ -14,7 +14,7 @@ export default function Footer({ contactEmail }: FooterProps) {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
             <p className="text-sm text-gray-600">
-              © {new Date().getFullYear()} Wetbulb Temperature Monitor
+              © {new Date().getFullYear()} Wet Bulb Temperature Monitor
             </p>
           </div>
           <div>

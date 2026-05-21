@@ -7,7 +7,7 @@ export default function Logo() {
       <Link href="/" className="cursor-pointer">
         <Image
           src="/logo.svg"
-          alt="Wetbulb Temperature Calculator Logo"
+          alt="Wet Bulb Temperature Logo"
           width={80}
           height={80}
           priority

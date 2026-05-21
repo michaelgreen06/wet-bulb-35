@@ -58,7 +58,7 @@ export default function CountriesPage({ countries }: CountriesPageProps) {
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={imageUrl} />
         <meta property="og:locale" content="en_US" />
-        <meta property="og:site_name" content="Wetbulb Temperature" />
+        <meta property="og:site_name" content="Wet Bulb Temperature" />
         
         {/* Twitter Card tags */}
         <meta name="twitter:card" content="summary_large_image" />

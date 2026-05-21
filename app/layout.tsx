@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import Footer from '../components/Footer'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Wetbulb Temperature Calculator',
-  description: 'Calculate and monitor wetbulb temperatures for any location',
+  title: 'Current Wet Bulb Temperature',
+  description: 'Calculate and monitor wet bulb temperatures for any location',
   icons: {
     icon: [
       {
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <main className="min-h-screen bg-gray-50 py-8 px-4">
           {children}
+          <Footer />
         </main>
       </body>
     </html>
