@@ -6,7 +6,7 @@ interface FooterProps {
 
 export default function Footer({ contactEmail }: FooterProps) {
   // Use the provided email or fall back to the environment variable
-  const email = contactEmail || process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'wetbulbwatch@gmail.com';
+  const email = contactEmail || process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'info@wetbulb35.com';
   
   return (
     <footer className="mt-12 py-6 border-t border-gray-200">
