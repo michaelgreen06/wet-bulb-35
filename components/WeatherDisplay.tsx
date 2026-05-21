@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { calculateWetBulb } from '../lib/utils/wetbulb';
 import {
-  parseWeatherData,
-  readWeatherError,
+  WeatherDataSchema,
+  WeatherErrorSchema,
   type WeatherData,
 } from '../lib/utils/weather';
 
@@ -65,16 +65,15 @@ export default function WeatherDisplay(props: WeatherDisplayProps) {
           return;
         }
 
-        const payload: unknown = await response.json();
+        const payload = await response.json();
 
         if (!response.ok) {
-          throw new Error(
-            readWeatherError(payload) || 'Failed to refresh weather data.',
-          );
+          const errorResult = WeatherErrorSchema.safeParse(payload);
+          throw new Error(errorResult.success ? errorResult.data.error : 'Failed to refresh weather data.');
         }
 
         if (isMounted) {
-          setData(parseWeatherData(payload));
+          setData(WeatherDataSchema.parse(payload));
         }
       } catch (err) {
         if (isMounted) {
