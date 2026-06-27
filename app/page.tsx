@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import SearchBox from '../components/SearchBox';
 import WeatherDisplay from '../components/WeatherDisplay';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -64,6 +65,13 @@ function HomeContent() {
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/hotspots"
+        className="mx-auto block max-w-2xl rounded-2xl border border-orange-200 bg-orange-50 p-4 text-center font-semibold text-orange-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-orange-100"
+      >
+        View global forecast hotspots
+      </Link>
+
       <SearchBox onLocationSelect={handleLocationSelect} />
       
       <CurrentLocationButton onClick={getCurrentLocationWeather} />
