@@ -92,6 +92,20 @@ function collectHrefs(html) {
   return [...html.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
 }
 
+function assertLegacyPrototypeClassesAbsent(html) {
+  for (const className of [
+    "site-header",
+    "brand-mark",
+    "hero",
+    "utility-panel",
+    "weather-card",
+    "status-pill",
+    "breadcrumbs",
+  ]) {
+    assert.doesNotMatch(html, new RegExp(`\\b${className}\\b`), className);
+  }
+}
+
 function createMockResponse() {
   return {
     statusCode: 200,
@@ -145,6 +159,14 @@ test("pageHtml emits required SEO and weather widget structure", () => {
   assert.match(html, /data-weather-widget=""/);
   assert.match(html, /data-lat="42\.53176"/);
   assert.match(html, /data-lon="1\.56654"/);
+  assert.match(html, /class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto"/);
+  assert.match(html, /class="grid grid-cols-2 gap-4" data-weather-grid/);
+  assert.match(html, /Wet Bulb Temperature/);
+  assert.match(html, /Air Temperature/);
+  assert.match(html, /Relative Humidity/);
+  assert.match(html, /Last Updated/);
+  assert.match(html, /Use Current Location/);
+  assertLegacyPrototypeClassesAbsent(html);
 
   const jsonLdMatch = html.match(
     /<script type="application\/ld\+json">(.+?)<\/script>/,
@@ -175,16 +197,30 @@ test("page templates include expected listings and route counts", () => {
   );
 
   assert.match(homeHtml, /Current Wet Bulb Temperature/);
-  assert.match(homeHtml, /Browse all countries/);
+  assert.match(homeHtml, /Search for a location\.\.\./);
+  assert.match(homeHtml, /Use Current Location/);
+  assert.doesNotMatch(homeHtml, /Browse all countries/);
+  assert.match(homeHtml, /class="min-h-screen bg-gray-50 py-8 px-4"/);
+  assert.match(homeHtml, /class="max-w-4xl mx-auto space-y-8"/);
   assert.match(browseHtml, /Browse Wet Bulb Temperature by Country/);
   assert.match(browseHtml, />United States</);
   assert.match(browseHtml, />3 locations</);
+  assert.match(browseHtml, /class="p-4 border rounded-lg hover:bg-gray-50 transition-colors"/);
+  assert.doesNotMatch(browseHtml, /data-search-form/);
   assert.match(countryHtml, /Browse United States by State\/Province/);
+  assert.match(countryHtml, /← Back to Countries/);
   assert.match(countryHtml, />North Carolina</);
   assert.match(countryHtml, />2 locations</);
   assert.match(stateHtml, /Cities in North Carolina, United States/);
+  assert.match(stateHtml, /← Back to United States/);
   assert.match(stateHtml, /Denver/);
   assert.match(stateHtml, /Raleigh/);
+  assert.doesNotMatch(stateHtml, /35\.53°/);
+  assert.doesNotMatch(stateHtml, /-81\.03°/);
+
+  for (const html of [homeHtml, browseHtml, countryHtml, stateHtml]) {
+    assertLegacyPrototypeClassesAbsent(html);
+  }
 });
 
 test("generated pages share stable DOM fingerprints per page type", () => {
@@ -240,6 +276,11 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
   for (const file of expectedFiles) {
     assert.ok(fs.existsSync(path.join(result.outDir, file)), file);
   }
+
+  const generatedCss = fs.readFileSync(path.join(result.outDir, "assets/app.css"), "utf8");
+  assert.match(generatedCss, /\.bg-gray-50/);
+  assert.match(generatedCss, /\.max-w-4xl/);
+  assert.doesNotMatch(generatedCss, /radial-gradient/);
 
   const siteData = createSiteData(sampleCities);
   const htmlFiles = [...siteData.pageRoutes].map((routePath) =>

@@ -5,6 +5,8 @@ export default {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./scripts/**/*.{js,mjs,ts}",
+    "./scripts/static-tailwind.css",
   ],
   theme: {
     extend: {

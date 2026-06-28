@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
 import slugify from "slugify";
@@ -8,6 +9,7 @@ const DEFAULT_SITE_URL = "https://www.wetbulb35.com";
 const DEFAULT_OUT_DIR = "/private/tmp/wetbulb-static-prototype";
 const DEFAULT_SOURCE_FILE = "scripts/resolved_cities.json";
 const PUBLIC_DIR = path.resolve("public");
+const STATIC_TAILWIND_INPUT = path.resolve("scripts/static-tailwind.css");
 const BOT_PATTERN =
   /(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|bytespider|crawler|spider|bot)/i;
 
@@ -238,7 +240,6 @@ function pageShell({
   title,
   description,
   breadcrumbData,
-  bodyClass = "",
   mainContent,
 }) {
   const canonical = canonicalUrl(siteUrl, routePath);
@@ -268,7 +269,7 @@ function pageShell({
   <link rel="stylesheet" href="/assets/app.css">
   <script type="application/ld+json">${jsonLd}</script>
 </head>
-<body class="${bodyClass}">
+<body>
   ${mainContent}
   <script src="/assets/app.js" defer></script>
 </body>
@@ -277,64 +278,66 @@ function pageShell({
 }
 
 function renderHeader() {
-  return `<header class="site-header">
-    <a href="/" class="brand">
-      <span class="brand-mark">35</span>
-      <span>
-        <strong>Wet Bulb Temperature</strong>
-        <small>Live weather and heat-risk lookup</small>
-      </span>
-    </a>
-    <nav class="header-nav">
-      <a href="/">Home</a>
-      <a href="/wetbulb-temperature/">Browse</a>
-    </nav>
+  return `<header class="text-center mb-8">
+    <div class="flex justify-center mb-4">
+      <a href="/" class="cursor-pointer">
+        <img src="/logo.svg" alt="Wet Bulb Temperature Logo" width="80" height="80">
+      </a>
+    </div>
+    <h1 class="text-4xl font-bold text-gray-900 mb-2">Current Wet Bulb Temperature</h1>
+    <p class="text-gray-600">Get real-time wet bulb temperature for any location</p>
   </header>`;
 }
 
 function renderFooter() {
   const year = new Date().getFullYear();
-  return `<footer class="site-footer">
-    <div>
-      <p>© ${year} Wet Bulb Temperature Monitor</p>
-      <p>Contact: <a href="mailto:info@wetbulb35.com">info@wetbulb35.com</a></p>
+  return `<footer class="mt-12 py-6 border-t border-gray-200">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <p class="text-sm text-gray-600">© ${year} Wet Bulb Temperature Monitor</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Contact us at: <span class="font-medium">info@wetbulb35.com</span></p>
+        </div>
+      </div>
     </div>
-    <p class="footer-note">Wet-bulb values are estimated with the Stull formula.</p>
   </footer>`;
 }
 
 function renderDisclaimer() {
-  return `<section class="disclaimer">
-    <p>
-      Disclaimer: Wet-bulb temperatures shown here are estimates using the Stull formula.
-      For a reference explanation, visit
-      <a href="https://www.omnicalculator.com/physics/wet-bulb" target="_blank" rel="noopener noreferrer">Omni Calculator&apos;s Wet-Bulb Temperature Calculator</a>.
+  return `<div class="mt-8 text-center text-sm text-gray-500 px-4">
+    <p class="mb-2">
+      Disclaimer: The wet-bulb temperatures shown are estimates calculated using the Stull formula.
+      For more information about wet-bulb temperature calculations, visit
+      <a href="https://www.omnicalculator.com/physics/wet-bulb" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-600 underline">Omni Calculator&apos;s Wet-Bulb Temperature Calculator</a>.
     </p>
-  </section>`;
+  </div>`;
 }
 
-function renderSearchPanel({ title = "Search for a location", showCurrentLocation = true }) {
-  return `<section class="utility-panel">
-    <div class="utility-copy">
-      <p class="eyebrow">Current wet bulb temperature</p>
-      <h2>${escapeHtml(title)}</h2>
-      <p>Search by city, then jump straight to a static location page and refresh live conditions only when needed.</p>
-    </div>
-    <form class="search-form" data-search-form>
-      <label class="search-label" for="location-search">Location search</label>
-      <div class="search-row">
-        <input id="location-search" name="query" type="search" placeholder="Search for a city, state, or country" autocomplete="off" list="location-options" data-search-input>
-        <button type="submit">View location</button>
-      </div>
+function renderSearchBox() {
+  return `<div class="w-full max-w-md mx-auto">
+    <form class="flex gap-2" data-search-form>
+      <input
+        id="location-search"
+        name="query"
+        type="search"
+        placeholder="Search for a location..."
+        autocomplete="off"
+        list="location-options"
+        data-search-input
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      >
+      <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors whitespace-nowrap">Search</button>
       <datalist id="location-options"></datalist>
-      <p class="search-help" data-search-status>Popular example: Denver, North Carolina, United States.</p>
+      <p class="sr-only" data-search-status></p>
     </form>
-    ${
-      showCurrentLocation
-        ? `<button class="secondary-button" type="button" data-current-location>Use Current Location</button>`
-        : ""
-    }
-  </section>`;
+  </div>`;
+}
+
+function renderCurrentLocationButton({ wrapperClass = "" } = {}) {
+  const button = `<button type="button" class="mx-auto block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors" data-current-location>Use Current Location</button>`;
+  return wrapperClass ? `<div class="${wrapperClass}">${button}</div>` : button;
 }
 
 function renderWeatherWidget({ locationName = "", lat = "", lon = "", mode = "lookup" } = {}) {
@@ -348,61 +351,56 @@ function renderWeatherWidget({ locationName = "", lat = "", lon = "", mode = "lo
     .map(([key, value]) => `${key}="${escapeHtml(value)}"`)
     .join(" ");
 
-  return `<section class="weather-card" ${attrs}>
-    <div class="weather-card__head">
-      <div>
-        <p class="eyebrow">Live conditions</p>
-        <h2 data-weather-location>${escapeHtml(locationName || "Choose a location")}</h2>
-        <p class="weather-coordinates" data-weather-coordinates>${
-          lat && lon ? `${Number(lat).toFixed(4)}°, ${Number(lon).toFixed(4)}°` : "Search or use your current location to load weather."
-        }</p>
+  return `<div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto" ${attrs}>
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800" data-weather-location>${escapeHtml(locationName || "Choose a location")}</h2>
+      <p class="text-sm text-gray-600" data-weather-coordinates>${
+        lat && lon ? `${Number(lat).toFixed(4)}°N, ${Number(lon).toFixed(4)}°E` : "Search or use your current location to load weather."
+      }</p>
+      <p class="sr-only" data-weather-status>Idle</p>
+    </div>
+    <div class="grid grid-cols-2 gap-4" data-weather-grid>
+      <div class="bg-blue-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-blue-800 mb-2">Wet Bulb Temperature</h3>
+        <p class="text-3xl font-bold text-blue-600" data-weather-wetbulb>--</p>
       </div>
-      <span class="status-pill" data-weather-status>Idle</span>
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Air Temperature</h3>
+        <p class="text-3xl font-bold text-gray-600" data-weather-temp>--</p>
+      </div>
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Relative Humidity</h3>
+        <p class="text-3xl font-bold text-gray-600" data-weather-humidity>--</p>
+      </div>
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Last Updated</h3>
+        <p class="text-lg text-gray-600" data-weather-updated>${lat && lon ? "Fetching latest weather..." : "Waiting for weather"}</p>
+      </div>
     </div>
-    <div class="weather-grid">
-      <article><h3>Wet Bulb</h3><p data-weather-wetbulb>--</p></article>
-      <article><h3>Air Temp</h3><p data-weather-temp>--</p></article>
-      <article><h3>Humidity</h3><p data-weather-humidity>--</p></article>
-      <article><h3>Last Updated</h3><p data-weather-updated>Waiting for weather</p></article>
-    </div>
-    <p class="weather-error" data-weather-error hidden></p>
-  </section>`;
+    <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700" data-weather-error hidden></div>
+  </div>`;
 }
 
-function renderHero() {
-  return `<section class="hero">
-    <div>
-      <p class="eyebrow">Heat-risk lookup</p>
-      <h1>Current Wet Bulb Temperature</h1>
-      <p class="hero-copy">Track live wet-bulb temperature for any location and browse our static city directory by country and state.</p>
-    </div>
-    <div class="hero-actions">
-      <a class="primary-link" href="/wetbulb-temperature/">Browse all countries</a>
-      <span class="hero-note">Fast static pages, live weather only on demand.</span>
-    </div>
-  </section>`;
-}
-
-function renderListSection({ title, kicker, items, emptyMessage }) {
-  return `<section class="list-section">
-    <div class="section-heading">
-      <p class="eyebrow">${escapeHtml(kicker)}</p>
-      <h1>${escapeHtml(title)}</h1>
-    </div>
+function renderListSection({ title, items, emptyMessage, backLink = "" }) {
+  return `<div class="mt-6">
+    ${backLink}
+    <h1 class="text-3xl font-bold mb-6">${escapeHtml(title)}</h1>
     ${
       items.length
-        ? `<div class="list-grid">${items.join("")}</div>`
-        : `<div class="empty-state"><p>${escapeHtml(emptyMessage)}</p></div>`
+        ? `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${items.join("")}</div>`
+        : `<div class="p-4 border rounded-lg bg-gray-50"><p>${escapeHtml(emptyMessage)}</p></div>`
     }
-  </section>`;
+  </div>`;
 }
 
 function renderAppFrame(content) {
-  return `<div class="page-shell">
-    ${renderHeader()}
-    <main class="page-main">${content}</main>
+  return `<main class="min-h-screen bg-gray-50 py-8 px-4">
+    <div class="max-w-4xl mx-auto space-y-8">
+      ${renderHeader()}
+      <div class="space-y-6">${content}</div>
+    </div>
     ${renderFooter()}
-  </div>`;
+  </main>`;
 }
 
 export function pageHtml(city, options = {}) {
@@ -427,19 +425,14 @@ export function pageHtml(city, options = {}) {
   };
 
   const cityContent = `
-    ${renderSearchPanel({ title: `Search locations from ${countryName} or anywhere else` })}
+    ${renderSearchBox()}
+    ${renderCurrentLocationButton({ wrapperClass: "mt-8" })}
     ${renderWeatherWidget({
       locationName: fullName,
       lat: Number(city.latitude),
       lon: Number(city.longitude),
       mode: "city",
     })}
-    <nav class="breadcrumbs">
-      <a href="/wetbulb-temperature/">Countries</a>
-      <a href="/wetbulb-temperature/${countrySlug}/">${escapeHtml(countryName)}</a>
-      <a href="/wetbulb-temperature/${countrySlug}/${stateSlug}/">${escapeHtml(stateName)}</a>
-      <span>${escapeHtml(cityName)}</span>
-    </nav>
     ${renderDisclaimer()}
   `;
 
@@ -464,23 +457,10 @@ export function renderHomePage(siteData, options = {}) {
     itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: siteUrl }],
   };
 
-  const highlightedCountries = siteData.countries.slice(0, 12).map(
-    (country) => `<a class="list-card" href="/wetbulb-temperature/${country.slug}/">
-      <strong>${escapeHtml(country.name)}</strong>
-      <span>${country.count} locations</span>
-    </a>`,
-  );
-
   const content = `
-    ${renderHero()}
-    ${renderSearchPanel({ title: "Search any city or use your current location" })}
+    ${renderSearchBox()}
+    ${renderCurrentLocationButton()}
     ${renderWeatherWidget({ mode: "home" })}
-    ${renderListSection({
-      title: "Browse by Country",
-      kicker: "Static directory",
-      items: highlightedCountries,
-      emptyMessage: "No countries available.",
-    })}
     ${renderDisclaimer()}
   `;
 
@@ -490,7 +470,6 @@ export function renderHomePage(siteData, options = {}) {
     title,
     description,
     breadcrumbData,
-    bodyClass: "home-page",
     mainContent: renderAppFrame(content),
   });
 }
@@ -507,17 +486,15 @@ export function renderBrowsePage(siteData, options = {}) {
   };
 
   const countryCards = siteData.countries.map(
-    (country) => `<a class="list-card" href="/wetbulb-temperature/${country.slug}/">
-      <strong>${escapeHtml(country.name)}</strong>
-      <span>${country.count} locations</span>
+    (country) => `<a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/${country.slug}/">
+      <div class="font-semibold">${escapeHtml(country.name)}</div>
+      <div class="text-sm text-gray-500">${country.count} locations</div>
     </a>`,
   );
 
   const content = `
-    ${renderSearchPanel({ title: "Jump directly to a city page" })}
     ${renderListSection({
       title: "Browse Wet Bulb Temperature by Country",
-      kicker: "All countries",
       items: countryCards,
       emptyMessage: "No countries found.",
     })}
@@ -548,23 +525,18 @@ export function renderCountryPage(country, options = {}) {
   };
 
   const stateCards = country.states.map(
-    (state) => `<a class="list-card" href="/wetbulb-temperature/${country.slug}/${state.slug}/">
-      <strong>${escapeHtml(state.name)}</strong>
-      <span>${state.count} locations</span>
+    (state) => `<a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/${country.slug}/${state.slug}/">
+      <div class="font-semibold">${escapeHtml(state.name)}</div>
+      <div class="text-sm text-gray-500">${state.count} locations</div>
     </a>`,
   );
 
   const content = `
-    ${renderSearchPanel({ title: `Search within ${country.name} or anywhere` })}
-    <nav class="breadcrumbs">
-      <a href="/wetbulb-temperature/">Countries</a>
-      <span>${escapeHtml(country.name)}</span>
-    </nav>
     ${renderListSection({
       title: `Browse ${country.name} by State/Province`,
-      kicker: "Country directory",
       items: stateCards,
       emptyMessage: "No states or provinces found for this country.",
+      backLink: `<div class="mb-6"><a href="/wetbulb-temperature/" class="text-blue-600 hover:underline">← Back to Countries</a></div>`,
     })}
   `;
 
@@ -595,24 +567,17 @@ export function renderStatePage(state, options = {}) {
 
   const cityCards = state.cities.map((city) => {
     const href = routePathForCity(city);
-    return `<a class="list-card" href="${href}">
-      <strong>${escapeHtml(city.name)}</strong>
-      <span>${Number(city.latitude).toFixed(2)}°, ${Number(city.longitude).toFixed(2)}°</span>
+    return `<a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="${href}">
+      <div class="font-semibold">${escapeHtml(city.name)}</div>
     </a>`;
   });
 
   const content = `
-    ${renderSearchPanel({ title: `Search cities in ${state.stateName}` })}
-    <nav class="breadcrumbs">
-      <a href="/wetbulb-temperature/">Countries</a>
-      <a href="/wetbulb-temperature/${state.countrySlug}/">${escapeHtml(state.countryName)}</a>
-      <span>${escapeHtml(state.stateName)}</span>
-    </nav>
     ${renderListSection({
       title: `Cities in ${state.stateName}, ${state.countryName}`,
-      kicker: "State directory",
       items: cityCards,
       emptyMessage: "No cities found for this state or province.",
+      backLink: `<div class="mb-6"><a href="/wetbulb-temperature/${state.countrySlug}/" class="text-blue-600 hover:underline">← Back to ${escapeHtml(state.countryName)}</a></div>`,
     })}
   `;
 
@@ -694,6 +659,7 @@ function clientRuntimeSource() {
       location: widget.querySelector("[data-weather-location]"),
       coords: widget.querySelector("[data-weather-coordinates]"),
       status: widget.querySelector("[data-weather-status]"),
+      grid: widget.querySelector("[data-weather-grid]"),
       wetBulb: widget.querySelector("[data-weather-wetbulb]"),
       temp: widget.querySelector("[data-weather-temp]"),
       humidity: widget.querySelector("[data-weather-humidity]"),
@@ -704,7 +670,8 @@ function clientRuntimeSource() {
 
   function setWeatherError(widget, message) {
     const el = weatherElements(widget);
-    el.status.textContent = "Unavailable";
+    if (el.status) el.status.textContent = "Unavailable";
+    if (el.grid) el.grid.hidden = true;
     el.error.hidden = false;
     el.error.textContent = message;
   }
@@ -716,8 +683,9 @@ function clientRuntimeSource() {
       : calculateWetBulb(payload.weather.temperature, payload.weather.humidity);
     const locationName = requestedName || payload.location.name || "Selected Location";
     el.location.textContent = locationName;
-    el.coords.textContent = payload.location.lat.toFixed(4) + "°, " + payload.location.lng.toFixed(4) + "°";
-    el.status.textContent = "Live";
+    el.coords.textContent = payload.location.lat.toFixed(4) + "°N, " + payload.location.lng.toFixed(4) + "°E";
+    if (el.status) el.status.textContent = "Live";
+    if (el.grid) el.grid.hidden = false;
     el.wetBulb.textContent = wetBulb.toFixed(2) + "°C";
     el.temp.textContent = payload.weather.temperature.toFixed(2) + "°C";
     el.humidity.textContent = payload.weather.humidity.toFixed(2) + "%";
@@ -728,13 +696,13 @@ function clientRuntimeSource() {
 
   async function fetchWeather(widget, lat, lon, requestedName) {
     const el = weatherElements(widget);
-    el.status.textContent = "Loading";
+    if (el.status) el.status.textContent = "Loading";
     el.updated.textContent = "Fetching latest weather...";
     el.error.hidden = true;
     el.error.textContent = "";
 
     if (isLikelyBot()) {
-      el.status.textContent = "Skipped";
+      if (el.status) el.status.textContent = "Skipped";
       el.updated.textContent = "Weather fetch skipped for automated client.";
       return;
     }
@@ -747,7 +715,7 @@ function clientRuntimeSource() {
     });
 
     if (response.status === 204) {
-      el.status.textContent = "Skipped";
+      if (el.status) el.status.textContent = "Skipped";
       el.updated.textContent = "Weather fetch skipped.";
       return;
     }
@@ -828,85 +796,21 @@ function clientRuntimeSource() {
 })();`;
 }
 
-function stylesheetSource() {
-  return `:root{
-  --bg:#f4f7fb;
-  --surface:#ffffff;
-  --surface-strong:#0f172a;
-  --border:#d9e2ec;
-  --text:#0f172a;
-  --muted:#526277;
-  --accent:#0f766e;
-  --accent-2:#f59e0b;
-  --shadow:0 22px 40px rgba(15,23,42,.08);
-  --radius:24px;
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:radial-gradient(circle at top,#fff 0,#eef5ff 38%,#f4f7fb 100%);color:var(--text);font:16px/1.5 Arial,Helvetica,sans-serif}
-a{color:inherit}
-.page-shell{max-width:1120px;margin:0 auto;padding:24px 18px 48px}
-.site-header,.utility-panel,.hero,.weather-card,.list-section,.disclaimer,.site-footer{background:rgba(255,255,255,.94);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:var(--radius)}
-.site-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px;margin-bottom:18px}
-.brand{display:flex;align-items:center;gap:14px;text-decoration:none}
-.brand-mark{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#38bdf8);color:#fff;font-weight:800;font-size:20px}
-.brand strong,.hero h1,.section-heading h1,.utility-copy h2,.weather-card__head h2{display:block}
-.brand small,.hero-note,.search-help,.weather-coordinates,.footer-note{color:var(--muted)}
-.header-nav{display:flex;gap:14px;flex-wrap:wrap}
-.header-nav a,.breadcrumbs a{color:var(--accent);text-decoration:none}
-.page-main{display:grid;gap:18px}
-.hero{display:grid;grid-template-columns:1.4fr .9fr;gap:24px;padding:30px}
-.hero h1{font-size:clamp(2.2rem,4vw,3.7rem);line-height:1.02;margin:.2rem 0 .75rem}
-.hero-copy{max-width:50ch;color:var(--muted);font-size:1.05rem}
-.hero-actions{display:flex;flex-direction:column;justify-content:flex-end;gap:14px}
-.primary-link,.search-row button,.secondary-button{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;padding:13px 18px;font-weight:700;text-decoration:none;cursor:pointer}
-.primary-link,.search-row button{background:var(--surface-strong);color:#fff}
-.secondary-button{background:#ecfeff;color:var(--accent);border:1px solid #a5f3fc}
-.utility-panel{display:grid;grid-template-columns:1.1fr 1fr auto;gap:18px;padding:24px}
-.utility-copy p,.section-heading p,.weather-card__head p{margin:0}
-.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.74rem;font-weight:700;color:var(--accent)}
-.utility-copy h2,.section-heading h1,.weather-card__head h2{margin:.35rem 0 .45rem}
-.search-form{display:grid;gap:10px}
-.search-label{font-weight:700}
-.search-row{display:flex;gap:10px}
-.search-row input{flex:1;min-width:0;padding:14px 16px;border-radius:16px;border:1px solid var(--border);font:inherit}
-.weather-card{padding:26px}
-.weather-card__head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
-.status-pill{padding:8px 12px;border-radius:999px;background:#ecfeff;color:var(--accent);font-weight:700}
-.weather-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.weather-grid article{padding:18px;border-radius:20px;background:#f8fbff;border:1px solid #dbeafe}
-.weather-grid h3{margin:0 0 8px;font-size:.95rem;color:var(--muted)}
-.weather-grid p{margin:0;font-size:1.35rem;font-weight:800}
-.weather-error{margin:16px 0 0;padding:14px 16px;border-radius:16px;background:#fff1f2;border:1px solid #fecdd3;color:#be123c}
-.breadcrumbs{display:flex;gap:10px;flex-wrap:wrap;font-size:.95rem;color:var(--muted)}
-.breadcrumbs span::before,.breadcrumbs a+a::before{content:"/";margin-right:10px;color:#94a3b8}
-.breadcrumbs a:first-child::before{content:""}
-.list-section{padding:24px}
-.list-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
-.list-card{display:grid;gap:4px;padding:18px;border-radius:20px;text-decoration:none;background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid var(--border);transition:transform .12s ease,border-color .12s ease}
-.list-card:hover{transform:translateY(-2px);border-color:#7dd3fc}
-.list-card span{color:var(--muted)}
-.empty-state{padding:18px;border-radius:18px;background:#f8fafc;color:var(--muted);margin-top:16px}
-.disclaimer,.site-footer{padding:20px 22px}
-.disclaimer p,.site-footer p{margin:0}
-.site-footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
-@media (max-width:960px){
-  .hero,.utility-panel{grid-template-columns:1fr}
-  .weather-grid,.list-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media (max-width:640px){
-  .page-shell{padding:14px 12px 40px}
-  .site-header{padding:16px;align-items:flex-start;flex-direction:column}
-  .search-row,.weather-card__head{flex-direction:column}
-  .search-row button,.secondary-button,.primary-link{width:100%}
-  .weather-grid,.list-grid{grid-template-columns:1fr}
-}`;
+export function buildStaticCss(outDir) {
+  const assetDir = path.join(outDir, "assets");
+  fs.mkdirSync(assetDir, { recursive: true });
+  const tailwindBin = path.resolve("node_modules/.bin/tailwindcss");
+  execFileSync(
+    tailwindBin,
+    ["-i", STATIC_TAILWIND_INPUT, "-o", path.join(assetDir, "app.css"), "--minify"],
+    { stdio: "pipe" },
+  );
 }
 
 export function ensureAssets(outDir, siteData) {
   const assetDir = path.join(outDir, "assets");
   fs.mkdirSync(assetDir, { recursive: true });
-  fs.writeFileSync(path.join(assetDir, "app.css"), stylesheetSource());
+  buildStaticCss(outDir);
   fs.writeFileSync(path.join(assetDir, "app.js"), clientRuntimeSource());
   fs.writeFileSync(
     path.join(assetDir, "locations.json"),
