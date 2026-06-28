@@ -325,7 +325,7 @@ function renderSearchBox() {
         placeholder="Search for a location..."
         autocomplete="off"
         data-search-input
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-700 caret-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       >
       <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors whitespace-nowrap">Search</button>
       <p class="sr-only" data-search-status></p>

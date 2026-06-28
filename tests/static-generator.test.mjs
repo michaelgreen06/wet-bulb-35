@@ -199,6 +199,7 @@ test("page templates include expected listings and route counts", () => {
 
   assert.match(homeHtml, /Current Wet Bulb Temperature/);
   assert.match(homeHtml, /Search for a location\.\.\./);
+  assert.match(homeHtml, /bg-white text-black placeholder-gray-700 caret-black/);
   assert.match(homeHtml, /Use Current Location/);
   assert.doesNotMatch(homeHtml, /maps\.googleapis\.com\/maps\/api\/js/);
   assert.doesNotMatch(homeHtml, /location-options/);
@@ -316,6 +317,8 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
   const generatedCss = fs.readFileSync(path.join(result.outDir, "assets/app.css"), "utf8");
   assert.match(generatedCss, /\.bg-gray-50/);
   assert.match(generatedCss, /\.max-w-4xl/);
+  assert.match(generatedCss, /-webkit-text-fill-color:#000/);
+  assert.match(generatedCss, /color-scheme:light/);
   assert.doesNotMatch(generatedCss, /radial-gradient/);
 
   const generatedJs = fs.readFileSync(path.join(result.outDir, "assets/app.js"), "utf8");
