@@ -1,4 +1,4 @@
-import { kelvinToCelsius } from './wetbulb';
+import { calculateWetBulb, kelvinToCelsius } from './wetbulb';
 import { z } from 'zod';
 
 export const WeatherDataSchema = z.object({
@@ -69,7 +69,10 @@ export async function fetchWeatherData(lat: number, lon: number): Promise<Weathe
       weather: {
         temperature: kelvinToCelsius(data.main.temp),
         humidity: data.main.humidity,
-        wetBulb: 0, // This will be calculated in the component
+        wetBulb: calculateWetBulb(
+          kelvinToCelsius(data.main.temp),
+          data.main.humidity,
+        ),
         timestamp: data.dt * 1000, // Convert to milliseconds
       },
     };
