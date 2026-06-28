@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  clientRuntimeSource,
   createSiteData,
   escapeHtml,
   generateStaticSite,
@@ -199,6 +200,8 @@ test("page templates include expected listings and route counts", () => {
   assert.match(homeHtml, /Current Wet Bulb Temperature/);
   assert.match(homeHtml, /Search for a location\.\.\./);
   assert.match(homeHtml, /Use Current Location/);
+  assert.doesNotMatch(homeHtml, /maps\.googleapis\.com\/maps\/api\/js/);
+  assert.doesNotMatch(homeHtml, /location-options/);
   assert.doesNotMatch(homeHtml, /Browse all countries/);
   assert.match(homeHtml, /class="min-h-screen bg-gray-50 py-8 px-4"/);
   assert.match(homeHtml, /class="max-w-4xl mx-auto space-y-8"/);
@@ -221,6 +224,38 @@ test("page templates include expected listings and route counts", () => {
   for (const html of [homeHtml, browseHtml, countryHtml, stateHtml]) {
     assertLegacyPrototypeClassesAbsent(html);
   }
+});
+
+test("client runtime lazy-loads Google Places only when a public key is provided", () => {
+  const withoutKey = clientRuntimeSource({ placesApiKey: "" });
+  assert.doesNotMatch(withoutKey, /maps\.googleapis\.com\/maps\/api\/js/);
+  assert.match(withoutKey, /Google Places search is unavailable/);
+  assert.match(withoutKey, /Static directory search is still available/);
+  assert.match(withoutKey, /loadSearchIndex\(\)\.then\(bindSearch\)/);
+
+  const withKey = clientRuntimeSource({ placesApiKey: "public-test-key" });
+  assert.match(withKey, /const googlePlacesApiKey = "public-test-key"/);
+  assert.match(withKey, /libraries=places/);
+  assert.match(withKey, /types: \["\(cities\)"\]/);
+  assert.match(withKey, /fields: \["geometry", "name", "formatted_address"\]/);
+  assert.match(withKey, /input\.addEventListener\("focus", ensureAutocomplete\)/);
+  assert.match(withKey, /input\.addEventListener\("click", ensureAutocomplete\)/);
+  assert.match(withKey, /document\.head\.appendChild\(script\)/);
+});
+
+test("client runtime wires Google Places selection to in-place weather refresh", () => {
+  const runtime = clientRuntimeSource({ placesApiKey: "public-test-key" });
+
+  assert.match(runtime, /autocomplete\.addListener\("place_changed", async \(\) =>/);
+  assert.match(runtime, /const lat = Number\(placeCoordinate\(location\.lat\)\)/);
+  assert.match(runtime, /const lng = Number\(placeCoordinate\(location\.lng\)\)/);
+  assert.match(runtime, /widget\.dataset\.lat = String\(lat\)/);
+  assert.match(runtime, /widget\.dataset\.lon = String\(lng\)/);
+  assert.match(runtime, /widget\.dataset\.location = label/);
+  assert.match(runtime, /await fetchWeather\(widget, lat, lng, label\)/);
+  assert.match(runtime, /input\.dataset\.placesSelected = "true"/);
+  assert.match(runtime, /if \(input\.dataset\.placesSelected === "true"\)/);
+  assert.match(runtime, /window\.location\.href = partial\.url/);
 });
 
 test("generated pages share stable DOM fingerprints per page type", () => {
@@ -253,6 +288,7 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
     outDir: path.join(tmpDir, "dist"),
     sourceFile: sourcePath,
     siteUrl: "https://example.test",
+    placesApiKey: "public-test-key",
   });
 
   assert.equal(result.written, 15);
@@ -281,6 +317,14 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
   assert.match(generatedCss, /\.bg-gray-50/);
   assert.match(generatedCss, /\.max-w-4xl/);
   assert.doesNotMatch(generatedCss, /radial-gradient/);
+
+  const generatedJs = fs.readFileSync(path.join(result.outDir, "assets/app.js"), "utf8");
+  assert.match(generatedJs, /const googlePlacesApiKey = "public-test-key"/);
+  assert.match(generatedJs, /maps\.googleapis\.com\/maps\/api\/js/);
+  assert.match(generatedJs, /loadSearchIndex\(\)\.then\(bindSearch\)/);
+
+  const homeHtml = fs.readFileSync(path.join(result.outDir, "index.html"), "utf8");
+  assert.doesNotMatch(homeHtml, /maps\.googleapis\.com\/maps\/api\/js/);
 
   const siteData = createSiteData(sampleCities);
   const htmlFiles = [...siteData.pageRoutes].map((routePath) =>

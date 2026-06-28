@@ -324,12 +324,10 @@ function renderSearchBox() {
         type="search"
         placeholder="Search for a location..."
         autocomplete="off"
-        list="location-options"
         data-search-input
         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       >
       <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors whitespace-nowrap">Search</button>
-      <datalist id="location-options"></datalist>
       <p class="sr-only" data-search-status></p>
     </form>
   </div>`;
@@ -591,9 +589,186 @@ export function renderStatePage(state, options = {}) {
   });
 }
 
-function clientRuntimeSource() {
+export function clientRuntimeSource({ placesApiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY ?? "" } = {}) {
+  const normalizedPlacesApiKey = String(placesApiKey ?? "").trim();
+  const placesRuntime = normalizedPlacesApiKey
+    ? String.raw`
+  const googlePlacesApiKey = ${safeJson(normalizedPlacesApiKey)};
+  const googlePlacesScriptId = "google-maps-places-sdk";
+  const googlePlacesCallbackName = "__wetBulbGooglePlacesReady";
+  let googlePlacesPromise = null;
+
+  function hasGooglePlaces() {
+    return Boolean(
+      window.google &&
+      window.google.maps &&
+      window.google.maps.places &&
+      window.google.maps.places.Autocomplete
+    );
+  }
+
+  function loadGooglePlaces() {
+    if (hasGooglePlaces()) {
+      return Promise.resolve(window.google.maps.places);
+    }
+
+    if (googlePlacesPromise) {
+      return googlePlacesPromise;
+    }
+
+    googlePlacesPromise = new Promise((resolve, reject) => {
+      window[googlePlacesCallbackName] = () => {
+        if (hasGooglePlaces()) {
+          resolve(window.google.maps.places);
+        } else {
+          reject(new Error("Google Places search is unavailable."));
+        }
+      };
+
+      const existing = document.getElementById(googlePlacesScriptId);
+      if (existing) {
+        existing.addEventListener("load", () => {
+          if (hasGooglePlaces()) {
+            resolve(window.google.maps.places);
+          }
+        }, { once: true });
+        existing.addEventListener("error", () => reject(new Error("Google Places search failed to load.")), { once: true });
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.id = googlePlacesScriptId;
+      script.src =
+        "https://maps.googleapis.com/maps/api/js?key=" +
+        encodeURIComponent(googlePlacesApiKey) +
+        "&libraries=places&callback=" +
+        encodeURIComponent(googlePlacesCallbackName);
+      script.async = true;
+      script.defer = true;
+      script.onerror = () => reject(new Error("Google Places search failed to load."));
+      document.head.appendChild(script);
+    });
+
+    return googlePlacesPromise;
+  }
+
+  function placeCoordinate(value) {
+    return typeof value === "function" ? value() : value;
+  }
+
+  function placeLabel(place, input) {
+    return place.formatted_address || place.name || input.value.trim() || "Selected Location";
+  }
+
+  function nearestWeatherWidget(form) {
+    const localWidget = form.parentElement && form.parentElement.querySelector("[data-weather-widget]");
+    return localWidget || document.querySelector("[data-weather-widget]");
+  }
+
+  function bindPlacesSearch() {
+    document.querySelectorAll("[data-search-form]").forEach((form) => {
+      const input = form.querySelector("[data-search-input]");
+      const status = form.querySelector("[data-search-status]");
+      if (!input) {
+        return;
+      }
+
+      let autocomplete = null;
+      const ensureAutocomplete = () => {
+        if (autocomplete) {
+          return;
+        }
+
+        if (status) status.textContent = "Loading Google Places search.";
+        loadGooglePlaces()
+          .then(() => {
+            if (autocomplete) {
+              return;
+            }
+
+            autocomplete = new window.google.maps.places.Autocomplete(input, {
+              types: ["(cities)"],
+              fields: ["geometry", "name", "formatted_address"]
+            });
+            if (status) status.textContent = "Google Places search ready.";
+
+            autocomplete.addListener("place_changed", async () => {
+              const place = autocomplete.getPlace();
+              const location = place && place.geometry && place.geometry.location;
+              if (!location) {
+                if (status) status.textContent = "Choose a suggested city to load weather here.";
+                return;
+              }
+
+              const lat = Number(placeCoordinate(location.lat));
+              const lng = Number(placeCoordinate(location.lng));
+              if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                if (status) status.textContent = "Selected city did not include coordinates.";
+                return;
+              }
+
+              const widget = nearestWeatherWidget(form);
+              if (!widget) {
+                if (status) status.textContent = "Weather card is unavailable on this page.";
+                return;
+              }
+
+              const label = placeLabel(place, input);
+              input.value = label;
+              input.dataset.placesSelected = "true";
+              widget.dataset.lat = String(lat);
+              widget.dataset.lon = String(lng);
+              widget.dataset.location = label;
+
+              try {
+                await fetchWeather(widget, lat, lng, label);
+                if (status) status.textContent = "Showing weather for " + label + ".";
+              } catch (error) {
+                setWeatherError(widget, error instanceof Error ? error.message : "Weather is temporarily unavailable.");
+              }
+            });
+          })
+          .catch((error) => {
+            if (status) {
+              status.textContent = error instanceof Error
+                ? error.message + " Static directory search is still available."
+                : "Google Places search is unavailable. Static directory search is still available.";
+            }
+          });
+      };
+
+      input.addEventListener("focus", ensureAutocomplete);
+      input.addEventListener("click", ensureAutocomplete);
+      input.addEventListener("input", () => {
+        delete input.dataset.placesSelected;
+      });
+    });
+  }
+`
+    : String.raw`
+  function bindPlacesSearch() {
+    document.querySelectorAll("[data-search-form]").forEach((form) => {
+      const input = form.querySelector("[data-search-input]");
+      const status = form.querySelector("[data-search-status]");
+      if (!input) {
+        return;
+      }
+
+      const showUnavailable = () => {
+        if (status) {
+          status.textContent = "Google Places search is unavailable. Static directory search is still available.";
+        }
+      };
+
+      input.addEventListener("focus", showUnavailable, { once: true });
+      input.addEventListener("click", showUnavailable, { once: true });
+    });
+  }
+`;
+
   return String.raw`(() => {
   const botPattern = /(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|bytespider|crawler|spider|bot)/i;
+${placesRuntime}
 
   function calculateWetBulb(temperature, relativeHumidity) {
     const rh = Math.min(Math.max(relativeHumidity, 5), 99);
@@ -622,11 +797,6 @@ function clientRuntimeSource() {
   }
 
   function bindSearch(index) {
-    const options = document.getElementById("location-options");
-    if (options) {
-      options.innerHTML = index.slice(0, 2500).map((item) => '<option value="' + item.label.replaceAll('"', "&quot;") + '"></option>').join("");
-    }
-
     document.querySelectorAll("[data-search-form]").forEach((form) => {
       const input = form.querySelector("[data-search-input]");
       const status = form.querySelector("[data-search-status]");
@@ -639,6 +809,11 @@ function clientRuntimeSource() {
         const query = input.value.trim().toLowerCase();
         if (!query) {
           if (status) status.textContent = "Enter a city, state, or country.";
+          return;
+        }
+
+        if (input.dataset.placesSelected === "true") {
+          if (status) status.textContent = "Showing selected location.";
           return;
         }
 
@@ -790,6 +965,7 @@ function clientRuntimeSource() {
   }
 
   Promise.allSettled([
+    Promise.resolve().then(bindPlacesSearch),
     loadSearchIndex().then(bindSearch),
     ...Array.from(document.querySelectorAll("[data-weather-widget]")).map((widget) => initWeather(widget))
   ]).catch(() => {});
@@ -807,11 +983,13 @@ export function buildStaticCss(outDir) {
   );
 }
 
-export function ensureAssets(outDir, siteData) {
+export function ensureAssets(outDir, siteData, options = {}) {
   const assetDir = path.join(outDir, "assets");
   fs.mkdirSync(assetDir, { recursive: true });
   buildStaticCss(outDir);
-  fs.writeFileSync(path.join(assetDir, "app.js"), clientRuntimeSource());
+  fs.writeFileSync(path.join(assetDir, "app.js"), clientRuntimeSource({
+    placesApiKey: options.placesApiKey,
+  }));
   fs.writeFileSync(
     path.join(assetDir, "locations.json"),
     JSON.stringify(siteData.searchIndex),
@@ -841,6 +1019,7 @@ export function generateStaticSite(options = {}) {
   const outDir = path.resolve(String(options.outDir ?? DEFAULT_OUT_DIR));
   const siteUrl = options.siteUrl ?? DEFAULT_SITE_URL;
   const sourceFile = path.resolve(String(options.sourceFile ?? DEFAULT_SOURCE_FILE));
+  const placesApiKey = options.placesApiKey ?? process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY ?? "";
 
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
@@ -849,7 +1028,7 @@ export function generateStaticSite(options = {}) {
   const siteData = createSiteData(sourceCities);
 
   copyPublicAssets(outDir);
-  ensureAssets(outDir, siteData);
+  ensureAssets(outDir, siteData, { placesApiKey });
 
   writeHtmlPage(outDir, "/", renderHomePage(siteData, { siteUrl }));
   writeHtmlPage(outDir, "/wetbulb-temperature/", renderBrowsePage(siteData, { siteUrl }));
