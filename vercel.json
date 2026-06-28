@@ -1,0 +1,5 @@
+{
+  "installCommand": "npm ci",
+  "buildCommand": "npm run test:static-prototype && npm run build:static-prototype",
+  "outputDirectory": "dist"
+}
