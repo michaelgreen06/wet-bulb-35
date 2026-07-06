@@ -19,3 +19,18 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+[data-search-input] {
+  color-scheme: light;
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000 !important;
+  opacity: 1;
+}
+
+[data-search-input]::placeholder {
+  color: #374151 !important;
+  -webkit-text-fill-color: #374151 !important;
+  opacity: 1;
+}

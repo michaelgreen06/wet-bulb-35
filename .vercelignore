@@ -1,0 +1,9 @@
+.git
+.next
+dist
+node_modules
+
+# Large local source data that is ignored by Git and not needed for this build.
+scripts/admin1CodesASCII.txt
+scripts/allCountries.txt
+scripts/geonames_cities.json
