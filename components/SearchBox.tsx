@@ -52,7 +52,8 @@ export default function SearchBox({ onLocationSelect }: SearchBoxProps) {
           <input
             type="text"
             placeholder="Search for a location..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            data-search-input
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-700 caret-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </Autocomplete>
       </div>
