@@ -1,4 +1,5 @@
 {
   "installCommand": "npm ci",
+  "ignoreCommand": "node scripts/should-ignore-vercel-build.mjs",
   "buildCommand": "npm run vercel-build"
 }

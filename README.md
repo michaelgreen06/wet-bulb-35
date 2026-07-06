@@ -54,6 +54,14 @@ This will create all sitemap files in the `public/sitemaps` directory. After gen
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Vercel uses `npm run vercel-build`, which writes the deployment with the Build Output API in `.vercel/output`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To avoid regenerating every static location page for changes that cannot affect the deployed output, `vercel.json` uses:
+
+```bash
+node scripts/should-ignore-vercel-build.mjs
+```
+
+The script compares the current commit to `VERCEL_GIT_PREVIOUS_SHA`, the last successful deployment SHA provided by Vercel, and skips the build when none of the deployment inputs changed. The build still runs when static generator code, city data, Tailwind config, public assets, package files, or Vercel config changes.
+
+Set `FORCE_VERCEL_BUILD=1` on a deployment to bypass the skip logic.

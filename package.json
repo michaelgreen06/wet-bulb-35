@@ -10,7 +10,7 @@
     "build:static-prototype": "node scripts/prototype-static-generator.mjs --limit=130684 --out=dist",
     "build:vercel-output": "node scripts/build-vercel-output.mjs",
     "vercel-build": "npm run test:static-prototype && npm run build:vercel-output",
-    "test:static-prototype": "node --test tests/static-generator.test.mjs",
+    "test:static-prototype": "node --test tests/static-generator.test.mjs tests/vercel-ignore-build.test.mjs",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
