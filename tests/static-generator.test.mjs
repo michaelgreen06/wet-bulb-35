@@ -13,6 +13,7 @@ import {
   prepareCities,
   renderBrowsePage,
   renderCountryPage,
+  renderGoogleAnalyticsScripts,
   renderHomePage,
   renderStatePage,
   routePathForCity,
@@ -160,6 +161,8 @@ test("pageHtml emits required SEO and weather widget structure", () => {
   assert.match(html, /data-weather-widget=""/);
   assert.match(html, /data-lat="42\.53176"/);
   assert.match(html, /data-lon="1\.56654"/);
+  assert.match(html, /googletagmanager\.com\/gtag\/js\?id=G-LNPWV0JL7S/);
+  assert.match(html, /gtag\("config", "G-LNPWV0JL7S"\)/);
   assert.match(html, /class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto"/);
   assert.match(html, /class="grid grid-cols-2 gap-4" data-weather-grid/);
   assert.match(html, /Wet Bulb Temperature/);
@@ -178,6 +181,15 @@ test("pageHtml emits required SEO and weather widget structure", () => {
   assert.equal(jsonLd["@type"], "BreadcrumbList");
   assert.equal(jsonLd.itemListElement.length, 4);
   assert.equal(jsonLd.itemListElement[3].name, "Vila");
+});
+
+test("renderGoogleAnalyticsScripts emits or omits the static GA snippet", () => {
+  const scripts = renderGoogleAnalyticsScripts("G-TEST123");
+
+  assert.match(scripts, /googletagmanager\.com\/gtag\/js\?id=G-TEST123/);
+  assert.match(scripts, /window\.dataLayer = window\.dataLayer \|\| \[\]/);
+  assert.match(scripts, /gtag\("config", "G-TEST123"\)/);
+  assert.equal(renderGoogleAnalyticsScripts(""), "");
 });
 
 test("page templates include expected listings and route counts", () => {
@@ -290,6 +302,7 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
     sourceFile: sourcePath,
     siteUrl: "https://example.test",
     placesApiKey: "public-test-key",
+    googleAnalyticsId: "G-STATIC123",
   });
 
   assert.equal(result.written, 15);
@@ -327,6 +340,8 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
   assert.match(generatedJs, /loadSearchIndex\(\)\.then\(bindSearch\)/);
 
   const homeHtml = fs.readFileSync(path.join(result.outDir, "index.html"), "utf8");
+  assert.match(homeHtml, /googletagmanager\.com\/gtag\/js\?id=G-STATIC123/);
+  assert.match(homeHtml, /gtag\("config", "G-STATIC123"\)/);
   assert.doesNotMatch(homeHtml, /maps\.googleapis\.com\/maps\/api\/js/);
 
   const siteData = createSiteData(sampleCities);

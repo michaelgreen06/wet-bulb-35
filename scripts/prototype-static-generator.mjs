@@ -8,6 +8,7 @@ import slugify from "slugify";
 const DEFAULT_SITE_URL = "https://www.wetbulb35.com";
 const DEFAULT_OUT_DIR = "/private/tmp/wetbulb-static-prototype";
 const DEFAULT_SOURCE_FILE = "scripts/resolved_cities.json";
+const DEFAULT_GA_MEASUREMENT_ID = "G-LNPWV0JL7S";
 const PUBLIC_DIR = path.resolve("public");
 const STATIC_TAILWIND_INPUT = path.resolve("scripts/static-tailwind.css");
 const BOT_PATTERN =
@@ -64,6 +65,32 @@ function canonicalUrl(siteUrl, routePath) {
 
 function safeJson(value) {
   return JSON.stringify(value).replaceAll("<", "\\u003c");
+}
+
+function defaultGoogleAnalyticsId() {
+  return process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || DEFAULT_GA_MEASUREMENT_ID;
+}
+
+function normalizeGoogleAnalyticsId(measurementId) {
+  const id = measurementId === undefined ? defaultGoogleAnalyticsId() : measurementId;
+  return String(id ?? "").trim();
+}
+
+export function renderGoogleAnalyticsScripts(measurementId) {
+  const normalizedMeasurementId = normalizeGoogleAnalyticsId(measurementId);
+
+  if (!normalizedMeasurementId) {
+    return "";
+  }
+
+  return `
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(normalizedMeasurementId)}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", ${safeJson(normalizedMeasurementId)});
+  </script>`;
 }
 
 function sortByName(items) {
@@ -241,10 +268,12 @@ function pageShell({
   description,
   breadcrumbData,
   mainContent,
+  googleAnalyticsId,
 }) {
   const canonical = canonicalUrl(siteUrl, routePath);
   const imageUrl = `${siteUrl}/images/wetbulb-default.jpg`;
   const jsonLd = safeJson(breadcrumbData);
+  const googleAnalyticsScripts = renderGoogleAnalyticsScripts(googleAnalyticsId);
 
   return `<!doctype html>
 <html lang="en">
@@ -267,6 +296,7 @@ function pageShell({
   <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/app.css">
+  ${googleAnalyticsScripts}
   <script type="application/ld+json">${jsonLd}</script>
 </head>
 <body>
@@ -441,6 +471,7 @@ export function pageHtml(city, options = {}) {
     description,
     breadcrumbData,
     mainContent: renderAppFrame(cityContent),
+    googleAnalyticsId: options.googleAnalyticsId,
   });
 }
 
@@ -469,6 +500,7 @@ export function renderHomePage(siteData, options = {}) {
     description,
     breadcrumbData,
     mainContent: renderAppFrame(content),
+    googleAnalyticsId: options.googleAnalyticsId,
   });
 }
 
@@ -505,6 +537,7 @@ export function renderBrowsePage(siteData, options = {}) {
     description,
     breadcrumbData,
     mainContent: renderAppFrame(content),
+    googleAnalyticsId: options.googleAnalyticsId,
   });
 }
 
@@ -545,6 +578,7 @@ export function renderCountryPage(country, options = {}) {
     description,
     breadcrumbData,
     mainContent: renderAppFrame(content),
+    googleAnalyticsId: options.googleAnalyticsId,
   });
 }
 
@@ -586,6 +620,7 @@ export function renderStatePage(state, options = {}) {
     description,
     breadcrumbData,
     mainContent: renderAppFrame(content),
+    googleAnalyticsId: options.googleAnalyticsId,
   });
 }
 
@@ -1020,6 +1055,9 @@ export function generateStaticSite(options = {}) {
   const siteUrl = options.siteUrl ?? DEFAULT_SITE_URL;
   const sourceFile = path.resolve(String(options.sourceFile ?? DEFAULT_SOURCE_FILE));
   const placesApiKey = options.placesApiKey ?? process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY ?? "";
+  const googleAnalyticsId = options.googleAnalyticsId === undefined
+    ? defaultGoogleAnalyticsId()
+    : options.googleAnalyticsId;
 
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
@@ -1030,14 +1068,14 @@ export function generateStaticSite(options = {}) {
   copyPublicAssets(outDir);
   ensureAssets(outDir, siteData, { placesApiKey });
 
-  writeHtmlPage(outDir, "/", renderHomePage(siteData, { siteUrl }));
-  writeHtmlPage(outDir, "/wetbulb-temperature/", renderBrowsePage(siteData, { siteUrl }));
+  writeHtmlPage(outDir, "/", renderHomePage(siteData, { siteUrl, googleAnalyticsId }));
+  writeHtmlPage(outDir, "/wetbulb-temperature/", renderBrowsePage(siteData, { siteUrl, googleAnalyticsId }));
 
   for (const country of siteData.countries) {
     writeHtmlPage(
       outDir,
       `/wetbulb-temperature/${country.slug}/`,
-      renderCountryPage(country, { siteUrl }),
+      renderCountryPage(country, { siteUrl, googleAnalyticsId }),
     );
   }
 
@@ -1045,12 +1083,12 @@ export function generateStaticSite(options = {}) {
     writeHtmlPage(
       outDir,
       `/wetbulb-temperature/${state.countrySlug}/${state.stateSlug}/`,
-      renderStatePage(state, { siteUrl }),
+      renderStatePage(state, { siteUrl, googleAnalyticsId }),
     );
   }
 
   for (const city of siteData.cities) {
-    writeHtmlPage(outDir, routePathForCity(city), pageHtml(city, { siteUrl }));
+    writeHtmlPage(outDir, routePathForCity(city), pageHtml(city, { siteUrl, googleAnalyticsId }));
   }
 
   const written = siteData.pageRoutes.size;
@@ -1072,6 +1110,7 @@ function main() {
     limit: args.get("limit") ?? 10000,
     outDir: args.get("out") ?? DEFAULT_OUT_DIR,
     siteUrl: args.get("site") ?? DEFAULT_SITE_URL,
+    googleAnalyticsId: args.get("ga"),
   });
 
   console.log(JSON.stringify(result, null, 2));
