@@ -9,7 +9,7 @@
     "limit": 50
   },
   "createdAt": "2026-08-01T21:07:00Z",
-  "updatedAt": "2026-08-01T21:15:17Z",
+  "updatedAt": "2026-08-01T22:13:47Z",
   "batchSize": 75,
   "candidateCities": [
     {
@@ -100979,6 +100979,5281 @@
           }
         }
       ]
+    },
+    {
+      "batchIndex": 53,
+      "locationsCompleted": 3975,
+      "hotspots": []
+    },
+    {
+      "batchIndex": 54,
+      "locationsCompleted": 4050,
+      "hotspots": [
+        {
+          "lat": 23.0348,
+          "lon": -81.1925,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T18:00:00Z",
+          "rhAtPeakTemp": 48,
+          "peakWetBulbC": 27.5,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.3,
+              "rh": 48,
+              "wetBulbC": 26.45
+            }
+          ],
+          "city": {
+            "name": "Cárdenas",
+            "countryCode": "CU",
+            "admin1Code": "03",
+            "latitude": 23.0366,
+            "longitude": -81.206,
+            "population": 98515
+          }
+        },
+        {
+          "lat": 22.6011,
+          "lon": -80.2804,
+          "peakTempC": 36.8,
+          "peakTempTime": "2026-08-02T18:00:00Z",
+          "rhAtPeakTemp": 40,
+          "peakWetBulbC": 26.31,
+          "peakWetBulbTime": "2026-08-02T21:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.7,
+              "rh": 42,
+              "wetBulbC": 25.53
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.8,
+              "rh": 40,
+              "wetBulbC": 25.98
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 36.2,
+              "rh": 41,
+              "wetBulbC": 25.71
+            }
+          ],
+          "city": {
+            "name": "Santo Domingo",
+            "countryCode": "CU",
+            "admin1Code": "16",
+            "latitude": 22.5868,
+            "longitude": -80.2426,
+            "population": 45476
+          }
+        },
+        {
+          "lat": 22.5308,
+          "lon": -81.1307,
+          "peakTempC": 35.9,
+          "peakTempTime": "2026-08-02T19:00:00Z",
+          "rhAtPeakTemp": 43,
+          "peakWetBulbC": 26.65,
+          "peakWetBulbTime": "2026-08-02T21:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.1,
+              "rh": 47,
+              "wetBulbC": 26.08
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.9,
+              "rh": 43,
+              "wetBulbC": 25.91
+            }
+          ],
+          "city": {
+            "name": "Jagüey Grande",
+            "countryCode": "CU",
+            "admin1Code": "03",
+            "latitude": 22.5269,
+            "longitude": -81.1286,
+            "population": 54363
+          }
+        },
+        {
+          "lat": 23.1634,
+          "lon": -82.2722,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T17:00:00Z",
+          "rhAtPeakTemp": 40,
+          "peakWetBulbC": 26.61,
+          "peakWetBulbTime": "2026-08-02T19:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.3,
+              "rh": 40,
+              "wetBulbC": 24.76
+            }
+          ],
+          "city": {
+            "name": "Alamar",
+            "countryCode": "CU",
+            "admin1Code": "02",
+            "latitude": 23.1579,
+            "longitude": -82.2784,
+            "population": 100000
+          }
+        },
+        {
+          "lat": 23.1634,
+          "lon": -82.2722,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T17:00:00Z",
+          "rhAtPeakTemp": 40,
+          "peakWetBulbC": 26.61,
+          "peakWetBulbTime": "2026-08-02T19:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.3,
+              "rh": 40,
+              "wetBulbC": 24.76
+            }
+          ],
+          "city": {
+            "name": "Ciudad Camilo Cienfuegos",
+            "countryCode": "CU",
+            "admin1Code": "02",
+            "latitude": 23.1608,
+            "longitude": -82.328,
+            "population": 178041
+          }
+        },
+        {
+          "lat": 10.7909,
+          "lon": 79.8143,
+          "peakTempC": 35.2,
+          "peakTempTime": "2026-08-02T09:00:00Z",
+          "rhAtPeakTemp": 46,
+          "peakWetBulbC": 26.2,
+          "peakWetBulbTime": "2026-08-02T08:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35,
+              "rh": 48,
+              "wetBulbC": 26.2
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.2,
+              "rh": 46,
+              "wetBulbC": 25.96
+            }
+          ],
+          "city": {
+            "name": "Negapatam",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 10.7638,
+            "longitude": 79.8431,
+            "population": 94238
+          }
+        },
+        {
+          "lat": 10.4394,
+          "lon": 79.3046,
+          "peakTempC": 35,
+          "peakTempTime": "2026-08-02T08:00:00Z",
+          "rhAtPeakTemp": 44,
+          "peakWetBulbC": 26.23,
+          "peakWetBulbTime": "2026-08-02T12:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35,
+              "rh": 44,
+              "wetBulbC": 25.37
+            }
+          ],
+          "city": {
+            "name": "Pattukkottai",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 10.4236,
+            "longitude": 79.3195,
+            "population": 67982
+          }
+        },
+        {
+          "lat": 10.7909,
+          "lon": 79.6552,
+          "peakTempC": 35,
+          "peakTempTime": "2026-08-02T09:00:00Z",
+          "rhAtPeakTemp": 48,
+          "peakWetBulbC": 26.75,
+          "peakWetBulbTime": "2026-08-02T13:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35,
+              "rh": 48,
+              "wetBulbC": 26.2
+            }
+          ],
+          "city": {
+            "name": "Thiruvarur",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 10.7727,
+            "longitude": 79.6368,
+            "population": 58777
+          }
+        },
+        {
+          "lat": 10.6503,
+          "lon": 79.4351,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T10:00:00Z",
+          "rhAtPeakTemp": 43,
+          "peakWetBulbC": 26.08,
+          "peakWetBulbTime": "2026-08-02T17:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35,
+              "rh": 44,
+              "wetBulbC": 25.37
+            },
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35.3,
+              "rh": 43,
+              "wetBulbC": 25.41
+            }
+          ],
+          "city": {
+            "name": "Mannargudi",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 10.6663,
+            "longitude": 79.4506,
+            "population": 63148
+          }
+        },
+        {
+          "lat": 10.9315,
+          "lon": 79.7963,
+          "peakTempC": 35.1,
+          "peakTempTime": "2026-08-02T09:00:00Z",
+          "rhAtPeakTemp": 48,
+          "peakWetBulbC": 26.31,
+          "peakWetBulbTime": "2026-08-02T08:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.1,
+              "rh": 48,
+              "wetBulbC": 26.28
+            },
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35.1,
+              "rh": 47,
+              "wetBulbC": 26.08
+            }
+          ],
+          "city": {
+            "name": "Kāraikāl",
+            "countryCode": "IN",
+            "admin1Code": "22",
+            "latitude": 10.9167,
+            "longitude": 79.8333,
+            "population": 79653
+          }
+        },
+        {
+          "lat": 10.7909,
+          "lon": 79.1777,
+          "peakTempC": 35.1,
+          "peakTempTime": "2026-08-02T09:00:00Z",
+          "rhAtPeakTemp": 46,
+          "peakWetBulbC": 25.87,
+          "peakWetBulbTime": "2026-08-02T09:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.1,
+              "rh": 46,
+              "wetBulbC": 25.87
+            },
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35,
+              "rh": 45,
+              "wetBulbC": 25.58
+            }
+          ],
+          "city": {
+            "name": "Thanjavur",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 10.7852,
+            "longitude": 79.1391,
+            "population": 291067
+          }
+        },
+        {
+          "lat": 11.2127,
+          "lon": 79.76,
+          "peakTempC": 35.4,
+          "peakTempTime": "2026-08-02T08:00:00Z",
+          "rhAtPeakTemp": 49,
+          "peakWetBulbC": 26.74,
+          "peakWetBulbTime": "2026-08-02T08:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.4,
+              "rh": 49,
+              "wetBulbC": 26.74
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.4,
+              "rh": 49,
+              "wetBulbC": 26.74
+            }
+          ],
+          "city": {
+            "name": "Sīrkāzhi",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 11.2372,
+            "longitude": 79.7358,
+            "population": 33100
+          }
+        }
+      ]
+    },
+    {
+      "batchIndex": 55,
+      "locationsCompleted": 4125,
+      "hotspots": [
+        {
+          "lat": 9.3849,
+          "lon": 78.8184,
+          "peakTempC": 36.6,
+          "peakTempTime": "2026-08-02T07:00:00Z",
+          "rhAtPeakTemp": 39,
+          "peakWetBulbC": 25.98,
+          "peakWetBulbTime": "2026-08-02T10:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 35.6,
+              "rh": 41,
+              "wetBulbC": 25.22
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 36.1,
+              "rh": 40,
+              "wetBulbC": 25.41
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 36.6,
+              "rh": 39,
+              "wetBulbC": 25.58
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 36,
+              "rh": 41,
+              "wetBulbC": 25.55
+            }
+          ],
+          "city": {
+            "name": "Ramanathapuram",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 9.3716,
+            "longitude": 78.8308,
+            "population": 65314
+          }
+        },
+        {
+          "lat": 11.2127,
+          "lon": 79.36,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T08:00:00Z",
+          "rhAtPeakTemp": 46,
+          "peakWetBulbC": 26.04,
+          "peakWetBulbTime": "2026-08-02T08:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.3,
+              "rh": 46,
+              "wetBulbC": 26.04
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.1,
+              "rh": 46,
+              "wetBulbC": 25.87
+            },
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35,
+              "rh": 46,
+              "wetBulbC": 25.79
+            }
+          ],
+          "city": {
+            "name": "Jayamkondacholapuram",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 11.2127,
+            "longitude": 79.3637,
+            "population": 32217
+          }
+        },
+        {
+          "lat": 8.7522,
+          "lon": 80.5345,
+          "peakTempC": 35.2,
+          "peakTempTime": "2026-08-02T07:00:00Z",
+          "rhAtPeakTemp": 43,
+          "peakWetBulbC": 25.33,
+          "peakWetBulbTime": "2026-08-02T07:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.2,
+              "rh": 43,
+              "wetBulbC": 25.33
+            }
+          ],
+          "city": {
+            "name": "Vavuniya",
+            "countryCode": "LK",
+            "admin1Code": "38",
+            "latitude": 8.7514,
+            "longitude": 80.4971,
+            "population": 60176
+          }
+        },
+        {
+          "lat": 11.1424,
+          "lon": 79.0497,
+          "peakTempC": 36.2,
+          "peakTempTime": "2026-08-02T09:00:00Z",
+          "rhAtPeakTemp": 42,
+          "peakWetBulbC": 25.94,
+          "peakWetBulbTime": "2026-08-02T09:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.3,
+              "rh": 45,
+              "wetBulbC": 25.83
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 36.2,
+              "rh": 42,
+              "wetBulbC": 25.94
+            },
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 36,
+              "rh": 41,
+              "wetBulbC": 25.55
+            }
+          ],
+          "city": {
+            "name": "Ariyalūr",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 11.1385,
+            "longitude": 79.0756,
+            "population": 29144
+          }
+        },
+        {
+          "lat": 9.5255,
+          "lon": 78.564,
+          "peakTempC": 35.6,
+          "peakTempTime": "2026-08-02T07:00:00Z",
+          "rhAtPeakTemp": 41,
+          "peakWetBulbC": 25.22,
+          "peakWetBulbTime": "2026-08-02T07:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.6,
+              "rh": 41,
+              "wetBulbC": 25.22
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.3,
+              "rh": 41,
+              "wetBulbC": 24.98
+            }
+          ],
+          "city": {
+            "name": "Paramagudi",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 9.5463,
+            "longitude": 78.5907,
+            "population": 85695
+          }
+        },
+        {
+          "lat": 10.7909,
+          "lon": 78.7003,
+          "peakTempC": 35.2,
+          "peakTempTime": "2026-08-02T08:00:00Z",
+          "rhAtPeakTemp": 42,
+          "peakWetBulbC": 25.11,
+          "peakWetBulbTime": "2026-08-02T08:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.2,
+              "rh": 42,
+              "wetBulbC": 25.11
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.2,
+              "rh": 42,
+              "wetBulbC": 25.11
+            }
+          ],
+          "city": {
+            "name": "Tiruchirappalli",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 10.8155,
+            "longitude": 78.6965,
+            "population": 1022518
+          }
+        },
+        {
+          "lat": 11.2127,
+          "lon": 78.88,
+          "peakTempC": 36.6,
+          "peakTempTime": "2026-08-02T09:00:00Z",
+          "rhAtPeakTemp": 40,
+          "peakWetBulbC": 26.04,
+          "peakWetBulbTime": "2026-08-02T07:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.3,
+              "rh": 46,
+              "wetBulbC": 26.04
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.5,
+              "rh": 44,
+              "wetBulbC": 25.79
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 36.6,
+              "rh": 40,
+              "wetBulbC": 25.81
+            },
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 36.5,
+              "rh": 40,
+              "wetBulbC": 25.73
+            }
+          ],
+          "city": {
+            "name": "Perambalur",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 11.2333,
+            "longitude": 78.8833,
+            "population": 30799
+          }
+        },
+        {
+          "lat": 11.1424,
+          "lon": 78.5702,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T09:00:00Z",
+          "rhAtPeakTemp": 41,
+          "peakWetBulbC": 25.16,
+          "peakWetBulbTime": "2026-08-02T07:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35,
+              "rh": 43,
+              "wetBulbC": 25.16
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.3,
+              "rh": 41,
+              "wetBulbC": 24.98
+            }
+          ],
+          "city": {
+            "name": "Turaiyūr",
+            "countryCode": "IN",
+            "admin1Code": "25",
+            "latitude": 11.1497,
+            "longitude": 78.5987,
+            "population": 32134
+          }
+        },
+        {
+          "lat": 8.5413,
+          "lon": 81.178,
+          "peakTempC": 35.4,
+          "peakTempTime": "2026-08-02T07:00:00Z",
+          "rhAtPeakTemp": 44,
+          "peakWetBulbC": 27.03,
+          "peakWetBulbTime": "2026-08-02T11:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.4,
+              "rh": 44,
+              "wetBulbC": 25.71
+            }
+          ],
+          "city": {
+            "name": "Trincomalee",
+            "countryCode": "LK",
+            "admin1Code": "37",
+            "latitude": 8.5778,
+            "longitude": 81.2289,
+            "population": 108420
+          }
+        }
+      ]
+    },
+    {
+      "batchIndex": 56,
+      "locationsCompleted": 4200,
+      "hotspots": []
+    },
+    {
+      "batchIndex": 57,
+      "locationsCompleted": 4275,
+      "hotspots": []
+    },
+    {
+      "batchIndex": 58,
+      "locationsCompleted": 4350,
+      "hotspots": [
+        {
+          "lat": 30.0527,
+          "lon": 121.1902,
+          "peakTempC": 38.4,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 34,
+          "peakWetBulbC": 26.84,
+          "peakWetBulbTime": "2026-08-02T12:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 35.9,
+              "rh": 38,
+              "wetBulbC": 24.79
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 37.1,
+              "rh": 36,
+              "wetBulbC": 25.27
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 38,
+              "rh": 35,
+              "wetBulbC": 25.73
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 38.4,
+              "rh": 34,
+              "wetBulbC": 25.79
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 35,
+              "rh": 47,
+              "wetBulbC": 25.99
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.8,
+              "rh": 43,
+              "wetBulbC": 25.83
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.5,
+              "rh": 43,
+              "wetBulbC": 25.58
+            }
+          ],
+          "city": {
+            "name": "Yuyao",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 30.05,
+            "longitude": 121.1494,
+            "population": 114177
+          }
+        },
+        {
+          "lat": 29.9824,
+          "lon": 120.9441,
+          "peakTempC": 37.7,
+          "peakTempTime": "2026-08-02T06:00:00Z",
+          "rhAtPeakTemp": 38,
+          "peakWetBulbC": 26.31,
+          "peakWetBulbTime": "2026-08-02T13:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 35.9,
+              "rh": 43,
+              "wetBulbC": 25.91
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36.6,
+              "rh": 41,
+              "wetBulbC": 26.04
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 37.2,
+              "rh": 38,
+              "wetBulbC": 25.83
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 37.7,
+              "rh": 38,
+              "wetBulbC": 26.23
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.6,
+              "rh": 45,
+              "wetBulbC": 26.09
+            }
+          ],
+          "city": {
+            "name": "Lianghu",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 29.9915,
+            "longitude": 120.8984,
+            "population": 155000
+          }
+        },
+        {
+          "lat": 30.0527,
+          "lon": 120.8752,
+          "peakTempC": 38.4,
+          "peakTempTime": "2026-08-02T06:00:00Z",
+          "rhAtPeakTemp": 34,
+          "peakWetBulbC": 26.13,
+          "peakWetBulbTime": "2026-08-02T17:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 35.5,
+              "rh": 43,
+              "wetBulbC": 25.58
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 36.7,
+              "rh": 39,
+              "wetBulbC": 25.67
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 37.5,
+              "rh": 36,
+              "wetBulbC": 25.59
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 37.9,
+              "rh": 35,
+              "wetBulbC": 25.65
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 38.4,
+              "rh": 34,
+              "wetBulbC": 25.79
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 37.3,
+              "rh": 37,
+              "wetBulbC": 25.67
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 36,
+              "rh": 41,
+              "wetBulbC": 25.55
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.3,
+              "rh": 44,
+              "wetBulbC": 25.62
+            }
+          ],
+          "city": {
+            "name": "Shangyu",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 30.0156,
+            "longitude": 120.8711,
+            "population": 770000
+          }
+        },
+        {
+          "lat": 30.1933,
+          "lon": 121.2632,
+          "peakTempC": 39,
+          "peakTempTime": "2026-08-02T04:00:00Z",
+          "rhAtPeakTemp": 33,
+          "peakWetBulbC": 26.62,
+          "peakWetBulbTime": "2026-08-02T13:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T01:00:00Z",
+              "tempC": 35.3,
+              "rh": 40,
+              "wetBulbC": 24.76
+            },
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 37.1,
+              "rh": 36,
+              "wetBulbC": 25.27
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 38.2,
+              "rh": 34,
+              "wetBulbC": 25.63
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 39,
+              "rh": 33,
+              "wetBulbC": 25.99
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 38,
+              "rh": 35,
+              "wetBulbC": 25.73
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 38,
+              "rh": 36,
+              "wetBulbC": 25.98
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 37.3,
+              "rh": 38,
+              "wetBulbC": 25.91
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 36.9,
+              "rh": 38,
+              "wetBulbC": 25.59
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 36,
+              "rh": 40,
+              "wetBulbC": 25.33
+            }
+          ],
+          "city": {
+            "name": "Cixi",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 30.1764,
+            "longitude": 121.2457,
+            "population": 1457510
+          }
+        },
+        {
+          "lat": 30.0527,
+          "lon": 120.5601,
+          "peakTempC": 39.6,
+          "peakTempTime": "2026-08-02T06:00:00Z",
+          "rhAtPeakTemp": 31,
+          "peakWetBulbC": 27,
+          "peakWetBulbTime": "2026-08-02T20:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 36.2,
+              "rh": 41,
+              "wetBulbC": 25.71
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 37.7,
+              "rh": 36,
+              "wetBulbC": 25.75
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 38.5,
+              "rh": 33,
+              "wetBulbC": 25.6
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 39.1,
+              "rh": 32,
+              "wetBulbC": 25.8
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 39.6,
+              "rh": 31,
+              "wetBulbC": 25.9
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 38.7,
+              "rh": 34,
+              "wetBulbC": 26.02
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 36.2,
+              "rh": 42,
+              "wetBulbC": 25.94
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 36.1,
+              "rh": 40,
+              "wetBulbC": 25.41
+            },
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 36,
+              "rh": 40,
+              "wetBulbC": 25.33
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35,
+              "rh": 45,
+              "wetBulbC": 25.58
+            }
+          ],
+          "city": {
+            "name": "Shaoxing",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 30.0024,
+            "longitude": 120.5786,
+            "population": 2300000
+          }
+        },
+        {
+          "lat": 29.9121,
+          "lon": 121.5367,
+          "peakTempC": 39.3,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 34,
+          "peakWetBulbC": 26.54,
+          "peakWetBulbTime": "2026-08-02T04:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 36.6,
+              "rh": 40,
+              "wetBulbC": 25.81
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 37.8,
+              "rh": 37,
+              "wetBulbC": 26.07
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 38.7,
+              "rh": 36,
+              "wetBulbC": 26.54
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 39.3,
+              "rh": 34,
+              "wetBulbC": 26.49
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 38.4,
+              "rh": 34,
+              "wetBulbC": 25.79
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 37.1,
+              "rh": 38,
+              "wetBulbC": 25.75
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 37.3,
+              "rh": 38,
+              "wetBulbC": 25.91
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 36.5,
+              "rh": 39,
+              "wetBulbC": 25.5
+            },
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35.6,
+              "rh": 43,
+              "wetBulbC": 25.66
+            }
+          ],
+          "city": {
+            "name": "Ningbo",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 29.8782,
+            "longitude": 121.5494,
+            "population": 3731203
+          }
+        },
+        {
+          "lat": 29.6309,
+          "lon": 121.3905,
+          "peakTempC": 36.6,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 42,
+          "peakWetBulbC": 27.03,
+          "peakWetBulbTime": "2026-08-02T10:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 35.2,
+              "rh": 44,
+              "wetBulbC": 25.54
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36.1,
+              "rh": 42,
+              "wetBulbC": 25.85
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 36.6,
+              "rh": 42,
+              "wetBulbC": 26.27
+            }
+          ],
+          "city": {
+            "name": "Fenghua",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 29.6563,
+            "longitude": 121.4064,
+            "population": 76653
+          }
+        },
+        {
+          "lat": 31.1072,
+          "lon": 121.1045,
+          "peakTempC": 37.7,
+          "peakTempTime": "2026-08-02T06:00:00Z",
+          "rhAtPeakTemp": 41,
+          "peakWetBulbC": 27.09,
+          "peakWetBulbTime": "2026-08-02T05:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 35.2,
+              "rh": 47,
+              "wetBulbC": 26.16
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 36.5,
+              "rh": 43,
+              "wetBulbC": 26.41
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 37.1,
+              "rh": 43,
+              "wetBulbC": 26.9
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 37.6,
+              "rh": 42,
+              "wetBulbC": 27.09
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 37.7,
+              "rh": 41,
+              "wetBulbC": 26.94
+            }
+          ],
+          "city": {
+            "name": "Zhujiajiao",
+            "countryCode": "CN",
+            "admin1Code": "23",
+            "latitude": 31.1076,
+            "longitude": 121.057,
+            "population": 60000
+          }
+        },
+        {
+          "lat": 30.826,
+          "lon": 120.9574,
+          "peakTempC": 36.9,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 42,
+          "peakWetBulbC": 26.69,
+          "peakWetBulbTime": "2026-08-02T20:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 35.4,
+              "rh": 47,
+              "wetBulbC": 26.33
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36.2,
+              "rh": 44,
+              "wetBulbC": 26.37
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 36.9,
+              "rh": 42,
+              "wetBulbC": 26.51
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 36.6,
+              "rh": 43,
+              "wetBulbC": 26.49
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 36.3,
+              "rh": 43,
+              "wetBulbC": 26.24
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.8,
+              "rh": 43,
+              "wetBulbC": 25.83
+            }
+          ],
+          "city": {
+            "name": "Jiashan",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 30.8492,
+            "longitude": 120.9258,
+            "population": 137112
+          }
+        },
+        {
+          "lat": 31.0369,
+          "lon": 121.1744,
+          "peakTempC": 38.6,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 37,
+          "peakWetBulbC": 26.71,
+          "peakWetBulbTime": "2026-08-02T05:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 35.9,
+              "rh": 43,
+              "wetBulbC": 25.91
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 37.2,
+              "rh": 40,
+              "wetBulbC": 26.3
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 37.9,
+              "rh": 39,
+              "wetBulbC": 26.63
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 38.6,
+              "rh": 37,
+              "wetBulbC": 26.71
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 36.9,
+              "rh": 40,
+              "wetBulbC": 26.06
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.3,
+              "rh": 48,
+              "wetBulbC": 26.45
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35,
+              "rh": 48,
+              "wetBulbC": 26.2
+            }
+          ],
+          "city": {
+            "name": "Songjiang",
+            "countryCode": "CN",
+            "admin1Code": "23",
+            "latitude": 31.0344,
+            "longitude": 121.2233,
+            "population": 130218
+          }
+        },
+        {
+          "lat": 30.7557,
+          "lon": 120.7084,
+          "peakTempC": 37.4,
+          "peakTempTime": "2026-08-02T06:00:00Z",
+          "rhAtPeakTemp": 40,
+          "peakWetBulbC": 26.9,
+          "peakWetBulbTime": "2026-08-02T21:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 35.8,
+              "rh": 45,
+              "wetBulbC": 26.25
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36.6,
+              "rh": 41,
+              "wetBulbC": 26.04
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 37.3,
+              "rh": 40,
+              "wetBulbC": 26.38
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 37.4,
+              "rh": 40,
+              "wetBulbC": 26.47
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 36.9,
+              "rh": 42,
+              "wetBulbC": 26.51
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.8,
+              "rh": 43,
+              "wetBulbC": 25.83
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.7,
+              "rh": 41,
+              "wetBulbC": 25.31
+            }
+          ],
+          "city": {
+            "name": "Jiaxing",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 30.7522,
+            "longitude": 120.75,
+            "population": 1180000
+          }
+        },
+        {
+          "lat": 31.1775,
+          "lon": 120.7134,
+          "peakTempC": 36,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 45,
+          "peakWetBulbC": 27.85,
+          "peakWetBulbTime": "2026-08-02T12:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 35,
+              "rh": 52,
+              "wetBulbC": 26.99
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 35.8,
+              "rh": 48,
+              "wetBulbC": 26.88
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 36,
+              "rh": 45,
+              "wetBulbC": 26.42
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 35.9,
+              "rh": 45,
+              "wetBulbC": 26.34
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.1,
+              "rh": 49,
+              "wetBulbC": 26.48
+            }
+          ],
+          "city": {
+            "name": "Songling",
+            "countryCode": "CN",
+            "admin1Code": "04",
+            "latitude": 31.1933,
+            "longitude": 120.7176,
+            "population": 77566
+          }
+        },
+        {
+          "lat": 31.3884,
+          "lon": 120.9308,
+          "peakTempC": 37.8,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 38,
+          "peakWetBulbC": 26.39,
+          "peakWetBulbTime": "2026-08-02T04:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 35.4,
+              "rh": 46,
+              "wetBulbC": 26.13
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 36.7,
+              "rh": 42,
+              "wetBulbC": 26.35
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 37.6,
+              "rh": 39,
+              "wetBulbC": 26.39
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 37.8,
+              "rh": 38,
+              "wetBulbC": 26.31
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 37.4,
+              "rh": 39,
+              "wetBulbC": 26.23
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 36.8,
+              "rh": 40,
+              "wetBulbC": 25.98
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 36.4,
+              "rh": 41,
+              "wetBulbC": 25.88
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.1,
+              "rh": 45,
+              "wetBulbC": 25.67
+            }
+          ],
+          "city": {
+            "name": "Kunshan",
+            "countryCode": "CN",
+            "admin1Code": "04",
+            "latitude": 31.3776,
+            "longitude": 120.9543,
+            "population": 2092496
+          }
+        },
+        {
+          "lat": 31.4587,
+          "lon": 121.0753,
+          "peakTempC": 36.7,
+          "peakTempTime": "2026-08-02T04:00:00Z",
+          "rhAtPeakTemp": 44,
+          "peakWetBulbC": 26.79,
+          "peakWetBulbTime": "2026-08-02T04:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 35.4,
+              "rh": 48,
+              "wetBulbC": 26.54
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 36.3,
+              "rh": 44,
+              "wetBulbC": 26.46
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36.7,
+              "rh": 44,
+              "wetBulbC": 26.79
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 35.6,
+              "rh": 45,
+              "wetBulbC": 26.09
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 35.8,
+              "rh": 45,
+              "wetBulbC": 26.25
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.5,
+              "rh": 45,
+              "wetBulbC": 26
+            }
+          ],
+          "city": {
+            "name": "Taicang",
+            "countryCode": "CN",
+            "admin1Code": "04",
+            "latitude": 31.4478,
+            "longitude": 121.0939,
+            "population": 831113
+          }
+        },
+        {
+          "lat": 31.3181,
+          "lon": 120.5721,
+          "peakTempC": 39.2,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 34,
+          "peakWetBulbC": 26.63,
+          "peakWetBulbTime": "2026-08-02T07:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T01:00:00Z",
+              "tempC": 35.1,
+              "rh": 46,
+              "wetBulbC": 25.87
+            },
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 37,
+              "rh": 39,
+              "wetBulbC": 25.91
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 38.1,
+              "rh": 36,
+              "wetBulbC": 26.06
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 38.8,
+              "rh": 34,
+              "wetBulbC": 26.1
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 39.2,
+              "rh": 34,
+              "wetBulbC": 26.41
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 37.9,
+              "rh": 37,
+              "wetBulbC": 26.15
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 37.6,
+              "rh": 40,
+              "wetBulbC": 26.63
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 36.7,
+              "rh": 41,
+              "wetBulbC": 26.12
+            }
+          ],
+          "city": {
+            "name": "Suzhou",
+            "countryCode": "CN",
+            "admin1Code": "04",
+            "latitude": 31.3041,
+            "longitude": 120.5954,
+            "population": 6715559
+          }
+        },
+        {
+          "lat": 30.5448,
+          "lon": 120.7059,
+          "peakTempC": 37.9,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 38,
+          "peakWetBulbC": 27,
+          "peakWetBulbTime": "2026-08-02T17:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 35.1,
+              "rh": 46,
+              "wetBulbC": 25.87
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 36.4,
+              "rh": 42,
+              "wetBulbC": 26.1
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 37.3,
+              "rh": 39,
+              "wetBulbC": 26.15
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 37.9,
+              "rh": 38,
+              "wetBulbC": 26.39
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 37.3,
+              "rh": 39,
+              "wetBulbC": 26.15
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.8,
+              "rh": 41,
+              "wetBulbC": 25.39
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 36.2,
+              "rh": 40,
+              "wetBulbC": 25.49
+            },
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.5,
+              "rh": 42,
+              "wetBulbC": 25.36
+            }
+          ],
+          "city": {
+            "name": "Haining",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 30.5363,
+            "longitude": 120.6864,
+            "population": 70171
+          }
+        },
+        {
+          "lat": 31.2478,
+          "lon": 120.5357,
+          "peakTempC": 37.5,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 43,
+          "peakWetBulbC": 27.23,
+          "peakWetBulbTime": "2026-08-02T05:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T02:00:00Z",
+              "tempC": 35.3,
+              "rh": 50,
+              "wetBulbC": 26.85
+            },
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 36.5,
+              "rh": 45,
+              "wetBulbC": 26.84
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 37.1,
+              "rh": 44,
+              "wetBulbC": 27.12
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 37.5,
+              "rh": 43,
+              "wetBulbC": 27.23
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 36.7,
+              "rh": 45,
+              "wetBulbC": 27.01
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 36.4,
+              "rh": 44,
+              "wetBulbC": 26.54
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 36.4,
+              "rh": 44,
+              "wetBulbC": 26.54
+            }
+          ],
+          "city": {
+            "name": "Mudu",
+            "countryCode": "CN",
+            "admin1Code": "04",
+            "latitude": 31.256,
+            "longitude": 120.5186,
+            "population": 61902
+          }
+        },
+        {
+          "lat": 28.8576,
+          "lon": 120.6865,
+          "peakTempC": 37.5,
+          "peakTempTime": "2026-08-02T07:00:00Z",
+          "rhAtPeakTemp": 37,
+          "peakWetBulbC": 26.71,
+          "peakWetBulbTime": "2026-08-02T11:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 35.7,
+              "rh": 43,
+              "wetBulbC": 25.74
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36.4,
+              "rh": 39,
+              "wetBulbC": 25.42
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 36.4,
+              "rh": 39,
+              "wetBulbC": 25.42
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 37,
+              "rh": 38,
+              "wetBulbC": 25.67
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 37.5,
+              "rh": 37,
+              "wetBulbC": 25.83
+            }
+          ],
+          "city": {
+            "name": "Xianju",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 28.8547,
+            "longitude": 120.7317,
+            "population": 61532
+          }
+        },
+        {
+          "lat": 29.2794,
+          "lon": 121.4171,
+          "peakTempC": 35.2,
+          "peakTempTime": "2026-08-02T04:00:00Z",
+          "rhAtPeakTemp": 48,
+          "peakWetBulbC": 27,
+          "peakWetBulbTime": "2026-08-02T10:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 35.2,
+              "rh": 48,
+              "wetBulbC": 26.37
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 35,
+              "rh": 48,
+              "wetBulbC": 26.2
+            }
+          ],
+          "city": {
+            "name": "Ninghai",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 29.2892,
+            "longitude": 121.4247,
+            "population": 68330
+          }
+        },
+        {
+          "lat": 28.6467,
+          "lon": 121.4025,
+          "peakTempC": 36.8,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 45,
+          "peakWetBulbC": 27.09,
+          "peakWetBulbTime": "2026-08-02T00:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 35.5,
+              "rh": 49,
+              "wetBulbC": 26.82
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36.2,
+              "rh": 46,
+              "wetBulbC": 26.8
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 36.8,
+              "rh": 45,
+              "wetBulbC": 27.09
+            }
+          ],
+          "city": {
+            "name": "Taizhou",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 28.6627,
+            "longitude": 121.4331,
+            "population": 1485502
+          }
+        },
+        {
+          "lat": 28.717,
+          "lon": 121.4384,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T04:00:00Z",
+          "rhAtPeakTemp": 52,
+          "peakWetBulbC": 27.32,
+          "peakWetBulbTime": "2026-08-02T06:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 35.3,
+              "rh": 52,
+              "wetBulbC": 27.25
+            }
+          ],
+          "city": {
+            "name": "Jiaojiang",
+            "countryCode": "CN",
+            "admin1Code": "02",
+            "latitude": 28.6984,
+            "longitude": 121.4733,
+            "population": 470804
+          }
+        },
+        {
+          "lat": 10.6503,
+          "lon": -85.4722,
+          "peakTempC": 35.5,
+          "peakTempTime": "2026-08-02T19:00:00Z",
+          "rhAtPeakTemp": 43,
+          "peakWetBulbC": 25.58,
+          "peakWetBulbTime": "2026-08-02T18:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35,
+              "rh": 45,
+              "wetBulbC": 25.58
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.5,
+              "rh": 43,
+              "wetBulbC": 25.58
+            }
+          ],
+          "city": {
+            "name": "Liberia",
+            "countryCode": "CR",
+            "admin1Code": "03",
+            "latitude": 10.635,
+            "longitude": -85.4377,
+            "population": 45380
+          }
+        },
+        {
+          "lat": 11.8453,
+          "lon": -86.4516,
+          "peakTempC": 36.6,
+          "peakTempTime": "2026-08-02T19:00:00Z",
+          "rhAtPeakTemp": 36,
+          "peakWetBulbC": 25.68,
+          "peakWetBulbTime": "2026-08-02T20:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.3,
+              "rh": 37,
+              "wetBulbC": 24.08
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.9,
+              "rh": 37,
+              "wetBulbC": 24.56
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.7,
+              "rh": 38,
+              "wetBulbC": 24.63
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 36.6,
+              "rh": 36,
+              "wetBulbC": 24.87
+            }
+          ],
+          "city": {
+            "name": "San Rafael del Sur",
+            "countryCode": "NI",
+            "admin1Code": "10",
+            "latitude": 11.8485,
+            "longitude": -86.4384,
+            "population": 29836
+          }
+        },
+        {
+          "lat": 12.1265,
+          "lon": -86.196,
+          "peakTempC": 35.9,
+          "peakTempTime": "2026-08-02T17:00:00Z",
+          "rhAtPeakTemp": 34,
+          "peakWetBulbC": 25.02,
+          "peakWetBulbTime": "2026-08-02T19:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.6,
+              "rh": 35,
+              "wetBulbC": 23.85
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.9,
+              "rh": 34,
+              "wetBulbC": 23.84
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.8,
+              "rh": 39,
+              "wetBulbC": 24.94
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.9,
+              "rh": 39,
+              "wetBulbC": 25.02
+            }
+          ],
+          "city": {
+            "name": "Managua",
+            "countryCode": "NI",
+            "admin1Code": "10",
+            "latitude": 12.1328,
+            "longitude": -86.2504,
+            "population": 973087
+          }
+        },
+        {
+          "lat": 12.1968,
+          "lon": -86.3546,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T19:00:00Z",
+          "rhAtPeakTemp": 42,
+          "peakWetBulbC": 25.2,
+          "peakWetBulbTime": "2026-08-02T19:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.3,
+              "rh": 42,
+              "wetBulbC": 25.2
+            }
+          ],
+          "city": {
+            "name": "Ciudad Sandino",
+            "countryCode": "NI",
+            "admin1Code": "10",
+            "latitude": 12.1589,
+            "longitude": -86.3442,
+            "population": 50000
+          }
+        },
+        {
+          "lat": 12.1968,
+          "lon": -86.4356,
+          "peakTempC": 35.6,
+          "peakTempTime": "2026-08-02T19:00:00Z",
+          "rhAtPeakTemp": 41,
+          "peakWetBulbC": 25.22,
+          "peakWetBulbTime": "2026-08-02T19:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.3,
+              "rh": 36,
+              "wetBulbC": 23.85
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.4,
+              "rh": 39,
+              "wetBulbC": 24.62
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.6,
+              "rh": 41,
+              "wetBulbC": 25.22
+            }
+          ],
+          "city": {
+            "name": "Mateare",
+            "countryCode": "NI",
+            "admin1Code": "10",
+            "latitude": 12.2351,
+            "longitude": -86.4281,
+            "population": 61234
+          }
+        },
+        {
+          "lat": 12.2671,
+          "lon": -86.5946,
+          "peakTempC": 36.2,
+          "peakTempTime": "2026-08-02T20:00:00Z",
+          "rhAtPeakTemp": 36,
+          "peakWetBulbC": 24.94,
+          "peakWetBulbTime": "2026-08-02T21:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.4,
+              "rh": 33,
+              "wetBulbC": 23.2
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.7,
+              "rh": 35,
+              "wetBulbC": 23.92
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.9,
+              "rh": 37,
+              "wetBulbC": 24.56
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36.2,
+              "rh": 36,
+              "wetBulbC": 24.56
+            }
+          ],
+          "city": {
+            "name": "Nagarote",
+            "countryCode": "NI",
+            "admin1Code": "08",
+            "latitude": 12.2659,
+            "longitude": -86.5647,
+            "population": 26270
+          }
+        },
+        {
+          "lat": 12.4077,
+          "lon": -86.9134,
+          "peakTempC": 38.5,
+          "peakTempTime": "2026-08-01T22:00:00Z",
+          "rhAtPeakTemp": 25,
+          "peakWetBulbC": 26.09,
+          "peakWetBulbTime": "2026-08-02T21:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 38.5,
+              "rh": 25,
+              "wetBulbC": 23.32
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 37.1,
+              "rh": 29,
+              "wetBulbC": 23.46
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 36.7,
+              "rh": 32,
+              "wetBulbC": 23.95
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 37,
+              "rh": 33,
+              "wetBulbC": 24.44
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.8,
+              "rh": 43,
+              "wetBulbC": 25.83
+            }
+          ],
+          "city": {
+            "name": "León",
+            "countryCode": "NI",
+            "admin1Code": "08",
+            "latitude": 12.4379,
+            "longitude": -86.878,
+            "population": 144538
+          }
+        },
+        {
+          "lat": 9.9473,
+          "lon": -75.0394,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T19:00:00Z",
+          "rhAtPeakTemp": 45,
+          "peakWetBulbC": 27,
+          "peakWetBulbTime": "2026-08-02T21:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.1,
+              "rh": 46,
+              "wetBulbC": 25.87
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.3,
+              "rh": 45,
+              "wetBulbC": 25.83
+            }
+          ],
+          "city": {
+            "name": "San Juan Nepomuceno",
+            "countryCode": "CO",
+            "admin1Code": "35",
+            "latitude": 9.9516,
+            "longitude": -75.082,
+            "population": 34110
+          }
+        },
+        {
+          "lat": 10.0176,
+          "lon": -75.2627,
+          "peakTempC": 36.8,
+          "peakTempTime": "2026-08-02T18:00:00Z",
+          "rhAtPeakTemp": 42,
+          "peakWetBulbC": 27.52,
+          "peakWetBulbTime": "2026-08-02T21:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 35.5,
+              "rh": 45,
+              "wetBulbC": 26
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.7,
+              "rh": 46,
+              "wetBulbC": 26.38
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.8,
+              "rh": 42,
+              "wetBulbC": 26.43
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 36.5,
+              "rh": 44,
+              "wetBulbC": 26.62
+            }
+          ],
+          "city": {
+            "name": "San Pablo",
+            "countryCode": "CO",
+            "admin1Code": "35",
+            "latitude": 10.0515,
+            "longitude": -75.2678,
+            "population": 37160
+          }
+        },
+        {
+          "lat": 10.2285,
+          "lon": -75.2239,
+          "peakTempC": 37,
+          "peakTempTime": "2026-08-02T19:00:00Z",
+          "rhAtPeakTemp": 40,
+          "peakWetBulbC": 27.41,
+          "peakWetBulbTime": "2026-08-02T20:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T16:00:00Z",
+              "tempC": 35.3,
+              "rh": 44,
+              "wetBulbC": 25.62
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.7,
+              "rh": 45,
+              "wetBulbC": 26.17
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.8,
+              "rh": 43,
+              "wetBulbC": 26.65
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 37,
+              "rh": 40,
+              "wetBulbC": 26.14
+            }
+          ],
+          "city": {
+            "name": "Mahates",
+            "countryCode": "CO",
+            "admin1Code": "35",
+            "latitude": 10.2329,
+            "longitude": -75.1899,
+            "population": 26075
+          }
+        },
+        {
+          "lat": 9.8067,
+          "lon": -74.7511,
+          "peakTempC": 38.5,
+          "peakTempTime": "2026-08-02T18:00:00Z",
+          "rhAtPeakTemp": 35,
+          "peakWetBulbC": 26.51,
+          "peakWetBulbTime": "2026-08-02T02:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36.7,
+              "rh": 38,
+              "wetBulbC": 25.43
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.4,
+              "rh": 43,
+              "wetBulbC": 25.49
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 35.4,
+              "rh": 47,
+              "wetBulbC": 26.33
+            },
+            {
+              "time": "2026-08-02T16:00:00Z",
+              "tempC": 36.8,
+              "rh": 41,
+              "wetBulbC": 26.21
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 37.7,
+              "rh": 36,
+              "wetBulbC": 25.75
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 38.5,
+              "rh": 35,
+              "wetBulbC": 26.12
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 38.4,
+              "rh": 35,
+              "wetBulbC": 26.05
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 38.3,
+              "rh": 34,
+              "wetBulbC": 25.71
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 37.3,
+              "rh": 36,
+              "wetBulbC": 25.43
+            }
+          ],
+          "city": {
+            "name": "Plato",
+            "countryCode": "CO",
+            "admin1Code": "38",
+            "latitude": 9.7903,
+            "longitude": -74.7824,
+            "population": 48606
+          }
+        },
+        {
+          "lat": 10.2285,
+          "lon": -75.3819,
+          "peakTempC": 36.7,
+          "peakTempTime": "2026-08-02T18:00:00Z",
+          "rhAtPeakTemp": 43,
+          "peakWetBulbC": 27.5,
+          "peakWetBulbTime": "2026-08-02T20:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 36.2,
+              "rh": 44,
+              "wetBulbC": 26.37
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 36.2,
+              "rh": 47,
+              "wetBulbC": 27.01
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.7,
+              "rh": 43,
+              "wetBulbC": 26.57
+            }
+          ],
+          "city": {
+            "name": "Arjona",
+            "countryCode": "CO",
+            "admin1Code": "35",
+            "latitude": 10.2544,
+            "longitude": -75.3439,
+            "population": 50405
+          }
+        },
+        {
+          "lat": 10.4394,
+          "lon": -74.6303,
+          "peakTempC": 36.5,
+          "peakTempTime": "2026-08-02T17:00:00Z",
+          "rhAtPeakTemp": 46,
+          "peakWetBulbC": 27.17,
+          "peakWetBulbTime": "2026-08-02T14:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T16:00:00Z",
+              "tempC": 36,
+              "rh": 48,
+              "wetBulbC": 27.05
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 36.5,
+              "rh": 46,
+              "wetBulbC": 27.05
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 36.5,
+              "rh": 44,
+              "wetBulbC": 26.62
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.7,
+              "rh": 47,
+              "wetBulbC": 26.59
+            }
+          ],
+          "city": {
+            "name": "Pivijay",
+            "countryCode": "CO",
+            "admin1Code": "38",
+            "latitude": 10.4617,
+            "longitude": -74.6162,
+            "population": 33047
+          }
+        }
+      ]
+    },
+    {
+      "batchIndex": 59,
+      "locationsCompleted": 4425,
+      "hotspots": []
+    },
+    {
+      "batchIndex": 60,
+      "locationsCompleted": 4500,
+      "hotspots": [
+        {
+          "lat": 37.0625,
+          "lon": 15.25,
+          "peakTempC": 35.1,
+          "peakTempTime": "2026-08-02T16:00:00Z",
+          "rhAtPeakTemp": 35,
+          "peakWetBulbC": 26.16,
+          "peakWetBulbTime": "2026-08-02T20:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T16:00:00Z",
+              "tempC": 35.1,
+              "rh": 35,
+              "wetBulbC": 23.45
+            }
+          ],
+          "city": {
+            "name": "Siracusa",
+            "countryCode": "IT",
+            "admin1Code": "15",
+            "latitude": 37.0754,
+            "longitude": 15.2866,
+            "population": 121605
+          }
+        },
+        {
+          "lat": 37.375,
+          "lon": 13.875,
+          "peakTempC": 35.6,
+          "peakTempTime": "2026-08-02T10:00:00Z",
+          "rhAtPeakTemp": 26,
+          "peakWetBulbC": 22.36,
+          "peakWetBulbTime": "2026-08-02T14:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35.6,
+              "rh": 26,
+              "wetBulbC": 21.52
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.2,
+              "rh": 24,
+              "wetBulbC": 20.66
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.1,
+              "rh": 29,
+              "wetBulbC": 21.96
+            }
+          ],
+          "city": {
+            "name": "Canicattì",
+            "countryCode": "IT",
+            "admin1Code": "15",
+            "latitude": 37.3584,
+            "longitude": 13.8479,
+            "population": 32918
+          }
+        },
+        {
+          "lat": 37.5,
+          "lon": 14.0625,
+          "peakTempC": 35.7,
+          "peakTempTime": "2026-08-02T11:00:00Z",
+          "rhAtPeakTemp": 21,
+          "peakWetBulbC": 21.85,
+          "peakWetBulbTime": "2026-08-02T18:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35.4,
+              "rh": 22,
+              "wetBulbC": 20.2
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.7,
+              "rh": 21,
+              "wetBulbC": 20.1
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.3,
+              "rh": 25,
+              "wetBulbC": 21.02
+            }
+          ],
+          "city": {
+            "name": "Caltanissetta",
+            "countryCode": "IT",
+            "admin1Code": "15",
+            "latitude": 37.4903,
+            "longitude": 14.0622,
+            "population": 62797
+          }
+        },
+        {
+          "lat": 32.6875,
+          "lon": 13.1875,
+          "peakTempC": 35.7,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 41,
+          "peakWetBulbC": 25.31,
+          "peakWetBulbTime": "2026-08-02T12:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.4,
+              "rh": 35,
+              "wetBulbC": 23.69
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.7,
+              "rh": 41,
+              "wetBulbC": 25.31
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35.1,
+              "rh": 42,
+              "wetBulbC": 25.03
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 35.2,
+              "rh": 37,
+              "wetBulbC": 24
+            }
+          ],
+          "city": {
+            "name": "Qaşr Bin Ghashīr",
+            "countryCode": "LY",
+            "admin1Code": "77",
+            "latitude": 32.6833,
+            "longitude": 13.1833,
+            "population": 100069
+          }
+        },
+        {
+          "lat": 32.6875,
+          "lon": 13.0625,
+          "peakTempC": 35.2,
+          "peakTempTime": "2026-08-02T13:00:00Z",
+          "rhAtPeakTemp": 40,
+          "peakWetBulbC": 25.5,
+          "peakWetBulbTime": "2026-08-02T12:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.1,
+              "rh": 41,
+              "wetBulbC": 24.81
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35.2,
+              "rh": 40,
+              "wetBulbC": 24.68
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 35.1,
+              "rh": 39,
+              "wetBulbC": 24.37
+            }
+          ],
+          "city": {
+            "name": "As Sawānī",
+            "countryCode": "LY",
+            "admin1Code": "81",
+            "latitude": 32.7167,
+            "longitude": 13.0667,
+            "population": 57069
+          }
+        },
+        {
+          "lat": 32.5625,
+          "lon": 13,
+          "peakTempC": 36.1,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 36,
+          "peakWetBulbC": 25.53,
+          "peakWetBulbTime": "2026-08-02T13:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.4,
+              "rh": 33,
+              "wetBulbC": 23.2
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 36.1,
+              "rh": 36,
+              "wetBulbC": 24.48
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35.7,
+              "rh": 42,
+              "wetBulbC": 25.53
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 35.6,
+              "rh": 37,
+              "wetBulbC": 24.32
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 35.3,
+              "rh": 35,
+              "wetBulbC": 23.61
+            }
+          ],
+          "city": {
+            "name": "Al ‘Azīzīyah",
+            "countryCode": "LY",
+            "admin1Code": "81",
+            "latitude": 32.5319,
+            "longitude": 13.0175,
+            "population": 52404
+          }
+        },
+        {
+          "lat": 25.4833,
+          "lon": 119.1866,
+          "peakTempC": 35.5,
+          "peakTempTime": "2026-08-02T07:00:00Z",
+          "rhAtPeakTemp": 39,
+          "peakWetBulbC": 26.03,
+          "peakWetBulbTime": "2026-08-02T13:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 35,
+              "rh": 40,
+              "wetBulbC": 24.51
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.5,
+              "rh": 39,
+              "wetBulbC": 24.7
+            }
+          ],
+          "city": {
+            "name": "Jiangkou",
+            "countryCode": "CN",
+            "admin1Code": "07",
+            "latitude": 25.4869,
+            "longitude": 119.1983,
+            "population": 59902
+          }
+        },
+        {
+          "lat": 25.6942,
+          "lon": 119.3798,
+          "peakTempC": 36.8,
+          "peakTempTime": "2026-08-02T05:00:00Z",
+          "rhAtPeakTemp": 38,
+          "peakWetBulbC": 25.93,
+          "peakWetBulbTime": "2026-08-02T17:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36,
+              "rh": 41,
+              "wetBulbC": 25.55
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 36.8,
+              "rh": 38,
+              "wetBulbC": 25.51
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 36.7,
+              "rh": 38,
+              "wetBulbC": 25.43
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.3,
+              "rh": 41,
+              "wetBulbC": 24.98
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.2,
+              "rh": 42,
+              "wetBulbC": 25.11
+            }
+          ],
+          "city": {
+            "name": "Fuqing",
+            "countryCode": "CN",
+            "admin1Code": "07",
+            "latitude": 25.7294,
+            "longitude": 119.3747,
+            "population": 67397
+          }
+        },
+        {
+          "lat": 25.413,
+          "lon": 119.0574,
+          "peakTempC": 35.1,
+          "peakTempTime": "2026-08-02T07:00:00Z",
+          "rhAtPeakTemp": 42,
+          "peakWetBulbC": 26.32,
+          "peakWetBulbTime": "2026-08-02T10:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.1,
+              "rh": 42,
+              "wetBulbC": 25.03
+            }
+          ],
+          "city": {
+            "name": "Putian",
+            "countryCode": "CN",
+            "admin1Code": "07",
+            "latitude": 25.4394,
+            "longitude": 119.0103,
+            "population": 1539389
+          }
+        }
+      ]
+    },
+    {
+      "batchIndex": 61,
+      "locationsCompleted": 4575,
+      "hotspots": [
+        {
+          "lat": 26.0457,
+          "lon": 119.3435,
+          "peakTempC": 36,
+          "peakTempTime": "2026-08-02T07:00:00Z",
+          "rhAtPeakTemp": 39,
+          "peakWetBulbC": 25.83,
+          "peakWetBulbTime": "2026-08-02T04:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 35.3,
+              "rh": 45,
+              "wetBulbC": 25.83
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 35.9,
+              "rh": 42,
+              "wetBulbC": 25.69
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 35.8,
+              "rh": 42,
+              "wetBulbC": 25.61
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 36,
+              "rh": 39,
+              "wetBulbC": 25.1
+            },
+            {
+              "time": "2026-08-02T08:00:00Z",
+              "tempC": 35.6,
+              "rh": 39,
+              "wetBulbC": 24.78
+            }
+          ],
+          "city": {
+            "name": "Fuzhou",
+            "countryCode": "CN",
+            "admin1Code": "07",
+            "latitude": 26.0614,
+            "longitude": 119.3061,
+            "population": 3740000
+          }
+        },
+        {
+          "lat": 24.9912,
+          "lon": 121.3886,
+          "peakTempC": 35,
+          "peakTempTime": "2026-08-02T04:00:00Z",
+          "rhAtPeakTemp": 49,
+          "peakWetBulbC": 26.68,
+          "peakWetBulbTime": "2026-08-02T07:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 35,
+              "rh": 49,
+              "wetBulbC": 26.4
+            }
+          ],
+          "city": {
+            "name": "Shulin",
+            "countryCode": "TW",
+            "admin1Code": "03",
+            "latitude": 24.9908,
+            "longitude": 121.422,
+            "population": 180044
+          }
+        },
+        {
+          "lat": 24.9912,
+          "lon": 121.4855,
+          "peakTempC": 36.5,
+          "peakTempTime": "2026-08-02T04:00:00Z",
+          "rhAtPeakTemp": 44,
+          "peakWetBulbC": 26.67,
+          "peakWetBulbTime": "2026-08-02T05:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 35.3,
+              "rh": 47,
+              "wetBulbC": 26.25
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36.5,
+              "rh": 44,
+              "wetBulbC": 26.62
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 36.3,
+              "rh": 45,
+              "wetBulbC": 26.67
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 36.2,
+              "rh": 44,
+              "wetBulbC": 26.37
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.6,
+              "rh": 45,
+              "wetBulbC": 26.09
+            }
+          ],
+          "city": {
+            "name": "Banqiao",
+            "countryCode": "TW",
+            "admin1Code": "03",
+            "latitude": 25.0143,
+            "longitude": 121.4672,
+            "population": 543342
+          }
+        },
+        {
+          "lat": 25.0615,
+          "lon": 121.5194,
+          "peakTempC": 36,
+          "peakTempTime": "2026-08-02T04:00:00Z",
+          "rhAtPeakTemp": 44,
+          "peakWetBulbC": 26.25,
+          "peakWetBulbTime": "2026-08-02T06:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T03:00:00Z",
+              "tempC": 35.4,
+              "rh": 45,
+              "wetBulbC": 25.92
+            },
+            {
+              "time": "2026-08-02T04:00:00Z",
+              "tempC": 36,
+              "rh": 44,
+              "wetBulbC": 26.21
+            },
+            {
+              "time": "2026-08-02T05:00:00Z",
+              "tempC": 35.7,
+              "rh": 45,
+              "wetBulbC": 26.17
+            },
+            {
+              "time": "2026-08-02T06:00:00Z",
+              "tempC": 35.8,
+              "rh": 45,
+              "wetBulbC": 26.25
+            },
+            {
+              "time": "2026-08-02T07:00:00Z",
+              "tempC": 35.8,
+              "rh": 43,
+              "wetBulbC": 25.83
+            }
+          ],
+          "city": {
+            "name": "Taipei",
+            "countryCode": "TW",
+            "admin1Code": "04",
+            "latitude": 25.0531,
+            "longitude": 121.5264,
+            "population": 7871900
+          }
+        }
+      ]
+    },
+    {
+      "batchIndex": 62,
+      "locationsCompleted": 4650,
+      "hotspots": [
+        {
+          "lat": 30.0034,
+          "lon": -95.1631,
+          "peakTempC": 36,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 33,
+          "peakWetBulbC": 26.45,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.3,
+              "rh": 48,
+              "wetBulbC": 26.45
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.6,
+              "rh": 34,
+              "wetBulbC": 23.6
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.9,
+              "rh": 34,
+              "wetBulbC": 23.84
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36,
+              "rh": 33,
+              "wetBulbC": 23.67
+            }
+          ],
+          "city": {
+            "name": "Atascocita",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.9988,
+            "longitude": -95.1766,
+            "population": 65844
+          }
+        },
+        {
+          "lat": 29.7886,
+          "lon": -95.1079,
+          "peakTempC": 35.5,
+          "peakTempTime": "2026-08-01T22:00:00Z",
+          "rhAtPeakTemp": 49,
+          "peakWetBulbC": 26.82,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.5,
+              "rh": 49,
+              "wetBulbC": 26.82
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.2,
+              "rh": 38,
+              "wetBulbC": 24.23
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.5,
+              "rh": 37,
+              "wetBulbC": 24.24
+            }
+          ],
+          "city": {
+            "name": "Channelview",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.7761,
+            "longitude": -95.1146,
+            "population": 38289
+          }
+        },
+        {
+          "lat": 29.7325,
+          "lon": -94.9866,
+          "peakTempC": 36,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 34,
+          "peakWetBulbC": 27,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.7,
+              "rh": 49,
+              "wetBulbC": 27
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.7,
+              "rh": 45,
+              "wetBulbC": 26.17
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35,
+              "rh": 36,
+              "wetBulbC": 23.61
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.5,
+              "rh": 34,
+              "wetBulbC": 23.53
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.9,
+              "rh": 34,
+              "wetBulbC": 23.84
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36,
+              "rh": 34,
+              "wetBulbC": 23.92
+            }
+          ],
+          "city": {
+            "name": "Baytown",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.7355,
+            "longitude": -94.9774,
+            "population": 76335
+          }
+        },
+        {
+          "lat": 29.7086,
+          "lon": -95.1103,
+          "peakTempC": 36.6,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 33,
+          "peakWetBulbC": 26.88,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36.3,
+              "rh": 46,
+              "wetBulbC": 26.88
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.2,
+              "rh": 47,
+              "wetBulbC": 26.16
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35,
+              "rh": 36,
+              "wetBulbC": 23.61
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.8,
+              "rh": 34,
+              "wetBulbC": 23.76
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36.3,
+              "rh": 33,
+              "wetBulbC": 23.9
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36.6,
+              "rh": 33,
+              "wetBulbC": 24.13
+            }
+          ],
+          "city": {
+            "name": "Deer Park",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.7052,
+            "longitude": -95.1238,
+            "population": 33806
+          }
+        },
+        {
+          "lat": 29.6532,
+          "lon": -95.0198,
+          "peakTempC": 36.3,
+          "peakTempTime": "2026-08-01T22:00:00Z",
+          "rhAtPeakTemp": 47,
+          "peakWetBulbC": 27.1,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36.3,
+              "rh": 47,
+              "wetBulbC": 27.1
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 36.1,
+              "rh": 43,
+              "wetBulbC": 26.07
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.1,
+              "rh": 38,
+              "wetBulbC": 24.15
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.9,
+              "rh": 33,
+              "wetBulbC": 23.59
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36.2,
+              "rh": 33,
+              "wetBulbC": 23.82
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36.2,
+              "rh": 36,
+              "wetBulbC": 24.56
+            }
+          ],
+          "city": {
+            "name": "La Porte",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.6658,
+            "longitude": -95.0194,
+            "population": 35148
+          }
+        },
+        {
+          "lat": 29.684,
+          "lon": -95.2031,
+          "peakTempC": 37.2,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 31,
+          "peakWetBulbC": 26.93,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36.1,
+              "rh": 47,
+              "wetBulbC": 26.93
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.6,
+              "rh": 35,
+              "wetBulbC": 23.85
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 36.8,
+              "rh": 31,
+              "wetBulbC": 23.77
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 37,
+              "rh": 32,
+              "wetBulbC": 24.18
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 37.2,
+              "rh": 31,
+              "wetBulbC": 24.07
+            }
+          ],
+          "city": {
+            "name": "Pasadena",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.6911,
+            "longitude": -95.2091,
+            "population": 153784
+          }
+        },
+        {
+          "lat": 30.0886,
+          "lon": -95.4075,
+          "peakTempC": 37.3,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 25,
+          "peakWetBulbC": 26.18,
+          "peakWetBulbTime": "2026-08-02T06:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.2,
+              "rh": 44,
+              "wetBulbC": 25.54
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.2,
+              "rh": 34,
+              "wetBulbC": 23.29
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.2,
+              "rh": 31,
+              "wetBulbC": 23.31
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 36.8,
+              "rh": 29,
+              "wetBulbC": 23.23
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 37.1,
+              "rh": 26,
+              "wetBulbC": 22.61
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 37.3,
+              "rh": 25,
+              "wetBulbC": 22.46
+            }
+          ],
+          "city": {
+            "name": "Spring",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 30.0799,
+            "longitude": -95.4172,
+            "population": 54298
+          }
+        },
+        {
+          "lat": 29.7672,
+          "lon": -95.3544,
+          "peakTempC": 36.5,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 25,
+          "peakWetBulbC": 27.03,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.4,
+              "rh": 32,
+              "wetBulbC": 22.96
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36.3,
+              "rh": 28,
+              "wetBulbC": 22.59
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36.5,
+              "rh": 25,
+              "wetBulbC": 21.88
+            }
+          ],
+          "city": {
+            "name": "Houston",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.7633,
+            "longitude": -95.3633,
+            "population": 2304580
+          }
+        },
+        {
+          "lat": 30.1705,
+          "lon": -95.4981,
+          "peakTempC": 36.4,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 29,
+          "peakWetBulbC": 26.08,
+          "peakWetBulbTime": "2026-08-01T23:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.4,
+              "rh": 33,
+              "wetBulbC": 23.2
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36.1,
+              "rh": 30,
+              "wetBulbC": 22.97
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36.4,
+              "rh": 29,
+              "wetBulbC": 22.93
+            }
+          ],
+          "city": {
+            "name": "The Woodlands",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 30.158,
+            "longitude": -95.4894,
+            "population": 93847
+          }
+        },
+        {
+          "lat": 30.3034,
+          "lon": -95.4638,
+          "peakTempC": 35.8,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 29,
+          "peakWetBulbC": 26.7,
+          "peakWetBulbTime": "2026-08-01T23:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35,
+              "rh": 32,
+              "wetBulbC": 22.65
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.6,
+              "rh": 29,
+              "wetBulbC": 22.33
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.8,
+              "rh": 29,
+              "wetBulbC": 22.48
+            }
+          ],
+          "city": {
+            "name": "Conroe",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 30.3119,
+            "longitude": -95.4561,
+            "population": 68602
+          }
+        },
+        {
+          "lat": 29.5527,
+          "lon": -95.2989,
+          "peakTempC": 38,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 24,
+          "peakWetBulbC": 26.55,
+          "peakWetBulbTime": "2026-08-02T03:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36.5,
+              "rh": 41,
+              "wetBulbC": 25.96
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 36.2,
+              "rh": 43,
+              "wetBulbC": 26.16
+            },
+            {
+              "time": "2026-08-02T00:00:00Z",
+              "tempC": 35.3,
+              "rh": 45,
+              "wetBulbC": 25.83
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35,
+              "rh": 41,
+              "wetBulbC": 24.73
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.3,
+              "rh": 33,
+              "wetBulbC": 23.9
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 37.3,
+              "rh": 27,
+              "wetBulbC": 23.04
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 37.7,
+              "rh": 27,
+              "wetBulbC": 23.34
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 38,
+              "rh": 24,
+              "wetBulbC": 22.65
+            }
+          ],
+          "city": {
+            "name": "Pearland",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.5636,
+            "longitude": -95.2861,
+            "population": 108821
+          }
+        },
+        {
+          "lat": 29.5241,
+          "lon": -95.2077,
+          "peakTempC": 38,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 25,
+          "peakWetBulbC": 26.51,
+          "peakWetBulbTime": "2026-08-02T02:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36.7,
+              "rh": 40,
+              "wetBulbC": 25.9
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 36.3,
+              "rh": 41,
+              "wetBulbC": 25.8
+            },
+            {
+              "time": "2026-08-02T00:00:00Z",
+              "tempC": 35.5,
+              "rh": 43,
+              "wetBulbC": 25.58
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.1,
+              "rh": 34,
+              "wetBulbC": 23.99
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 37,
+              "rh": 31,
+              "wetBulbC": 23.92
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 37.8,
+              "rh": 24,
+              "wetBulbC": 22.51
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 38,
+              "rh": 25,
+              "wetBulbC": 22.96
+            }
+          ],
+          "city": {
+            "name": "Friendswood",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.5294,
+            "longitude": -95.201,
+            "population": 38800
+          }
+        },
+        {
+          "lat": 29.7186,
+          "lon": -95.6015,
+          "peakTempC": 36.6,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 28,
+          "peakWetBulbC": 27.31,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.6,
+              "rh": 51,
+              "wetBulbC": 27.31
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.2,
+              "rh": 52,
+              "wetBulbC": 27.16
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.6,
+              "rh": 35,
+              "wetBulbC": 23.85
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 36.1,
+              "rh": 32,
+              "wetBulbC": 23.49
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36.4,
+              "rh": 30,
+              "wetBulbC": 23.2
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36.6,
+              "rh": 28,
+              "wetBulbC": 22.81
+            }
+          ],
+          "city": {
+            "name": "Alief",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.7111,
+            "longitude": -95.5963,
+            "population": 98725
+          }
+        },
+        {
+          "lat": 29.6108,
+          "lon": -95.5427,
+          "peakTempC": 37.3,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 25,
+          "peakWetBulbC": 27.05,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36,
+              "rh": 48,
+              "wetBulbC": 27.05
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.3,
+              "rh": 49,
+              "wetBulbC": 26.65
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.2,
+              "rh": 38,
+              "wetBulbC": 24.23
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.3,
+              "rh": 32,
+              "wetBulbC": 23.65
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 37.1,
+              "rh": 27,
+              "wetBulbC": 22.9
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 37.2,
+              "rh": 27,
+              "wetBulbC": 22.97
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 37.3,
+              "rh": 25,
+              "wetBulbC": 22.46
+            }
+          ],
+          "city": {
+            "name": "Missouri City",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.6186,
+            "longitude": -95.5377,
+            "population": 74139
+          }
+        },
+        {
+          "lat": 29.9603,
+          "lon": -95.6882,
+          "peakTempC": 36,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 31,
+          "peakWetBulbC": 26.61,
+          "peakWetBulbTime": "2026-08-02T00:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.1,
+              "rh": 35,
+              "wetBulbC": 23.45
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.7,
+              "rh": 33,
+              "wetBulbC": 23.44
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36,
+              "rh": 31,
+              "wetBulbC": 23.16
+            }
+          ],
+          "city": {
+            "name": "Cypress",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.9691,
+            "longitude": -95.6972,
+            "population": 46025
+          }
+        },
+        {
+          "lat": 29.4181,
+          "lon": -95.2414,
+          "peakTempC": 38.2,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 23,
+          "peakWetBulbC": 26.78,
+          "peakWetBulbTime": "2026-08-02T01:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 37,
+              "rh": 41,
+              "wetBulbC": 26.37
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 36.7,
+              "rh": 36,
+              "wetBulbC": 24.95
+            },
+            {
+              "time": "2026-08-02T00:00:00Z",
+              "tempC": 35.9,
+              "rh": 39,
+              "wetBulbC": 25.02
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.4,
+              "rh": 37,
+              "wetBulbC": 24.96
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 37.3,
+              "rh": 29,
+              "wetBulbC": 23.61
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 38.1,
+              "rh": 24,
+              "wetBulbC": 22.72
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 38.2,
+              "rh": 23,
+              "wetBulbC": 22.48
+            }
+          ],
+          "city": {
+            "name": "Alvin",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.4239,
+            "longitude": -95.2441,
+            "population": 25791
+          }
+        },
+        {
+          "lat": 29.693,
+          "lon": -95.6636,
+          "peakTempC": 36.7,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 29,
+          "peakWetBulbC": 27.4,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.7,
+              "rh": 51,
+              "wetBulbC": 27.4
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.2,
+              "rh": 52,
+              "wetBulbC": 27.16
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.5,
+              "rh": 34,
+              "wetBulbC": 23.53
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 36.2,
+              "rh": 31,
+              "wetBulbC": 23.31
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36.6,
+              "rh": 30,
+              "wetBulbC": 23.35
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36.7,
+              "rh": 29,
+              "wetBulbC": 23.16
+            }
+          ],
+          "city": {
+            "name": "Mission Bend",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.6938,
+            "longitude": -95.665,
+            "population": 36501
+          }
+        },
+        {
+          "lat": 29.6125,
+          "lon": -95.6347,
+          "peakTempC": 37,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 27,
+          "peakWetBulbC": 27.2,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.7,
+              "rh": 50,
+              "wetBulbC": 27.2
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35,
+              "rh": 51,
+              "wetBulbC": 26.79
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35,
+              "rh": 38,
+              "wetBulbC": 24.07
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 36.1,
+              "rh": 33,
+              "wetBulbC": 23.75
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 36.6,
+              "rh": 29,
+              "wetBulbC": 23.08
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36.9,
+              "rh": 28,
+              "wetBulbC": 23.03
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 37,
+              "rh": 27,
+              "wetBulbC": 22.82
+            }
+          ],
+          "city": {
+            "name": "Sugar Land",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.6197,
+            "longitude": -95.635,
+            "population": 88156
+          }
+        },
+        {
+          "lat": 29.5622,
+          "lon": -95.8199,
+          "peakTempC": 35.6,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 30,
+          "peakWetBulbC": 26.96,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.1,
+              "rh": 35,
+              "wetBulbC": 23.45
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.5,
+              "rh": 31,
+              "wetBulbC": 22.78
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.6,
+              "rh": 30,
+              "wetBulbC": 22.6
+            }
+          ],
+          "city": {
+            "name": "Rosenberg",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.5572,
+            "longitude": -95.8086,
+            "population": 35510
+          }
+        },
+        {
+          "lat": 30.7327,
+          "lon": -95.546,
+          "peakTempC": 35.1,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 28,
+          "peakWetBulbC": 26.07,
+          "peakWetBulbTime": "2026-08-02T00:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.1,
+              "rh": 28,
+              "wetBulbC": 21.7
+            }
+          ],
+          "city": {
+            "name": "Huntsville",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 30.7235,
+            "longitude": -95.5508,
+            "population": 40938
+          }
+        },
+        {
+          "lat": 29.8892,
+          "lon": -93.9346,
+          "peakTempC": 35.8,
+          "peakTempTime": "2026-08-02T20:00:00Z",
+          "rhAtPeakTemp": 34,
+          "peakWetBulbC": 27.37,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35,
+              "rh": 54,
+              "wetBulbC": 27.37
+            },
+            {
+              "time": "2026-08-02T18:00:00Z",
+              "tempC": 35.3,
+              "rh": 34,
+              "wetBulbC": 23.37
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.7,
+              "rh": 34,
+              "wetBulbC": 23.68
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.8,
+              "rh": 34,
+              "wetBulbC": 23.76
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.8,
+              "rh": 34,
+              "wetBulbC": 23.76
+            }
+          ],
+          "city": {
+            "name": "Port Arthur",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.8852,
+            "longitude": -93.9423,
+            "population": 55340
+          }
+        },
+        {
+          "lat": 29.0224,
+          "lon": -95.4352,
+          "peakTempC": 35.4,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 40,
+          "peakWetBulbC": 27.3,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.4,
+              "rh": 40,
+              "wetBulbC": 24.84
+            }
+          ],
+          "city": {
+            "name": "Lake Jackson",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 29.0339,
+            "longitude": -95.4344,
+            "population": 27533
+          }
+        },
+        {
+          "lat": 30.6371,
+          "lon": -96.3253,
+          "peakTempC": 35.7,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 31,
+          "peakWetBulbC": 25.98,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.7,
+              "rh": 31,
+              "wetBulbC": 22.93
+            }
+          ],
+          "city": {
+            "name": "College Station",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 30.628,
+            "longitude": -96.3344,
+            "population": 107889
+          }
+        },
+        {
+          "lat": 30.6642,
+          "lon": -96.356,
+          "peakTempC": 37.5,
+          "peakTempTime": "2026-08-02T21:00:00Z",
+          "rhAtPeakTemp": 24,
+          "peakWetBulbC": 25.91,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.5,
+              "rh": 32,
+              "wetBulbC": 23.03
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36.7,
+              "rh": 28,
+              "wetBulbC": 22.88
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 37.5,
+              "rh": 24,
+              "wetBulbC": 22.3
+            }
+          ],
+          "city": {
+            "name": "Bryan",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 30.6744,
+            "longitude": -96.37,
+            "population": 82118
+          }
+        },
+        {
+          "lat": 31.33,
+          "lon": -94.716,
+          "peakTempC": 37.2,
+          "peakTempTime": "2026-08-01T23:00:00Z",
+          "rhAtPeakTemp": 37,
+          "peakWetBulbC": 26.43,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36.8,
+              "rh": 42,
+              "wetBulbC": 26.43
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 37.2,
+              "rh": 37,
+              "wetBulbC": 25.59
+            },
+            {
+              "time": "2026-08-02T00:00:00Z",
+              "tempC": 36.7,
+              "rh": 36,
+              "wetBulbC": 24.95
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.1,
+              "rh": 31,
+              "wetBulbC": 22.47
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 36,
+              "rh": 27,
+              "wetBulbC": 22.09
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36.6,
+              "rh": 25,
+              "wetBulbC": 21.95
+            }
+          ],
+          "city": {
+            "name": "Lufkin",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 31.3382,
+            "longitude": -94.7291,
+            "population": 36333
+          }
+        },
+        {
+          "lat": 31.596,
+          "lon": -94.6436,
+          "peakTempC": 36.9,
+          "peakTempTime": "2026-08-01T23:00:00Z",
+          "rhAtPeakTemp": 36,
+          "peakWetBulbC": 26.27,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36.6,
+              "rh": 42,
+              "wetBulbC": 26.27
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 36.9,
+              "rh": 36,
+              "wetBulbC": 25.11
+            },
+            {
+              "time": "2026-08-02T00:00:00Z",
+              "tempC": 35.4,
+              "rh": 27,
+              "wetBulbC": 21.65
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.4,
+              "rh": 29,
+              "wetBulbC": 22.18
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.9,
+              "rh": 27,
+              "wetBulbC": 22.01
+            }
+          ],
+          "city": {
+            "name": "Nacogdoches",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 31.6035,
+            "longitude": -94.6555,
+            "population": 33894
+          }
+        },
+        {
+          "lat": 28.8019,
+          "lon": -96.9896,
+          "peakTempC": 37,
+          "peakTempTime": "2026-08-01T22:00:00Z",
+          "rhAtPeakTemp": 41,
+          "peakWetBulbC": 27.25,
+          "peakWetBulbTime": "2026-08-02T19:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 37,
+              "rh": 41,
+              "wetBulbC": 26.37
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 37,
+              "rh": 40,
+              "wetBulbC": 26.14
+            },
+            {
+              "time": "2026-08-02T00:00:00Z",
+              "tempC": 36.5,
+              "rh": 40,
+              "wetBulbC": 25.73
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35.3,
+              "rh": 52,
+              "wetBulbC": 27.25
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.3,
+              "rh": 48,
+              "wetBulbC": 26.45
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 36.4,
+              "rh": 46,
+              "wetBulbC": 26.97
+            }
+          ],
+          "city": {
+            "name": "Victoria",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 28.8053,
+            "longitude": -97.0036,
+            "population": 67574
+          }
+        },
+        {
+          "lat": 32.3626,
+          "lon": -95.3144,
+          "peakTempC": 35.7,
+          "peakTempTime": "2026-08-01T22:00:00Z",
+          "rhAtPeakTemp": 27,
+          "peakWetBulbC": 21.87,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.7,
+              "rh": 27,
+              "wetBulbC": 21.87
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.2,
+              "rh": 25,
+              "wetBulbC": 20.94
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.2,
+              "rh": 26,
+              "wetBulbC": 21.22
+            }
+          ],
+          "city": {
+            "name": "Tyler",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 32.3513,
+            "longitude": -95.3011,
+            "population": 103700
+          }
+        },
+        {
+          "lat": 31.5529,
+          "lon": -97.1603,
+          "peakTempC": 36,
+          "peakTempTime": "2026-08-01T22:00:00Z",
+          "rhAtPeakTemp": 25,
+          "peakWetBulbC": 22.58,
+          "peakWetBulbTime": "2026-08-02T18:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 36,
+              "rh": 25,
+              "wetBulbC": 21.52
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.3,
+              "rh": 25,
+              "wetBulbC": 21.02
+            },
+            {
+              "time": "2026-08-02T19:00:00Z",
+              "tempC": 35,
+              "rh": 30,
+              "wetBulbC": 22.14
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35.3,
+              "rh": 28,
+              "wetBulbC": 21.84
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.8,
+              "rh": 27,
+              "wetBulbC": 21.94
+            }
+          ],
+          "city": {
+            "name": "Waco",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 31.5493,
+            "longitude": -97.1467,
+            "population": 132356
+          }
+        },
+        {
+          "lat": 32.3825,
+          "lon": -96.839,
+          "peakTempC": 35.6,
+          "peakTempTime": "2026-08-01T22:00:00Z",
+          "rhAtPeakTemp": 29,
+          "peakWetBulbC": 22.63,
+          "peakWetBulbTime": "2026-08-01T23:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.6,
+              "rh": 29,
+              "wetBulbC": 22.33
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.3,
+              "rh": 31,
+              "wetBulbC": 22.63
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.3,
+              "rh": 26,
+              "wetBulbC": 21.3
+            }
+          ],
+          "city": {
+            "name": "Waxahachie",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 32.3865,
+            "longitude": -96.8483,
+            "population": 33384
+          }
+        },
+        {
+          "lat": 32.3576,
+          "lon": -97.3791,
+          "peakTempC": 35.8,
+          "peakTempTime": "2026-08-01T22:00:00Z",
+          "rhAtPeakTemp": 29,
+          "peakWetBulbC": 22.48,
+          "peakWetBulbTime": "2026-08-01T22:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-01T22:00:00Z",
+              "tempC": 35.8,
+              "rh": 29,
+              "wetBulbC": 22.48
+            },
+            {
+              "time": "2026-08-01T23:00:00Z",
+              "tempC": 35.8,
+              "rh": 26,
+              "wetBulbC": 21.66
+            },
+            {
+              "time": "2026-08-02T00:00:00Z",
+              "tempC": 35.2,
+              "rh": 28,
+              "wetBulbC": 21.77
+            },
+            {
+              "time": "2026-08-02T20:00:00Z",
+              "tempC": 35,
+              "rh": 28,
+              "wetBulbC": 21.62
+            },
+            {
+              "time": "2026-08-02T21:00:00Z",
+              "tempC": 35.6,
+              "rh": 25,
+              "wetBulbC": 21.23
+            }
+          ],
+          "city": {
+            "name": "Cleburne",
+            "countryCode": "US",
+            "admin1Code": "TX",
+            "latitude": 32.3476,
+            "longitude": -97.3867,
+            "population": 30020
+          }
+        }
+      ]
+    },
+    {
+      "batchIndex": 63,
+      "locationsCompleted": 4725,
+      "hotspots": [
+        {
+          "lat": 40.9375,
+          "lon": 14.8125,
+          "peakTempC": 35.2,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 37,
+          "peakWetBulbC": 24.64,
+          "peakWetBulbTime": "2026-08-02T14:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.2,
+              "rh": 37,
+              "wetBulbC": 24
+            }
+          ],
+          "city": {
+            "name": "Avellino",
+            "countryCode": "IT",
+            "admin1Code": "04",
+            "latitude": 40.9149,
+            "longitude": 14.791,
+            "population": 48104
+          }
+        }
+      ]
+    },
+    {
+      "batchIndex": 64,
+      "locationsCompleted": 4800,
+      "hotspots": [
+        {
+          "lat": 41.0625,
+          "lon": 14.375,
+          "peakTempC": 35,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 54,
+          "peakWetBulbC": 27.41,
+          "peakWetBulbTime": "2026-08-02T15:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35,
+              "rh": 54,
+              "wetBulbC": 27.37
+            }
+          ],
+          "city": {
+            "name": "Maddaloni",
+            "countryCode": "IT",
+            "admin1Code": "04",
+            "latitude": 41.0358,
+            "longitude": 14.3823,
+            "population": 34546
+          }
+        },
+        {
+          "lat": 41.125,
+          "lon": 14.75,
+          "peakTempC": 37,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 35,
+          "peakWetBulbC": 25.66,
+          "peakWetBulbTime": "2026-08-02T10:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35.6,
+              "rh": 43,
+              "wetBulbC": 25.66
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 36.8,
+              "rh": 37,
+              "wetBulbC": 25.27
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 37,
+              "rh": 35,
+              "wetBulbC": 24.95
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 36.3,
+              "rh": 37,
+              "wetBulbC": 24.88
+            }
+          ],
+          "city": {
+            "name": "Benevento",
+            "countryCode": "IT",
+            "admin1Code": "04",
+            "latitude": 41.1307,
+            "longitude": 14.7782,
+            "population": 58418
+          }
+        },
+        {
+          "lat": 40.8125,
+          "lon": 16.4375,
+          "peakTempC": 37.1,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 17,
+          "peakWetBulbC": 21.11,
+          "peakWetBulbTime": "2026-08-02T17:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 36,
+              "rh": 20,
+              "wetBulbC": 19.98
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 37,
+              "rh": 19,
+              "wetBulbC": 20.32
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 37.1,
+              "rh": 17,
+              "wetBulbC": 19.68
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 36.9,
+              "rh": 20,
+              "wetBulbC": 20.59
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 36.6,
+              "rh": 19,
+              "wetBulbC": 20.06
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 35.1,
+              "rh": 23,
+              "wetBulbC": 20.29
+            }
+          ],
+          "city": {
+            "name": "Gravina in Puglia",
+            "countryCode": "IT",
+            "admin1Code": "13",
+            "latitude": 40.8175,
+            "longitude": 16.4191,
+            "population": 42210
+          }
+        },
+        {
+          "lat": 40.6875,
+          "lon": 16.625,
+          "peakTempC": 36.5,
+          "peakTempTime": "2026-08-02T11:00:00Z",
+          "rhAtPeakTemp": 18,
+          "peakWetBulbC": 22.37,
+          "peakWetBulbTime": "2026-08-02T17:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35.5,
+              "rh": 21,
+              "wetBulbC": 19.96
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 36.5,
+              "rh": 18,
+              "wetBulbC": 19.64
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 36.5,
+              "rh": 20,
+              "wetBulbC": 20.32
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35.6,
+              "rh": 24,
+              "wetBulbC": 20.94
+            }
+          ],
+          "city": {
+            "name": "Matera",
+            "countryCode": "IT",
+            "admin1Code": "02",
+            "latitude": 40.666,
+            "longitude": 16.6046,
+            "population": 60403
+          }
+        },
+        {
+          "lat": 41.25,
+          "lon": 15.875,
+          "peakTempC": 36.9,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 24,
+          "peakWetBulbC": 24.56,
+          "peakWetBulbTime": "2026-08-02T10:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 36.2,
+              "rh": 36,
+              "wetBulbC": 24.56
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 36.5,
+              "rh": 35,
+              "wetBulbC": 24.55
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 36.9,
+              "rh": 24,
+              "wetBulbC": 21.87
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 36.5,
+              "rh": 25,
+              "wetBulbC": 21.88
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 36.2,
+              "rh": 23,
+              "wetBulbC": 21.07
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 35.6,
+              "rh": 23,
+              "wetBulbC": 20.64
+            }
+          ],
+          "city": {
+            "name": "Cerignola",
+            "countryCode": "IT",
+            "admin1Code": "13",
+            "latitude": 41.2652,
+            "longitude": 15.8956,
+            "population": 54056
+          }
+        },
+        {
+          "lat": 40.8125,
+          "lon": 16.5625,
+          "peakTempC": 36.2,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 20,
+          "peakWetBulbC": 21.61,
+          "peakWetBulbTime": "2026-08-02T18:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.3,
+              "rh": 22,
+              "wetBulbC": 20.13
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 36.2,
+              "rh": 20,
+              "wetBulbC": 20.12
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35.9,
+              "rh": 22,
+              "wetBulbC": 20.55
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 35,
+              "rh": 21,
+              "wetBulbC": 19.62
+            }
+          ],
+          "city": {
+            "name": "Altamura",
+            "countryCode": "IT",
+            "admin1Code": "13",
+            "latitude": 40.8266,
+            "longitude": 16.5495,
+            "population": 70539
+          }
+        },
+        {
+          "lat": 41.25,
+          "lon": 16.0625,
+          "peakTempC": 35.8,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 26,
+          "peakWetBulbC": 25.12,
+          "peakWetBulbTime": "2026-08-02T10:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.2,
+              "rh": 34,
+              "wetBulbC": 23.29
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.8,
+              "rh": 26,
+              "wetBulbC": 21.66
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35.1,
+              "rh": 29,
+              "wetBulbC": 21.96
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 35,
+              "rh": 28,
+              "wetBulbC": 21.62
+            }
+          ],
+          "city": {
+            "name": "Canosa di Puglia",
+            "countryCode": "IT",
+            "admin1Code": "13",
+            "latitude": 41.2195,
+            "longitude": 16.0677,
+            "population": 29847
+          }
+        },
+        {
+          "lat": 41.4375,
+          "lon": 15.5625,
+          "peakTempC": 38.8,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 20,
+          "peakWetBulbC": 23.15,
+          "peakWetBulbTime": "2026-08-02T08:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 37,
+              "rh": 24,
+              "wetBulbC": 21.94
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 38.7,
+              "rh": 17,
+              "wetBulbC": 20.73
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 38.8,
+              "rh": 20,
+              "wetBulbC": 21.89
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 37.9,
+              "rh": 21,
+              "wetBulbC": 21.61
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 36.8,
+              "rh": 24,
+              "wetBulbC": 21.8
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 35.4,
+              "rh": 27,
+              "wetBulbC": 21.65
+            }
+          ],
+          "city": {
+            "name": "Foggia",
+            "countryCode": "IT",
+            "admin1Code": "13",
+            "latitude": 41.4584,
+            "longitude": 15.5519,
+            "population": 137032
+          }
+        },
+        {
+          "lat": 41.5,
+          "lon": 15.3125,
+          "peakTempC": 39.4,
+          "peakTempTime": "2026-08-02T13:00:00Z",
+          "rhAtPeakTemp": 14,
+          "peakWetBulbC": 24.11,
+          "peakWetBulbTime": "2026-08-02T08:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 36.3,
+              "rh": 23,
+              "wetBulbC": 21.14
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 37.9,
+              "rh": 17,
+              "wetBulbC": 20.2
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 39,
+              "rh": 13,
+              "wetBulbC": 19.3
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 39.4,
+              "rh": 14,
+              "wetBulbC": 19.97
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 38.3,
+              "rh": 18,
+              "wetBulbC": 20.84
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 36.9,
+              "rh": 21,
+              "wetBulbC": 20.92
+            },
+            {
+              "time": "2026-08-02T16:00:00Z",
+              "tempC": 35.1,
+              "rh": 26,
+              "wetBulbC": 21.15
+            }
+          ],
+          "city": {
+            "name": "Lucera",
+            "countryCode": "IT",
+            "admin1Code": "13",
+            "latitude": 41.5055,
+            "longitude": 15.3391,
+            "population": 32222
+          }
+        },
+        {
+          "lat": 41.5625,
+          "lon": 14.6875,
+          "peakTempC": 35.3,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 19,
+          "peakWetBulbC": 22.77,
+          "peakWetBulbTime": "2026-08-02T14:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.3,
+              "rh": 19,
+              "wetBulbC": 19.18
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35,
+              "rh": 21,
+              "wetBulbC": 19.62
+            }
+          ],
+          "city": {
+            "name": "Campobasso",
+            "countryCode": "IT",
+            "admin1Code": "11",
+            "latitude": 41.5595,
+            "longitude": 14.6674,
+            "population": 49230
+          }
+        },
+        {
+          "lat": 41.6875,
+          "lon": 15.375,
+          "peakTempC": 38.3,
+          "peakTempTime": "2026-08-02T11:00:00Z",
+          "rhAtPeakTemp": 20,
+          "peakWetBulbC": 21.82,
+          "peakWetBulbTime": "2026-08-02T12:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T09:00:00Z",
+              "tempC": 35.7,
+              "rh": 23,
+              "wetBulbC": 20.71
+            },
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 37.6,
+              "rh": 19,
+              "wetBulbC": 20.73
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 38.3,
+              "rh": 20,
+              "wetBulbC": 21.55
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 38.2,
+              "rh": 21,
+              "wetBulbC": 21.82
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 38.2,
+              "rh": 21,
+              "wetBulbC": 21.82
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 38,
+              "rh": 20,
+              "wetBulbC": 21.34
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 37.9,
+              "rh": 19,
+              "wetBulbC": 20.93
+            },
+            {
+              "time": "2026-08-02T16:00:00Z",
+              "tempC": 37.4,
+              "rh": 19,
+              "wetBulbC": 20.59
+            },
+            {
+              "time": "2026-08-02T17:00:00Z",
+              "tempC": 35.1,
+              "rh": 28,
+              "wetBulbC": 21.7
+            }
+          ],
+          "city": {
+            "name": "San Severo",
+            "countryCode": "IT",
+            "admin1Code": "13",
+            "latitude": 41.6856,
+            "longitude": 15.3815,
+            "population": 51919
+          }
+        },
+        {
+          "lat": 40.5625,
+          "lon": 17.4375,
+          "peakTempC": 35.9,
+          "peakTempTime": "2026-08-02T11:00:00Z",
+          "rhAtPeakTemp": 37,
+          "peakWetBulbC": 25,
+          "peakWetBulbTime": "2026-08-02T12:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T10:00:00Z",
+              "tempC": 35.1,
+              "rh": 33,
+              "wetBulbC": 22.97
+            },
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.9,
+              "rh": 37,
+              "wetBulbC": 24.56
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.6,
+              "rh": 40,
+              "wetBulbC": 25
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 35.4,
+              "rh": 38,
+              "wetBulbC": 24.39
+            }
+          ],
+          "city": {
+            "name": "Grottaglie",
+            "countryCode": "IT",
+            "admin1Code": "13",
+            "latitude": 40.5369,
+            "longitude": 17.4372,
+            "population": 31320
+          }
+        }
+      ]
+    },
+    {
+      "batchIndex": 65,
+      "locationsCompleted": 4875,
+      "hotspots": [
+        {
+          "lat": 37.5625,
+          "lon": 14.875,
+          "peakTempC": 35.9,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 29,
+          "peakWetBulbC": 24.15,
+          "peakWetBulbTime": "2026-08-02T20:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.3,
+              "rh": 31,
+              "wetBulbC": 22.63
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.9,
+              "rh": 29,
+              "wetBulbC": 22.56
+            }
+          ],
+          "city": {
+            "name": "Paternò",
+            "countryCode": "IT",
+            "admin1Code": "15",
+            "latitude": 37.5667,
+            "longitude": 14.9025,
+            "population": 46030
+          }
+        },
+        {
+          "lat": 42,
+          "lon": 12.75,
+          "peakTempC": 35.8,
+          "peakTempTime": "2026-08-02T14:00:00Z",
+          "rhAtPeakTemp": 38,
+          "peakWetBulbC": 26.14,
+          "peakWetBulbTime": "2026-08-02T18:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35.5,
+              "rh": 38,
+              "wetBulbC": 24.47
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 35.8,
+              "rh": 38,
+              "wetBulbC": 24.71
+            }
+          ],
+          "city": {
+            "name": "Guidonia Montecelio",
+            "countryCode": "IT",
+            "admin1Code": "07",
+            "latitude": 41.9936,
+            "longitude": 12.7224,
+            "population": 67516
+          }
+        },
+        {
+          "lat": 42.375,
+          "lon": 13.375,
+          "peakTempC": 35.4,
+          "peakTempTime": "2026-08-02T11:00:00Z",
+          "rhAtPeakTemp": 17,
+          "peakWetBulbC": 20.32,
+          "peakWetBulbTime": "2026-08-02T18:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.4,
+              "rh": 17,
+              "wetBulbC": 18.57
+            }
+          ],
+          "city": {
+            "name": "L'Aquila",
+            "countryCode": "IT",
+            "admin1Code": "01",
+            "latitude": 42.3505,
+            "longitude": 13.3995,
+            "population": 33691
+          }
+        },
+        {
+          "lat": 41.9375,
+          "lon": 12.5625,
+          "peakTempC": 35.9,
+          "peakTempTime": "2026-08-02T13:00:00Z",
+          "rhAtPeakTemp": 48,
+          "peakWetBulbC": 26.99,
+          "peakWetBulbTime": "2026-08-02T15:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.3,
+              "rh": 50,
+              "wetBulbC": 26.85
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35.9,
+              "rh": 48,
+              "wetBulbC": 26.96
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 35.6,
+              "rh": 49,
+              "wetBulbC": 26.91
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 35,
+              "rh": 52,
+              "wetBulbC": 26.99
+            }
+          ],
+          "city": {
+            "name": "Casal de' Pazzi",
+            "countryCode": "IT",
+            "admin1Code": "07",
+            "latitude": 41.9288,
+            "longitude": 12.5658,
+            "population": 27206
+          }
+        },
+        {
+          "lat": 41.875,
+          "lon": 12.5,
+          "peakTempC": 35,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 50,
+          "peakWetBulbC": 27.37,
+          "peakWetBulbTime": "2026-08-02T13:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35,
+              "rh": 50,
+              "wetBulbC": 26.6
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35,
+              "rh": 54,
+              "wetBulbC": 27.37
+            }
+          ],
+          "city": {
+            "name": "Rome",
+            "countryCode": "IT",
+            "admin1Code": "07",
+            "latitude": 41.8919,
+            "longitude": 12.5113,
+            "population": 2318895
+          }
+        },
+        {
+          "lat": 42.0625,
+          "lon": 12.625,
+          "peakTempC": 36.2,
+          "peakTempTime": "2026-08-02T13:00:00Z",
+          "rhAtPeakTemp": 39,
+          "peakWetBulbC": 26.6,
+          "peakWetBulbTime": "2026-08-02T15:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.1,
+              "rh": 41,
+              "wetBulbC": 24.81
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 36.2,
+              "rh": 39,
+              "wetBulbC": 25.26
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 36.1,
+              "rh": 41,
+              "wetBulbC": 25.63
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 35,
+              "rh": 50,
+              "wetBulbC": 26.6
+            }
+          ],
+          "city": {
+            "name": "Monterotondo",
+            "countryCode": "IT",
+            "admin1Code": "07",
+            "latitude": 42.0516,
+            "longitude": 12.6197,
+            "population": 37225
+          }
+        },
+        {
+          "lat": 37.6875,
+          "lon": 12.8125,
+          "peakTempC": 35.1,
+          "peakTempTime": "2026-08-02T12:00:00Z",
+          "rhAtPeakTemp": 40,
+          "peakWetBulbC": 24.6,
+          "peakWetBulbTime": "2026-08-02T12:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.1,
+              "rh": 40,
+              "wetBulbC": 24.6
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 35,
+              "rh": 39,
+              "wetBulbC": 24.29
+            }
+          ],
+          "city": {
+            "name": "Castelvetrano",
+            "countryCode": "IT",
+            "admin1Code": "15",
+            "latitude": 37.6808,
+            "longitude": 12.7919,
+            "population": 31680
+          }
+        },
+        {
+          "lat": 42.375,
+          "lon": 12.875,
+          "peakTempC": 36.5,
+          "peakTempTime": "2026-08-02T13:00:00Z",
+          "rhAtPeakTemp": 22,
+          "peakWetBulbC": 25.01,
+          "peakWetBulbTime": "2026-08-02T18:00:00Z",
+          "hotHours": [
+            {
+              "time": "2026-08-02T11:00:00Z",
+              "tempC": 35.2,
+              "rh": 29,
+              "wetBulbC": 22.03
+            },
+            {
+              "time": "2026-08-02T12:00:00Z",
+              "tempC": 35.9,
+              "rh": 29,
+              "wetBulbC": 22.56
+            },
+            {
+              "time": "2026-08-02T13:00:00Z",
+              "tempC": 36.5,
+              "rh": 22,
+              "wetBulbC": 20.97
+            },
+            {
+              "time": "2026-08-02T14:00:00Z",
+              "tempC": 36.5,
+              "rh": 22,
+              "wetBulbC": 20.97
+            },
+            {
+              "time": "2026-08-02T15:00:00Z",
+              "tempC": 35.6,
+              "rh": 24,
+              "wetBulbC": 20.94
+            }
+          ],
+          "city": {
+            "name": "Rieti",
+            "countryCode": "IT",
+            "admin1Code": "07",
+            "latitude": 42.4048,
+            "longitude": 12.8574,
+            "population": 39068
+          }
+        }
+      ]
+    },
+    {
+      "batchIndex": 66,
+      "locationsCompleted": 4950,
+      "hotspots": []
     }
   ]
 }
