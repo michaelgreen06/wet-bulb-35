@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   buildOpenMeteoForecastUrl,
   fetchOpenMeteoBatch,
+  OpenMeteoTransientError,
 } from '@/lib/utils/openMeteoForecast';
 
 describe('Open-Meteo forecast client', () => {
@@ -94,5 +95,29 @@ describe('Open-Meteo forecast client', () => {
       coords: [{ lat: 10, lon: 20 }],
       forecastHours: 1,
     })).rejects.toThrow('Open-Meteo forecast request failed');
+  });
+
+  it('classifies overloaded 5xx responses as transient', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: new Headers(),
+      text: async () => '{"reason":"The service is overloaded","error":true}',
+    } as Response);
+
+    await expect(fetchOpenMeteoBatch({
+      coords: [{ lat: 10, lon: 20 }],
+      forecastHours: 1,
+    })).rejects.toBeInstanceOf(OpenMeteoTransientError);
+  });
+
+  it('classifies fetch network failures as transient', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
+
+    await expect(fetchOpenMeteoBatch({
+      coords: [{ lat: 10, lon: 20 }],
+      forecastHours: 1,
+    })).rejects.toBeInstanceOf(OpenMeteoTransientError);
   });
 });

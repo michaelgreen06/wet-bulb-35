@@ -118,6 +118,41 @@ describe('hotspot scanner', () => {
     expect(result.scan.batchCount).toBeGreaterThan(26);
   });
 
+  it('can collect lower-threshold gate cells from the same scan', async () => {
+    fetchOpenMeteoBatchMock.mockImplementation(async ({ coords }) =>
+      coords.map((coord) => {
+        if (coord.lat === 20 && coord.lon === 40) {
+          return makePoint(coord, 32, 70);
+        }
+
+        return makePoint(coord, 24, 40);
+      }),
+    );
+
+    const result = await scanRegionForHotspots(
+      {
+        regionId: 'arabian-peninsula',
+        forecastHours: 2,
+        tempThresholdC: 35,
+        wetBulbThresholdC: 30,
+        limit: 10,
+      },
+      {
+        gate: {
+          tempThresholdC: 30,
+          wetBulbThresholdC: 26,
+        },
+      },
+    );
+
+    expect(result.hotspots).toHaveLength(0);
+    expect(result.gateCells).toContainEqual(expect.objectContaining({
+      lat: 20,
+      lon: 40,
+      peakTempC: 32,
+    }));
+  });
+
   it('recovers from Open-Meteo 429s by retrying the same batch', async () => {
     fetchOpenMeteoBatchMock
       .mockRejectedValueOnce(new OpenMeteoRateLimitError({

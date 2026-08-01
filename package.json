@@ -9,7 +9,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "create-populated-cities": "node scripts/create-populated-cities.js",
+    "generate-all-hotspots": "tsx -r tsconfig-paths/register scripts/generate-all-hotspots.ts",
     "generate-hotspots": "tsx -r tsconfig-paths/register scripts/generate-hotspots.ts",
+    "generate-inhabited-hotspots": "tsx -r tsconfig-paths/register scripts/generate-inhabited-hotspots.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

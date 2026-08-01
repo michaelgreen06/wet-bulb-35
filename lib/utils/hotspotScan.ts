@@ -40,6 +40,7 @@ export type HotspotScanProgressEvent =
       locationsCompleted: number;
       totalLocations: number;
       cellsEvaluated: number;
+      skipped?: boolean;
     }
   | {
       type: 'throttle';
@@ -47,7 +48,8 @@ export type HotspotScanProgressEvent =
       delayMs: number;
       locationsInWindow: number;
       maxLocationsPerMinute: number;
-      reason: 'planned' | 'rate-limit';
+      reason: 'planned' | 'rate-limit' | 'transient-error';
+      quotaWindow?: 'minute' | 'hour';
       errorMessage?: string;
       responseBody?: string;
       retryAfterHeader?: string | null;
@@ -56,6 +58,10 @@ export type HotspotScanProgressEvent =
 
 type HotspotScanOptions = {
   onProgress?: (event: HotspotScanProgressEvent) => void;
+  gate?: {
+    tempThresholdC: number;
+    wetBulbThresholdC: number;
+  };
 };
 
 type RateLimitState = {
@@ -110,8 +116,11 @@ function sortHotspots(a: HotspotCell, b: HotspotCell): number {
   );
 }
 
-function getCacheKey(request: HotspotScanRequest): string {
-  return JSON.stringify(request);
+function getCacheKey(request: HotspotScanRequest, options: HotspotScanOptions): string {
+  return JSON.stringify({
+    request,
+    gate: options.gate,
+  });
 }
 
 function sleep(ms: number): Promise<void> {
@@ -388,7 +397,7 @@ export async function scanRegionForHotspots(
   request: HotspotScanRequest,
   options: HotspotScanOptions = {},
 ): Promise<HotspotScanResponse> {
-  const cacheKey = getCacheKey(request);
+  const cacheKey = getCacheKey(request, options);
   const cached = cache.get(cacheKey);
 
   if (cached && cached.expiresAt > Date.now()) {
@@ -443,6 +452,16 @@ export async function scanRegionForHotspots(
     .sort(sortHotspots)
     .slice(0, request.limit)
     .map(({ isHotspot: _isHotspot, ...cell }) => cell);
+  const gateCells = options.gate
+    ? [...bestCellsByCoord.values()]
+        .filter(
+          (cell) =>
+            cell.peakTempC >= options.gate!.tempThresholdC ||
+            cell.peakWetBulbC >= options.gate!.wetBulbThresholdC,
+        )
+        .sort(sortHotspots)
+        .map(({ isHotspot: _isHotspot, ...cell }) => cell)
+    : undefined;
 
   const data: HotspotScanResponse = {
     region,
@@ -461,6 +480,7 @@ export async function scanRegionForHotspots(
     },
     limit: request.limit,
     hotspots,
+    ...(gateCells ? { gateCells } : {}),
   };
 
   cache.set(cacheKey, {

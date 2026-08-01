@@ -48,6 +48,21 @@ export type HotspotCell = {
   nearestLocation?: HotspotNearestLocation;
 };
 
+export type PopulatedCity = {
+  name: string;
+  countryCode?: string;
+  country?: string;
+  admin1Code?: string;
+  admin1?: string;
+  latitude: number;
+  longitude: number;
+  population: number;
+};
+
+export type InhabitedHotspotCell = HotspotCell & {
+  city: PopulatedCity;
+};
+
 export type HotspotScanRequest = {
   regionId: HotspotRegionId;
   forecastHours: number;
@@ -73,9 +88,49 @@ export type HotspotScanResponse = {
   };
   limit: number;
   hotspots: HotspotCell[];
+  gateCells?: HotspotCell[];
 };
 
 export type HotspotSnapshot = HotspotScanResponse & {
+  snapshot: {
+    generatedBy: 'cron' | 'manual';
+    source: 'open-meteo';
+    expiresAt?: string;
+  };
+};
+
+export type InhabitedHotspotScanRequest = {
+  forecastHours: number;
+  tempThresholdC: number;
+  wetBulbThresholdC: number;
+  minPopulation: number;
+  limit: number;
+};
+
+export type InhabitedHotspotScanResponse = {
+  label: string;
+  scan: {
+    forecastHours: number;
+    candidateCities: number;
+    populationQualifiedCities?: number;
+    gateCells?: number;
+    gateRadiusKm?: number;
+    maxCandidateCities?: number;
+    citiesScanned: number;
+    batchCount: number;
+    generatedAt: string;
+    cacheHit?: boolean;
+  };
+  thresholds: {
+    tempC: number;
+    wetBulbC: number;
+  };
+  minPopulation: number;
+  limit: number;
+  hotspots: InhabitedHotspotCell[];
+};
+
+export type InhabitedHotspotSnapshot = InhabitedHotspotScanResponse & {
   snapshot: {
     generatedBy: 'cron' | 'manual';
     source: 'open-meteo';
