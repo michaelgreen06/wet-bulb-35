@@ -1,5 +1,6 @@
 import { HOTSPOT_REGIONS, getHotspotRegion } from '@/lib/config/hotspotRegions';
 import type {
+  EvaluatedHotspotCell,
   HourlyCellSample,
   HotspotCell,
   HotspotRegionId,
@@ -21,9 +22,11 @@ const COORD_PRECISION = 4;
 const ONE_MINUTE_MS = 60 * 1000;
 const MAX_CONSECUTIVE_RATE_LIMITS = 6;
 
-type EvaluatedCell = HotspotCell & {
+type SummarizedCell = HotspotCell & {
   isHotspot: boolean;
 };
+
+type EvaluatedCell = EvaluatedHotspotCell & SummarizedCell;
 
 export type HotspotScanProgressEvent =
   | {
@@ -58,6 +61,7 @@ export type HotspotScanProgressEvent =
 
 type HotspotScanOptions = {
   onProgress?: (event: HotspotScanProgressEvent) => void;
+  includeEvaluatedCells?: boolean;
   gate?: {
     tempThresholdC: number;
     wetBulbThresholdC: number;
@@ -120,6 +124,7 @@ function getCacheKey(request: HotspotScanRequest, options: HotspotScanOptions): 
   return JSON.stringify({
     request,
     gate: options.gate,
+    includeEvaluatedCells: options.includeEvaluatedCells ?? false,
   });
 }
 
@@ -174,7 +179,7 @@ export function generateRefinementGrid(
 export function summarizeForecastPoint(
   forecast: ForecastPoint,
   thresholds: Pick<HotspotScanRequest, 'tempThresholdC' | 'wetBulbThresholdC'>,
-): EvaluatedCell | null {
+): SummarizedCell | null {
   const times = forecast.hourly.time;
   const temps = forecast.hourly.temperature_2m;
   const humidities = forecast.hourly.relative_humidity_2m;
@@ -348,7 +353,11 @@ async function fetchAndEvaluate(
     for (const forecast of forecasts) {
       const cell = summarizeForecastPoint(forecast, request);
       if (cell) {
-        cells.push(cell);
+        cells.push({
+          ...cell,
+          sourceStepDeg:
+            phase === 'refine' ? (region.refinedStepDeg ?? region.stepDeg) : region.stepDeg,
+        });
       }
     }
 
@@ -451,7 +460,7 @@ export async function scanRegionForHotspots(
     .filter((cell) => cell.isHotspot)
     .sort(sortHotspots)
     .slice(0, request.limit)
-    .map(({ isHotspot: _isHotspot, ...cell }) => cell);
+    .map(({ isHotspot: _isHotspot, sourceStepDeg: _sourceStepDeg, ...cell }) => cell);
   const gateCells = options.gate
     ? [...bestCellsByCoord.values()]
         .filter(
@@ -460,6 +469,11 @@ export async function scanRegionForHotspots(
             cell.peakWetBulbC >= options.gate!.wetBulbThresholdC,
         )
         .sort(sortHotspots)
+        .map(({ isHotspot: _isHotspot, sourceStepDeg: _sourceStepDeg, ...cell }) => cell)
+    : undefined;
+  const evaluatedCells = options.includeEvaluatedCells
+    ? [...bestCellsByCoord.values()]
+        .sort((a, b) => a.lat - b.lat || a.lon - b.lon)
         .map(({ isHotspot: _isHotspot, ...cell }) => cell)
     : undefined;
 
@@ -481,6 +495,7 @@ export async function scanRegionForHotspots(
     limit: request.limit,
     hotspots,
     ...(gateCells ? { gateCells } : {}),
+    ...(evaluatedCells ? { evaluatedCells } : {}),
   };
 
   cache.set(cacheKey, {

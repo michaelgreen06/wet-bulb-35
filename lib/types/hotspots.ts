@@ -48,6 +48,10 @@ export type HotspotCell = {
   nearestLocation?: HotspotNearestLocation;
 };
 
+export type EvaluatedHotspotCell = HotspotCell & {
+  sourceStepDeg: number;
+};
+
 export type PopulatedCity = {
   name: string;
   countryCode?: string;
@@ -89,6 +93,7 @@ export type HotspotScanResponse = {
   limit: number;
   hotspots: HotspotCell[];
   gateCells?: HotspotCell[];
+  evaluatedCells?: EvaluatedHotspotCell[];
 };
 
 export type HotspotSnapshot = HotspotScanResponse & {
@@ -113,9 +118,12 @@ export type InhabitedHotspotScanResponse = {
     forecastHours: number;
     candidateCities: number;
     populationQualifiedCities?: number;
+    gridQualifiedCandidateCities?: number;
     gateCells?: number;
     gateRadiusKm?: number;
     maxCandidateCities?: number;
+    citiesExcludedByCandidateCap?: number;
+    gatingMode?: 'radius' | 'grid-cell';
     citiesScanned: number;
     batchCount: number;
     generatedAt: string;

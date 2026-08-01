@@ -4,6 +4,7 @@ import type {
   InhabitedHotspotCell,
   InhabitedHotspotScanRequest,
   InhabitedHotspotScanResponse,
+  EvaluatedHotspotCell,
   HotspotCell,
   PopulatedCity,
 } from '@/lib/types/hotspots';
@@ -34,8 +35,12 @@ const MAX_CONSECUTIVE_TRANSIENT_ERRORS = 8;
 type InhabitedHotspotScanOptions = {
   batchSize?: number;
   checkpointPath?: string;
+  gatingMode?: 'radius' | 'grid-cell';
   gateCells?: HotspotCell[];
   gateRadiusKm?: number;
+  evaluatedCells?: EvaluatedHotspotCell[];
+  gateTempThresholdC?: number;
+  gateWetBulbThresholdC?: number;
   maxCandidateCities?: number;
   maxLocationsPerMinute?: number;
   maxLocationsPerHour?: number;
@@ -48,7 +53,7 @@ type RateLimitState = {
 };
 
 type InhabitedHotspotCheckpoint = {
-  version: 1;
+  version: 2;
   key: string;
   request: InhabitedHotspotScanRequest;
   createdAt: string;
@@ -70,25 +75,30 @@ function getCheckpointKey(args: {
   request: InhabitedHotspotScanRequest;
   batchSize: number;
   candidateCities: PopulatedCity[];
-  gateCells?: HotspotCell[];
+  gatingMode: 'radius' | 'grid-cell' | 'population';
+  gateTempThresholdC: number;
+  gateWetBulbThresholdC: number;
   gateRadiusKm: number;
   maxCandidateCities: number;
+  maxLocationsPerMinute: number;
+  maxLocationsPerHour: number;
 }): string {
   return JSON.stringify({
     request: args.request,
     batchSize: args.batchSize,
+    gatingMode: args.gatingMode,
+    gateTempThresholdC: args.gateTempThresholdC,
+    gateWetBulbThresholdC: args.gateWetBulbThresholdC,
     gateRadiusKm: args.gateRadiusKm,
     maxCandidateCities: args.maxCandidateCities,
-    gateCells: args.gateCells?.map((cell) => [
-      cell.lat,
-      cell.lon,
-      Number(cell.peakTempC.toFixed(2)),
-      Number(cell.peakWetBulbC.toFixed(2)),
-    ]),
+    maxLocationsPerMinute: args.maxLocationsPerMinute,
+    maxLocationsPerHour: args.maxLocationsPerHour,
     candidateCities: args.candidateCities.map((city) => [
       city.name,
       city.countryCode,
+      city.country,
       city.admin1Code,
+      city.admin1,
       city.latitude,
       city.longitude,
       city.population,
@@ -108,7 +118,7 @@ async function loadCheckpoint(
     const raw = await fs.readFile(checkpointPath, 'utf8');
     const checkpoint = JSON.parse(raw) as InhabitedHotspotCheckpoint;
 
-    if (checkpoint.version !== 1 || checkpoint.key !== key) {
+    if (checkpoint.version !== 2 || checkpoint.key !== key) {
       return null;
     }
 
@@ -210,6 +220,87 @@ function selectGatedCandidateCities(
     )
     .slice(0, maxCandidateCities)
     .map((candidate) => candidate.city);
+}
+
+type GatedCity = {
+  city: PopulatedCity;
+  gateCell: HotspotCell;
+  distanceKm: number;
+};
+
+function compareGridGatedCities(a: GatedCity, b: GatedCity): number {
+  return (
+    b.gateCell.peakWetBulbC - a.gateCell.peakWetBulbC ||
+    b.gateCell.peakTempC - a.gateCell.peakTempC ||
+    b.city.population - a.city.population ||
+    a.distanceKm - b.distanceKm ||
+    a.city.name.localeCompare(b.city.name) ||
+    (a.city.countryCode ?? '').localeCompare(b.city.countryCode ?? '') ||
+    a.city.latitude - b.city.latitude ||
+    a.city.longitude - b.city.longitude
+  );
+}
+
+function longitudeDistanceDeg(a: number, b: number): number {
+  const delta = ((a - b + 540) % 360) - 180;
+  return Math.abs(delta);
+}
+
+function selectGridGatedCandidateCities(
+  cities: PopulatedCity[],
+  evaluatedCells: EvaluatedHotspotCell[],
+  gateTempThresholdC: number,
+  gateWetBulbThresholdC: number,
+  maxCandidateCities: number,
+): { candidateCities: PopulatedCity[]; gridQualifiedCandidateCities: number; warmCells: number } {
+  const warmCells = evaluatedCells.filter(
+    (cell) =>
+      cell.peakTempC >= gateTempThresholdC ||
+      cell.peakWetBulbC >= gateWetBulbThresholdC,
+  );
+  const qualifiedCities = cities.flatMap((city): GatedCity[] => {
+    let bestGate: EvaluatedHotspotCell | null = null;
+    let bestDistanceKm = Number.POSITIVE_INFINITY;
+
+    for (const gateCell of warmCells) {
+      // Half a cell covers the cell itself; one more full step covers its eight neighbors.
+      const gateReachDeg = gateCell.sourceStepDeg * 1.5;
+      if (
+        Math.abs(city.latitude - gateCell.lat) > gateReachDeg ||
+        longitudeDistanceDeg(city.longitude, gateCell.lon) > gateReachDeg
+      ) {
+        continue;
+      }
+
+      const distanceKm = getHaversineDistanceKm(
+        { lat: city.latitude, lon: city.longitude },
+        { lat: gateCell.lat, lon: gateCell.lon },
+      );
+      const candidate = { city, gateCell, distanceKm };
+      if (
+        !bestGate ||
+        compareGridGatedCities(candidate, {
+          city,
+          gateCell: bestGate,
+          distanceKm: bestDistanceKm,
+        }) < 0
+      ) {
+        bestGate = gateCell;
+        bestDistanceKm = distanceKm;
+      }
+    }
+
+    return bestGate ? [{ city, gateCell: bestGate, distanceKm: bestDistanceKm }] : [];
+  });
+
+  return {
+    candidateCities: qualifiedCities
+      .sort(compareGridGatedCities)
+      .slice(0, maxCandidateCities)
+      .map(({ city }) => city),
+    gridQualifiedCandidateCities: qualifiedCities.length,
+    warmCells: warmCells.length,
+  };
 }
 
 async function waitForCapacity(
@@ -403,9 +494,21 @@ export async function scanPopulatedPlacesForHotspots(
   const populationQualifiedCities = filterPopulatedCities(cities, request.minPopulation);
   const gateRadiusKm = options.gateRadiusKm ?? DEFAULT_GATE_RADIUS_KM;
   const maxCandidateCities = options.maxCandidateCities ?? DEFAULT_MAX_CANDIDATE_CITIES;
-  const candidateCities = selectGatedCandidateCities(
+  const gateTempThresholdC = options.gateTempThresholdC ?? 30;
+  const gateWetBulbThresholdC = options.gateWetBulbThresholdC ?? 26;
+  const gatingMode = options.gatingMode ?? (options.gateCells ? 'radius' : 'population');
+  const gridSelection = gatingMode === 'grid-cell'
+    ? selectGridGatedCandidateCities(
+      populationQualifiedCities,
+      options.evaluatedCells ?? [],
+      gateTempThresholdC,
+      gateWetBulbThresholdC,
+      maxCandidateCities,
+    )
+    : null;
+  const candidateCities = gridSelection?.candidateCities ?? selectGatedCandidateCities(
     populationQualifiedCities,
-    options.gateCells,
+    gatingMode === 'radius' ? options.gateCells : undefined,
     gateRadiusKm,
     maxCandidateCities,
   );
@@ -418,16 +521,20 @@ export async function scanPopulatedPlacesForHotspots(
     request,
     batchSize,
     candidateCities,
-    gateCells: options.gateCells,
+    gatingMode,
+    gateTempThresholdC,
+    gateWetBulbThresholdC,
     gateRadiusKm,
     maxCandidateCities,
+    maxLocationsPerMinute,
+    maxLocationsPerHour,
   });
   const existingCheckpoint = await loadCheckpoint(options.checkpointPath, checkpointKey);
   const completedBatches = new Map(
     existingCheckpoint?.completedBatches.map((batch) => [batch.batchIndex, batch]) ?? [],
   );
   const checkpoint: InhabitedHotspotCheckpoint = existingCheckpoint ?? {
-    version: 1,
+    version: 2,
     key: checkpointKey,
     request,
     createdAt: toUtcIsoSecond(new Date()),
@@ -512,8 +619,13 @@ export async function scanPopulatedPlacesForHotspots(
       forecastHours: request.forecastHours,
       candidateCities: candidateCities.length,
       populationQualifiedCities: populationQualifiedCities.length,
-      gateCells: options.gateCells?.length,
-      gateRadiusKm: options.gateCells ? gateRadiusKm : undefined,
+      gridQualifiedCandidateCities: gridSelection?.gridQualifiedCandidateCities,
+      citiesExcludedByCandidateCap: gridSelection
+        ? gridSelection.gridQualifiedCandidateCities - candidateCities.length
+        : undefined,
+      gateCells: gridSelection?.warmCells ?? options.gateCells?.length,
+      gateRadiusKm: gatingMode === 'radius' && options.gateCells ? gateRadiusKm : undefined,
+      gatingMode: gatingMode === 'population' ? undefined : gatingMode,
       maxCandidateCities,
       citiesScanned: candidateCities.length,
       batchCount: chunks.length,

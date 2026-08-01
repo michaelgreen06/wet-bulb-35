@@ -45,7 +45,6 @@ async function main() {
   const maxCandidateCities = parsePositiveIntEnv('INHABITED_MAX_CANDIDATE_CITIES', 7000);
   const gateTempThresholdC = parsePositiveIntEnv('INHABITED_GATE_TEMP_THRESHOLD_C', 30);
   const gateWetBulbThresholdC = parsePositiveIntEnv('INHABITED_GATE_WETBULB_THRESHOLD_C', 26);
-  const gateRadiusKm = parsePositiveIntEnv('INHABITED_GATE_RADIUS_KM', 600);
   const batchSize = parsePositiveIntEnv('OPEN_METEO_BATCH_SIZE', 75);
   const checkpointPath =
     process.env.INHABITED_CHECKPOINT_PATH ||
@@ -68,10 +67,7 @@ async function main() {
       limit: 200,
     },
     {
-      gate: {
-        tempThresholdC: gateTempThresholdC,
-        wetBulbThresholdC: gateWetBulbThresholdC,
-      },
+      includeEvaluatedCells: true,
       onProgress(event) {
         if (event.type === 'phase-start') {
           console.log(
@@ -97,7 +93,16 @@ async function main() {
     },
   );
 
-  const { gateCells = [], ...globalScanForSnapshot } = globalScan;
+  const {
+    evaluatedCells = [],
+    gateCells: _gateCells,
+    ...globalScanForSnapshot
+  } = globalScan;
+  const warmGridCellCount = evaluatedCells.filter(
+    (cell) =>
+      cell.peakTempC >= gateTempThresholdC ||
+      cell.peakWetBulbC >= gateWetBulbThresholdC,
+  ).length;
   const resolvedCities = await loadResolvedCities();
   const globalHotspots = enrichHotspotsWithNearestLocations(globalScan.hotspots, resolvedCities);
   const globalSnapshot: HotspotSnapshot = {
@@ -116,8 +121,9 @@ async function main() {
 
   await writeHotspotSnapshot(globalSnapshot);
   console.log(
-    `Generated ${globalSnapshot.hotspots.length} global hotspots and ${gateCells.length.toLocaleString()} inhabited gate cells`,
+    `Generated ${globalSnapshot.hotspots.length} global hotspots from ${evaluatedCells.length.toLocaleString()} evaluated global cells`,
   );
+  console.log(`Warm grid cells: ${warmGridCellCount.toLocaleString()}`);
 
   const populatedCities = await loadPopulatedCities();
   const inhabitedScan = await scanPopulatedPlacesForHotspots(
@@ -132,8 +138,10 @@ async function main() {
     {
       batchSize,
       checkpointPath,
-      gateCells,
-      gateRadiusKm,
+      gatingMode: 'grid-cell',
+      evaluatedCells,
+      gateTempThresholdC,
+      gateWetBulbThresholdC,
       maxCandidateCities,
       maxLocationsPerMinute,
       maxLocationsPerHour,
@@ -183,6 +191,19 @@ async function main() {
   };
 
   await writeInhabitedHotspotSnapshot(inhabitedSnapshot);
+  console.log(
+    `Population-qualified cities: ${(inhabitedSnapshot.scan.populationQualifiedCities ?? 0).toLocaleString()}`,
+  );
+  console.log(
+    `Grid-qualified candidate cities before cap: ${(inhabitedSnapshot.scan.gridQualifiedCandidateCities ?? 0).toLocaleString()}`,
+  );
+  console.log(`Exact city scan cap: ${maxCandidateCities.toLocaleString()}`);
+  console.log(
+    `Cities excluded by cap: ${(inhabitedSnapshot.scan.citiesExcludedByCandidateCap ?? 0).toLocaleString()}`,
+  );
+  console.log(
+    `Actual exact city scans: ${inhabitedSnapshot.scan.candidateCities.toLocaleString()}`,
+  );
   console.log(
     `Generated ${inhabitedSnapshot.hotspots.length} inhabited hotspots at ${inhabitedSnapshot.scan.generatedAt} in ${formatDuration(Date.now() - startedAt)}.`,
   );

@@ -128,6 +128,17 @@ async function main() {
   };
 
   await writeInhabitedHotspotSnapshot(snapshot);
+  const populationQualifiedCities = snapshot.scan.populationQualifiedCities ?? 0;
+  const citiesExcludedByCap = Math.max(
+    0,
+    populationQualifiedCities - snapshot.scan.candidateCities,
+  );
+  console.log(
+    `Population-qualified cities: ${populationQualifiedCities.toLocaleString()}`,
+  );
+  console.log(`Exact city scan cap: ${maxCandidateCities.toLocaleString()}`);
+  console.log(`Cities excluded by cap: ${citiesExcludedByCap.toLocaleString()}`);
+  console.log(`Actual exact city scans: ${snapshot.scan.candidateCities.toLocaleString()}`);
   console.log(
     `Generated ${snapshot.hotspots.length} inhabited hotspots at ${snapshot.scan.generatedAt} in ${formatDuration(Date.now() - startedAt)} -> public/data/hotspots/inhabited-latest.json`,
   );

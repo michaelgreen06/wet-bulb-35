@@ -98,13 +98,16 @@ describe('hotspot scanner', () => {
       }),
     );
 
-    const result = await scanRegionForHotspots({
-      regionId: 'global',
-      forecastHours: 2,
-      tempThresholdC: 35,
-      wetBulbThresholdC: 30,
-      limit: 1,
-    });
+    const result = await scanRegionForHotspots(
+      {
+        regionId: 'global',
+        forecastHours: 2,
+        tempThresholdC: 35,
+        wetBulbThresholdC: 30,
+        limit: 1,
+      },
+      { includeEvaluatedCells: true },
+    );
 
     expect(result.hotspots).toHaveLength(1);
     expect(result.hotspots[0]).toMatchObject({
@@ -113,9 +116,44 @@ describe('hotspot scanner', () => {
       peakTempC: 46,
       rhAtPeakTemp: 70,
     });
+    expect(result.hotspots[0]).not.toHaveProperty('sourceStepDeg');
     expect(result.scan.coarsePointsScanned).toBe(2664);
     expect(result.scan.refinedPointsScanned).toBeGreaterThan(0);
     expect(result.scan.batchCount).toBeGreaterThan(26);
+    expect(result.evaluatedCells).toContainEqual(expect.objectContaining({
+      lat: 20,
+      lon: 20,
+      sourceStepDeg: 5,
+    }));
+    expect(result.evaluatedCells).toContainEqual(expect.objectContaining({
+      lat: 21,
+      lon: 21,
+      sourceStepDeg: 1,
+    }));
+  });
+
+  it('only returns evaluated cells when explicitly requested and isolates cached variants', async () => {
+    fetchOpenMeteoBatchMock.mockImplementation(async ({ coords }) =>
+      coords.map((coord) => makePoint(coord, 25, 35)),
+    );
+    const request = {
+      regionId: 'arabian-peninsula' as const,
+      forecastHours: 2,
+      tempThresholdC: 35,
+      wetBulbThresholdC: 30,
+      limit: 1,
+    };
+
+    const publicResult = await scanRegionForHotspots(request);
+    const callsAfterPublicScan = fetchOpenMeteoBatchMock.mock.calls.length;
+    const generationResult = await scanRegionForHotspots(request, {
+      includeEvaluatedCells: true,
+    });
+
+    expect(publicResult.evaluatedCells).toBeUndefined();
+    expect(generationResult.evaluatedCells).toHaveLength(154);
+    expect(generationResult.evaluatedCells?.[0].sourceStepDeg).toBe(2);
+    expect(fetchOpenMeteoBatchMock.mock.calls.length).toBeGreaterThan(callsAfterPublicScan);
   });
 
   it('can collect lower-threshold gate cells from the same scan', async () => {
@@ -151,6 +189,7 @@ describe('hotspot scanner', () => {
       lon: 40,
       peakTempC: 32,
     }));
+    expect(result.gateCells?.[0]).not.toHaveProperty('sourceStepDeg');
   });
 
   it('recovers from Open-Meteo 429s by retrying the same batch', async () => {
