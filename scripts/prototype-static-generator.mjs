@@ -228,7 +228,7 @@ export function createSiteData(sourceCities) {
     );
 
   const cityRoutes = new Set(cities.map(routePathForCity));
-  const pageRoutes = new Set(["/", "/wetbulb-temperature/"]);
+  const pageRoutes = new Set(["/", "/wetbulb-temperature/", "/inhabited-hotspots/"]);
 
   for (const country of countries) {
     pageRoutes.add(`/wetbulb-temperature/${country.slug}/`);
@@ -488,9 +488,52 @@ export function renderHomePage(siteData, options = {}) {
 
   const content = `
     ${renderSearchBox()}
+    <div class="text-center">
+      <a href="/inhabited-hotspots/" class="inline-block px-4 py-2 border border-blue-200 bg-white text-blue-700 rounded-lg hover:bg-blue-50 transition-colors font-semibold">Forecast inhabited hotspots</a>
+    </div>
     ${renderCurrentLocationButton()}
     ${renderWeatherWidget({ mode: "home" })}
     ${renderDisclaimer()}
+  `;
+
+  return pageShell({
+    siteUrl,
+    routePath,
+    title,
+    description,
+    breadcrumbData,
+    mainContent: renderAppFrame(content),
+    googleAnalyticsId: options.googleAnalyticsId,
+  });
+}
+
+export function renderInhabitedHotspotsPage(options = {}) {
+  const siteUrl = options.siteUrl ?? DEFAULT_SITE_URL;
+  const routePath = "/inhabited-hotspots/";
+  const title = "Forecast Inhabited Wet-Bulb Hotspots";
+  const description = "Highest forecast wet-bulb among up to 1,000 grid-prioritized populated places.";
+  const breadcrumbData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Inhabited Hotspots", item: `${siteUrl}${routePath}` },
+    ],
+  };
+  const content = `
+    <section class="space-y-6" data-inhabited-hotspots>
+      <div class="bg-white p-6 rounded-lg shadow-lg">
+        <p class="text-sm font-semibold uppercase text-blue-700">Forecast preview</p>
+        <h1 class="mt-2 text-3xl font-bold text-gray-900">Inhabited wet-bulb hotspots</h1>
+        <p class="mt-3 text-gray-600">Highest forecast wet-bulb among up to 1,000 grid-prioritized populated places. This is not an exhaustive global ranking.</p>
+        <p class="mt-2 text-sm text-gray-500">Forecast source, not realtime observations. Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Open-Meteo</a>.</p>
+      </div>
+      <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800" data-hotspot-loading>Loading inhabited hotspot forecast...</div>
+      <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800" data-hotspot-error hidden></div>
+      <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900" data-hotspot-warning hidden></div>
+      <div class="bg-white rounded-lg shadow-lg overflow-hidden" data-hotspot-summary hidden></div>
+      <div class="bg-white rounded-lg shadow-lg overflow-x-auto" data-hotspot-table hidden></div>
+    </section>
   `;
 
   return pageShell({
@@ -999,10 +1042,117 @@ ${placesRuntime}
     }
   }
 
+  function hotspotElements(root) {
+    return {
+      loading: root.querySelector("[data-hotspot-loading]"),
+      error: root.querySelector("[data-hotspot-error]"),
+      warning: root.querySelector("[data-hotspot-warning]"),
+      summary: root.querySelector("[data-hotspot-summary]"),
+      table: root.querySelector("[data-hotspot-table]")
+    };
+  }
+
+  function formatHotspotTime(value) {
+    return new Date(value).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  function placeLabel(hotspot) {
+    const city = hotspot.city || {};
+    return [city.name, city.admin1 || city.admin1Code, city.country || city.countryCode]
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  function formatPopulation(value) {
+    return new Intl.NumberFormat("en", {
+      notation: value >= 1000000 ? "compact" : "standard",
+      maximumFractionDigits: value >= 1000000 ? 1 : 0
+    }).format(value);
+  }
+
+  function renderHotspotSummary(root, data, source) {
+    const el = hotspotElements(root);
+    const leader = data.hotspots[0];
+    const generatedAt = formatHotspotTime(data.scan.generatedAt);
+    const expiresAt = data.snapshot.expiresAt ? formatHotspotTime(data.snapshot.expiresAt) : "not provided";
+    el.summary.hidden = false;
+    el.summary.innerHTML =
+      '<div class="grid gap-4 p-5 md:grid-cols-4">' +
+        '<div><p class="text-xs font-semibold uppercase text-gray-500">Cities scanned</p><p class="mt-1 text-2xl font-bold text-gray-900">' + data.scan.citiesScanned.toLocaleString() + '</p></div>' +
+        '<div><p class="text-xs font-semibold uppercase text-gray-500">Grid-qualified</p><p class="mt-1 text-2xl font-bold text-gray-900">' + (data.scan.gridQualifiedCandidateCities || 0).toLocaleString() + '</p></div>' +
+        '<div><p class="text-xs font-semibold uppercase text-gray-500">Excluded by cap</p><p class="mt-1 text-2xl font-bold text-gray-900">' + (data.scan.citiesExcludedByCandidateCap || 0).toLocaleString() + '</p></div>' +
+        '<div><p class="text-xs font-semibold uppercase text-gray-500">Leader</p><p class="mt-1 text-2xl font-bold text-gray-900">' + (leader ? leader.peakWetBulbC.toFixed(1) + "C" : "None") + '</p></div>' +
+      '</div>' +
+      '<div class="border-t border-gray-100 px-5 py-3 text-sm text-gray-600">Generated ' + generatedAt + '. Expires ' + expiresAt + '. Source: ' + source + '.</div>';
+  }
+
+  function renderHotspotTable(root, data) {
+    const el = hotspotElements(root);
+    el.table.hidden = false;
+    const rows = data.hotspots.map((hotspot, index) => {
+      const mapsUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(hotspot.lat + "," + hotspot.lon);
+      return '<tr class="border-b border-gray-100 hover:bg-blue-50">' +
+        '<td class="px-4 py-3 text-center font-bold">' + (index + 1) + '</td>' +
+        '<td class="px-4 py-3"><a class="font-semibold text-blue-700 hover:underline" target="_blank" rel="noopener noreferrer" href="' + mapsUrl + '">' + placeLabel(hotspot) + '</a><div class="text-xs text-gray-500">' + hotspot.lat.toFixed(2) + ', ' + hotspot.lon.toFixed(2) + '</div></td>' +
+        '<td class="px-4 py-3 text-right font-bold">' + hotspot.peakWetBulbC.toFixed(1) + 'C<div class="text-xs font-normal text-gray-500">' + formatHotspotTime(hotspot.peakWetBulbTime) + '</div></td>' +
+        '<td class="px-4 py-3 text-right">' + hotspot.peakTempC.toFixed(1) + 'C</td>' +
+        '<td class="px-4 py-3 text-right">' + hotspot.rhAtPeakTemp.toFixed(0) + '%</td>' +
+        '<td class="px-4 py-3 text-right">' + formatPopulation(hotspot.city.population) + '</td>' +
+      '</tr>';
+    }).join("");
+
+    el.table.innerHTML =
+      '<table class="w-full min-w-[720px] border-collapse text-sm">' +
+        '<thead><tr class="bg-gray-900 text-left text-xs font-bold uppercase text-white">' +
+          '<th class="px-4 py-3 text-center">Rank</th><th class="px-4 py-3">Place</th><th class="px-4 py-3 text-right">Wet bulb</th><th class="px-4 py-3 text-right">Air temp</th><th class="px-4 py-3 text-right">Humidity</th><th class="px-4 py-3 text-right">Population</th>' +
+        '</tr></thead>' +
+        '<tbody>' + (rows || '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-600">No populated places crossed the configured thresholds.</td></tr>') + '</tbody>' +
+      '</table>';
+  }
+
+  async function initInhabitedHotspots(root) {
+    const el = hotspotElements(root);
+    try {
+      const response = await fetch("/api/inhabited-hotspots", {
+        headers: { Accept: "application/json" }
+      });
+      const source = response.headers.get("X-Hotspot-Data-Source") || "unknown";
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload && payload.error ? payload.error : "Failed to load inhabited hotspots.");
+      }
+
+      el.loading.hidden = true;
+      const warnings = [];
+      if (source === "bundled-fallback") {
+        warnings.push("Showing bundled fallback data because Blob data is unavailable.");
+      }
+      if (payload.snapshot && payload.snapshot.expiresAt && Date.parse(payload.snapshot.expiresAt) < Date.now()) {
+        warnings.push("This forecast snapshot is expired; stale data remains visible for continuity.");
+      }
+      if (warnings.length) {
+        el.warning.hidden = false;
+        el.warning.textContent = warnings.join(" ");
+      }
+      renderHotspotSummary(root, payload, source);
+      renderHotspotTable(root, payload);
+    } catch (error) {
+      el.loading.hidden = true;
+      el.error.hidden = false;
+      el.error.textContent = error instanceof Error ? error.message : "Failed to load inhabited hotspots.";
+    }
+  }
+
   Promise.allSettled([
     Promise.resolve().then(bindPlacesSearch),
     loadSearchIndex().then(bindSearch),
-    ...Array.from(document.querySelectorAll("[data-weather-widget]")).map((widget) => initWeather(widget))
+    ...Array.from(document.querySelectorAll("[data-weather-widget]")).map((widget) => initWeather(widget)),
+    ...Array.from(document.querySelectorAll("[data-inhabited-hotspots]")).map((root) => initInhabitedHotspots(root))
   ]).catch(() => {});
 })();`;
 }
@@ -1070,6 +1220,7 @@ export function generateStaticSite(options = {}) {
 
   writeHtmlPage(outDir, "/", renderHomePage(siteData, { siteUrl, googleAnalyticsId }));
   writeHtmlPage(outDir, "/wetbulb-temperature/", renderBrowsePage(siteData, { siteUrl, googleAnalyticsId }));
+  writeHtmlPage(outDir, "/inhabited-hotspots/", renderInhabitedHotspotsPage({ siteUrl, googleAnalyticsId }));
 
   for (const country of siteData.countries) {
     writeHtmlPage(

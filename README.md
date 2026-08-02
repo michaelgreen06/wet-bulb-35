@@ -20,6 +20,44 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Inhabited Hotspots Preview
+
+This repo includes two separate weather workflows:
+
+- Current single-location weather uses OpenWeather through `/api/weather`.
+- Inhabited hotspot forecasts use Open-Meteo through `/api/inhabited-hotspots`.
+
+The inhabited hotspot page reads a validated `schemaVersion: 1` snapshot for the next 24 hours. The generation job runs a global grid gate, selects up to 1,000 grid-prioritized populated places above 25,000 people, scans those city coordinates exactly, and writes the top 50 places where forecast air temperature or wet-bulb thresholds are crossed.
+
+- Page: `/inhabited-hotspots/`
+- Snapshot API: `/api/inhabited-hotspots`
+- Bundled fallback snapshot: `public/data/hotspots/inhabited-latest.json`
+- Blob pathname: `inhabited/v1/latest.json`
+
+Visitors cannot trigger a new forecast scan. The API reads `INHABITED_HOTSPOT_DATA_URL` first and falls back to the bundled snapshot when Blob data is unavailable or invalid.
+
+Generate or refresh the snapshot with:
+
+```bash
+npm run generate-inhabited-hotspots
+```
+
+Publish the validated snapshot to Vercel Blob with:
+
+```bash
+npm run publish-inhabited-hotspots
+```
+
+The generation job batches 75 locations per HTTP request and keeps the existing throttling, retry, and checkpoint behavior. If Open-Meteo returns 429s, the job logs the response body and retry header, uses adaptive recovery waits, and eventually fails instead of looping forever. Run this from GitHub Actions or another controlled update job, not from user traffic. Open-Meteo data is used with attribution; see <https://open-meteo.com/>.
+
+## Tests
+
+Run the utility and scanner test suite with:
+
+```bash
+npm test
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

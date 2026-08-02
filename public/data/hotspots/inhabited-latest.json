@@ -1,0 +1,4078 @@
+{
+  "label": "Highest forecast wet-bulb among up to 1,000 grid-prioritized populated places in the next 24 hours.",
+  "scan": {
+    "algorithm": "grid-cell-v1",
+    "forecastHours": 24,
+    "candidateCities": 1000,
+    "populationQualifiedCities": 20000,
+    "gridQualifiedCandidateCities": 1000,
+    "gateCells": 574,
+    "maxCandidateCities": 1000,
+    "citiesExcludedByCandidateCap": 19000,
+    "gatingMode": "grid-cell",
+    "citiesScanned": 1000,
+    "batchCount": 14,
+    "generatedAt": "2026-08-01T22:18:46Z",
+    "cacheHit": false
+  },
+  "thresholds": {
+    "tempC": 35,
+    "wetBulbC": 30
+  },
+  "minPopulation": 25000,
+  "limit": 50,
+  "hotspots": [
+    {
+      "lat": 25.5536,
+      "lon": 56.2866,
+      "peakTempC": 39.3,
+      "peakTempTime": "2026-08-02T04:00:00Z",
+      "rhAtPeakTemp": 22,
+      "peakWetBulbC": 31.87,
+      "peakWetBulbTime": "2026-08-02T17:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 36.7,
+          "rh": 28,
+          "wetBulbC": 22.88
+        },
+        {
+          "time": "2026-08-01T22:00:00Z",
+          "tempC": 35.5,
+          "rh": 32,
+          "wetBulbC": 23.03
+        },
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 36.8,
+          "rh": 31,
+          "wetBulbC": 23.77
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 39.3,
+          "rh": 22,
+          "wetBulbC": 22.92
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.8,
+          "rh": 28,
+          "wetBulbC": 24.44
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 38.5,
+          "rh": 35,
+          "wetBulbC": 26.12
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 38.2,
+          "rh": 42,
+          "wetBulbC": 27.58
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 38.2,
+          "rh": 44,
+          "wetBulbC": 28.04
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 38.4,
+          "rh": 43,
+          "wetBulbC": 27.98
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 38.3,
+          "rh": 46,
+          "wetBulbC": 28.57
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 38,
+          "rh": 49,
+          "wetBulbC": 28.96
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 37.6,
+          "rh": 53,
+          "wetBulbC": 29.45
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 57,
+          "wetBulbC": 29.71
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 35,
+          "rh": 74,
+          "wetBulbC": 30.93
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 34.4,
+          "rh": 78,
+          "wetBulbC": 31.03
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 34.6,
+          "rh": 81,
+          "wetBulbC": 31.71
+        },
+        {
+          "time": "2026-08-02T17:00:00Z",
+          "tempC": 34.1,
+          "rh": 85,
+          "wetBulbC": 31.87
+        },
+        {
+          "time": "2026-08-02T18:00:00Z",
+          "tempC": 34.9,
+          "rh": 79,
+          "wetBulbC": 31.67
+        },
+        {
+          "time": "2026-08-02T19:00:00Z",
+          "tempC": 35.1,
+          "rh": 75,
+          "wetBulbC": 31.2
+        },
+        {
+          "time": "2026-08-02T20:00:00Z",
+          "tempC": 34.6,
+          "rh": 76,
+          "wetBulbC": 30.89
+        }
+      ],
+      "city": {
+        "name": "Dibba Al-Hisn",
+        "countryCode": "AE",
+        "admin1Code": "04",
+        "latitude": 25.6196,
+        "longitude": 56.2729,
+        "population": 26395
+      }
+    },
+    {
+      "lat": 25.5536,
+      "lon": 56.2866,
+      "peakTempC": 39.2,
+      "peakTempTime": "2026-08-02T04:00:00Z",
+      "rhAtPeakTemp": 22,
+      "peakWetBulbC": 31.77,
+      "peakWetBulbTime": "2026-08-02T17:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 36.6,
+          "rh": 28,
+          "wetBulbC": 22.81
+        },
+        {
+          "time": "2026-08-01T22:00:00Z",
+          "tempC": 35.4,
+          "rh": 32,
+          "wetBulbC": 22.96
+        },
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 36.7,
+          "rh": 31,
+          "wetBulbC": 23.69
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 39.2,
+          "rh": 22,
+          "wetBulbC": 22.85
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.7,
+          "rh": 28,
+          "wetBulbC": 24.37
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 38.4,
+          "rh": 35,
+          "wetBulbC": 26.05
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 38.1,
+          "rh": 42,
+          "wetBulbC": 27.5
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 38.1,
+          "rh": 44,
+          "wetBulbC": 27.96
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 38.3,
+          "rh": 43,
+          "wetBulbC": 27.9
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 38.2,
+          "rh": 46,
+          "wetBulbC": 28.48
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 37.9,
+          "rh": 49,
+          "wetBulbC": 28.88
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 37.5,
+          "rh": 53,
+          "wetBulbC": 29.36
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 36.9,
+          "rh": 57,
+          "wetBulbC": 29.62
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 34.9,
+          "rh": 74,
+          "wetBulbC": 30.84
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 34.3,
+          "rh": 78,
+          "wetBulbC": 30.93
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 34.5,
+          "rh": 81,
+          "wetBulbC": 31.61
+        },
+        {
+          "time": "2026-08-02T17:00:00Z",
+          "tempC": 34,
+          "rh": 85,
+          "wetBulbC": 31.77
+        },
+        {
+          "time": "2026-08-02T18:00:00Z",
+          "tempC": 34.8,
+          "rh": 79,
+          "wetBulbC": 31.57
+        },
+        {
+          "time": "2026-08-02T19:00:00Z",
+          "tempC": 35,
+          "rh": 75,
+          "wetBulbC": 31.1
+        },
+        {
+          "time": "2026-08-02T20:00:00Z",
+          "tempC": 34.5,
+          "rh": 76,
+          "wetBulbC": 30.79
+        }
+      ],
+      "city": {
+        "name": "Dibba Al-Fujairah",
+        "countryCode": "AE",
+        "admin1Code": "04",
+        "latitude": 25.5925,
+        "longitude": 56.2618,
+        "population": 30000
+      }
+    },
+    {
+      "lat": 25.0615,
+      "lon": 55.1832,
+      "peakTempC": 44.9,
+      "peakTempTime": "2026-08-02T08:00:00Z",
+      "rhAtPeakTemp": 13,
+      "peakWetBulbC": 30.84,
+      "peakWetBulbTime": "2026-08-02T11:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.2,
+          "rh": 36,
+          "wetBulbC": 26.14
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.9,
+          "rh": 21,
+          "wetBulbC": 24.37
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.4,
+          "rh": 13,
+          "wetBulbC": 22.6
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 44.9,
+          "rh": 13,
+          "wetBulbC": 22.91
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.8,
+          "rh": 46,
+          "wetBulbC": 30.67
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40.3,
+          "rh": 45,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.2,
+          "rh": 53,
+          "wetBulbC": 30.84
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.4,
+          "rh": 53,
+          "wetBulbC": 30.14
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37.4,
+          "rh": 59,
+          "wetBulbC": 30.45
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.3,
+          "rh": 62,
+          "wetBulbC": 30.03
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.3,
+          "rh": 66,
+          "wetBulbC": 29.84
+        }
+      ],
+      "city": {
+        "name": "Dubai Marina",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.0852,
+        "longitude": 55.1465,
+        "population": 120000
+      }
+    },
+    {
+      "lat": 25.0615,
+      "lon": 55.1832,
+      "peakTempC": 44.8,
+      "peakTempTime": "2026-08-02T08:00:00Z",
+      "rhAtPeakTemp": 13,
+      "peakWetBulbC": 30.84,
+      "peakWetBulbTime": "2026-08-02T11:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.2,
+          "rh": 36,
+          "wetBulbC": 26.14
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.8,
+          "rh": 21,
+          "wetBulbC": 24.3
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.3,
+          "rh": 13,
+          "wetBulbC": 22.54
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 44.8,
+          "rh": 13,
+          "wetBulbC": 22.85
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.8,
+          "rh": 46,
+          "wetBulbC": 30.67
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40.2,
+          "rh": 45,
+          "wetBulbC": 29.94
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.2,
+          "rh": 53,
+          "wetBulbC": 30.84
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.4,
+          "rh": 53,
+          "wetBulbC": 30.14
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37.4,
+          "rh": 59,
+          "wetBulbC": 30.45
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.3,
+          "rh": 62,
+          "wetBulbC": 30.03
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.2,
+          "rh": 66,
+          "wetBulbC": 29.74
+        }
+      ],
+      "city": {
+        "name": "The Palm Jumeirah",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.1161,
+        "longitude": 55.1351,
+        "population": 25500
+      }
+    },
+    {
+      "lat": 24.4288,
+      "lon": 54.365,
+      "peakTempC": 44.2,
+      "peakTempTime": "2026-08-02T09:00:00Z",
+      "rhAtPeakTemp": 21,
+      "peakWetBulbC": 30.74,
+      "peakWetBulbTime": "2026-08-02T16:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 32.8,
+          "rh": 83,
+          "wetBulbC": 30.29
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 37.1,
+          "rh": 51,
+          "wetBulbC": 28.61
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 39.6,
+          "rh": 37,
+          "wetBulbC": 27.51
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 41.8,
+          "rh": 28,
+          "wetBulbC": 26.67
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 43.7,
+          "rh": 21,
+          "wetBulbC": 25.61
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 44.2,
+          "rh": 21,
+          "wetBulbC": 25.95
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 41.3,
+          "rh": 43,
+          "wetBulbC": 30.38
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.9,
+          "rh": 44,
+          "wetBulbC": 29.46
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.5,
+          "rh": 50,
+          "wetBulbC": 29.6
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37.4,
+          "rh": 58,
+          "wetBulbC": 30.26
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.4,
+          "rh": 63,
+          "wetBulbC": 30.3
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.3,
+          "rh": 71,
+          "wetBulbC": 30.7
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 34.8,
+          "rh": 74,
+          "wetBulbC": 30.74
+        },
+        {
+          "time": "2026-08-02T17:00:00Z",
+          "tempC": 34.4,
+          "rh": 74,
+          "wetBulbC": 30.37
+        }
+      ],
+      "city": {
+        "name": "Abu Dhabi",
+        "countryCode": "AE",
+        "admin1Code": "01",
+        "latitude": 24.4512,
+        "longitude": 54.397,
+        "population": 1807000
+      }
+    },
+    {
+      "lat": 25.5536,
+      "lon": 55.6026,
+      "peakTempC": 43.4,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 20,
+      "peakWetBulbC": 30.63,
+      "peakWetBulbTime": "2026-08-02T08:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 36,
+          "rh": 43,
+          "wetBulbC": 25.99
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 39.8,
+          "rh": 28,
+          "wetBulbC": 25.18
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.8,
+          "rh": 18,
+          "wetBulbC": 23.82
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 43.4,
+          "rh": 20,
+          "wetBulbC": 25.02
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 39.2,
+          "rh": 52,
+          "wetBulbC": 30.63
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 38.4,
+          "rh": 51,
+          "wetBulbC": 29.73
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 38,
+          "rh": 56,
+          "wetBulbC": 30.4
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 37.7,
+          "rh": 49,
+          "wetBulbC": 28.71
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 37.1,
+          "rh": 57,
+          "wetBulbC": 29.8
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 36.8,
+          "rh": 55,
+          "wetBulbC": 29.14
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 35.9,
+          "rh": 60,
+          "wetBulbC": 29.3
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 33.7,
+          "rh": 77,
+          "wetBulbC": 30.2
+        }
+      ],
+      "city": {
+        "name": "Umm Al Quwain City",
+        "countryCode": "AE",
+        "admin1Code": "07",
+        "latitude": 25.5647,
+        "longitude": 55.5552,
+        "population": 62747
+      }
+    },
+    {
+      "lat": 27.2408,
+      "lon": 56.2876,
+      "peakTempC": 44.3,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 13,
+      "peakWetBulbC": 30.42,
+      "peakWetBulbTime": "2026-08-02T19:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 35.2,
+          "rh": 29,
+          "wetBulbC": 22.03
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 37.5,
+          "rh": 25,
+          "wetBulbC": 22.6
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 40.8,
+          "rh": 18,
+          "wetBulbC": 22.49
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 43.2,
+          "rh": 14,
+          "wetBulbC": 22.34
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.3,
+          "rh": 13,
+          "wetBulbC": 22.54
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 43.6,
+          "rh": 22,
+          "wetBulbC": 25.92
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 43.4,
+          "rh": 22,
+          "wetBulbC": 25.78
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 43,
+          "rh": 26,
+          "wetBulbC": 26.9
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 43.1,
+          "rh": 25,
+          "wetBulbC": 26.63
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 42.8,
+          "rh": 26,
+          "wetBulbC": 26.75
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 41.9,
+          "rh": 28,
+          "wetBulbC": 26.74
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 40.9,
+          "rh": 29,
+          "wetBulbC": 26.3
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 39.4,
+          "rh": 34,
+          "wetBulbC": 26.57
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 37.1,
+          "rh": 49,
+          "wetBulbC": 28.19
+        },
+        {
+          "time": "2026-08-02T17:00:00Z",
+          "tempC": 35.7,
+          "rh": 60,
+          "wetBulbC": 29.12
+        },
+        {
+          "time": "2026-08-02T18:00:00Z",
+          "tempC": 34.2,
+          "rh": 75,
+          "wetBulbC": 30.34
+        },
+        {
+          "time": "2026-08-02T19:00:00Z",
+          "tempC": 33.1,
+          "rh": 82,
+          "wetBulbC": 30.42
+        }
+      ],
+      "city": {
+        "name": "Bandar Abbas",
+        "countryCode": "IR",
+        "admin1Code": "11",
+        "latitude": 27.1865,
+        "longitude": 56.2808,
+        "population": 352173
+      }
+    },
+    {
+      "lat": 36.9,
+      "lon": 126.625,
+      "peakTempC": 35.5,
+      "peakTempTime": "2026-08-02T04:00:00Z",
+      "rhAtPeakTemp": 68,
+      "peakWetBulbC": 30.37,
+      "peakWetBulbTime": "2026-08-02T04:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35.5,
+          "rh": 68,
+          "wetBulbC": 30.37
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 34.5,
+          "rh": 73,
+          "wetBulbC": 30.29
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 34.4,
+          "rh": 72,
+          "wetBulbC": 30.03
+        }
+      ],
+      "city": {
+        "name": "Tangjin",
+        "countryCode": "KR",
+        "admin1Code": "17",
+        "latitude": 36.8944,
+        "longitude": 126.6297,
+        "population": 32778
+      }
+    },
+    {
+      "lat": 25.413,
+      "lon": 55.4821,
+      "peakTempC": 44.4,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 13,
+      "peakWetBulbC": 30.34,
+      "peakWetBulbTime": "2026-08-02T17:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35,
+          "rh": 50,
+          "wetBulbC": 26.6
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 39.1,
+          "rh": 31,
+          "wetBulbC": 25.52
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.7,
+          "rh": 18,
+          "wetBulbC": 23.75
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.4,
+          "rh": 13,
+          "wetBulbC": 22.6
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 40.1,
+          "rh": 46,
+          "wetBulbC": 30.08
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.4,
+          "rh": 39,
+          "wetBulbC": 28.65
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 39.1,
+          "rh": 51,
+          "wetBulbC": 30.33
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 38.4,
+          "rh": 50,
+          "wetBulbC": 29.52
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38,
+          "rh": 52,
+          "wetBulbC": 29.59
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37.6,
+          "rh": 53,
+          "wetBulbC": 29.45
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 37.2,
+          "rh": 51,
+          "wetBulbC": 28.69
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.5,
+          "rh": 63,
+          "wetBulbC": 29.48
+        },
+        {
+          "time": "2026-08-02T17:00:00Z",
+          "tempC": 34.2,
+          "rh": 75,
+          "wetBulbC": 30.34
+        },
+        {
+          "time": "2026-08-02T18:00:00Z",
+          "tempC": 33.5,
+          "rh": 77,
+          "wetBulbC": 30.01
+        }
+      ],
+      "city": {
+        "name": "Ajman City",
+        "countryCode": "AE",
+        "admin1Code": "02",
+        "latitude": 25.4018,
+        "longitude": 55.4788,
+        "population": 490035
+      }
+    },
+    {
+      "lat": 25.413,
+      "lon": 55.4821,
+      "peakTempC": 44.4,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 13,
+      "peakWetBulbC": 30.34,
+      "peakWetBulbTime": "2026-08-02T17:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35,
+          "rh": 50,
+          "wetBulbC": 26.6
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 39.1,
+          "rh": 31,
+          "wetBulbC": 25.52
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.7,
+          "rh": 18,
+          "wetBulbC": 23.75
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.4,
+          "rh": 13,
+          "wetBulbC": 22.6
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 40.1,
+          "rh": 46,
+          "wetBulbC": 30.08
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.4,
+          "rh": 39,
+          "wetBulbC": 28.65
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 39.1,
+          "rh": 51,
+          "wetBulbC": 30.33
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 38.4,
+          "rh": 50,
+          "wetBulbC": 29.52
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38,
+          "rh": 52,
+          "wetBulbC": 29.59
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37.6,
+          "rh": 53,
+          "wetBulbC": 29.45
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 37.2,
+          "rh": 51,
+          "wetBulbC": 28.69
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.5,
+          "rh": 63,
+          "wetBulbC": 29.48
+        },
+        {
+          "time": "2026-08-02T17:00:00Z",
+          "tempC": 34.2,
+          "rh": 75,
+          "wetBulbC": 30.34
+        },
+        {
+          "time": "2026-08-02T18:00:00Z",
+          "tempC": 33.5,
+          "rh": 77,
+          "wetBulbC": 30.01
+        }
+      ],
+      "city": {
+        "name": "Ar Rumaylah",
+        "countryCode": "AE",
+        "admin1Code": "02",
+        "latitude": 25.4034,
+        "longitude": 55.4334,
+        "population": 86000
+      }
+    },
+    {
+      "lat": 24.9912,
+      "lon": 55.1238,
+      "peakTempC": 46.1,
+      "peakTempTime": "2026-08-02T08:00:00Z",
+      "rhAtPeakTemp": 10,
+      "peakWetBulbC": 30.31,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.1,
+          "rh": 37,
+          "wetBulbC": 26.31
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.9,
+          "rh": 21,
+          "wetBulbC": 24.37
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.7,
+          "rh": 13,
+          "wetBulbC": 22.79
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 46.1,
+          "rh": 10,
+          "wetBulbC": 22.03
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 43.5,
+          "rh": 29,
+          "wetBulbC": 28.25
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 41.5,
+          "rh": 38,
+          "wetBulbC": 29.28
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 40.6,
+          "rh": 44,
+          "wetBulbC": 30.04
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 39.5,
+          "rh": 45,
+          "wetBulbC": 29.35
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37.9,
+          "rh": 56,
+          "wetBulbC": 30.31
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.7,
+          "rh": 60,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.4,
+          "rh": 67,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35,
+          "rh": 66,
+          "wetBulbC": 29.56
+        }
+      ],
+      "city": {
+        "name": "Jebel Ali",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.0025,
+        "longitude": 55.1081,
+        "population": 210000
+      }
+    },
+    {
+      "lat": 24.9912,
+      "lon": 55.1238,
+      "peakTempC": 46.1,
+      "peakTempTime": "2026-08-02T08:00:00Z",
+      "rhAtPeakTemp": 10,
+      "peakWetBulbC": 30.31,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.1,
+          "rh": 37,
+          "wetBulbC": 26.31
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.9,
+          "rh": 21,
+          "wetBulbC": 24.37
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.7,
+          "rh": 13,
+          "wetBulbC": 22.79
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 46.1,
+          "rh": 10,
+          "wetBulbC": 22.03
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 43.5,
+          "rh": 29,
+          "wetBulbC": 28.25
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 41.5,
+          "rh": 38,
+          "wetBulbC": 29.28
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 40.6,
+          "rh": 44,
+          "wetBulbC": 30.04
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 39.5,
+          "rh": 45,
+          "wetBulbC": 29.35
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37.9,
+          "rh": 56,
+          "wetBulbC": 30.31
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.7,
+          "rh": 60,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.4,
+          "rh": 67,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35,
+          "rh": 66,
+          "wetBulbC": 29.56
+        }
+      ],
+      "city": {
+        "name": "Dubai Investments Park",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.0083,
+        "longitude": 55.1568,
+        "population": 160000
+      }
+    },
+    {
+      "lat": 24.9912,
+      "lon": 55.1238,
+      "peakTempC": 46.1,
+      "peakTempTime": "2026-08-02T08:00:00Z",
+      "rhAtPeakTemp": 10,
+      "peakWetBulbC": 30.31,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.1,
+          "rh": 37,
+          "wetBulbC": 26.31
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.9,
+          "rh": 21,
+          "wetBulbC": 24.37
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.7,
+          "rh": 13,
+          "wetBulbC": 22.79
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 46.1,
+          "rh": 10,
+          "wetBulbC": 22.03
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 43.5,
+          "rh": 29,
+          "wetBulbC": 28.25
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 41.5,
+          "rh": 38,
+          "wetBulbC": 29.28
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 40.6,
+          "rh": 44,
+          "wetBulbC": 30.04
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 39.5,
+          "rh": 45,
+          "wetBulbC": 29.35
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37.9,
+          "rh": 56,
+          "wetBulbC": 30.31
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.7,
+          "rh": 60,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.4,
+          "rh": 67,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35,
+          "rh": 66,
+          "wetBulbC": 29.56
+        }
+      ],
+      "city": {
+        "name": "Al Furjan",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.0265,
+        "longitude": 55.1457,
+        "population": 26000
+      }
+    },
+    {
+      "lat": 25.3427,
+      "lon": 55.4221,
+      "peakTempC": 43.9,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 14,
+      "peakWetBulbC": 30.2,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35.1,
+          "rh": 51,
+          "wetBulbC": 26.88
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 39.1,
+          "rh": 31,
+          "wetBulbC": 25.52
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.4,
+          "rh": 18,
+          "wetBulbC": 23.55
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 43.9,
+          "rh": 14,
+          "wetBulbC": 22.78
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 40.6,
+          "rh": 42,
+          "wetBulbC": 29.56
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.2,
+          "rh": 41,
+          "wetBulbC": 28.99
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 39.6,
+          "rh": 45,
+          "wetBulbC": 29.44
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 38.5,
+          "rh": 48,
+          "wetBulbC": 29.18
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 37.7,
+          "rh": 53,
+          "wetBulbC": 29.53
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 36.9,
+          "rh": 60,
+          "wetBulbC": 30.2
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.8,
+          "rh": 55,
+          "wetBulbC": 29.14
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.9,
+          "rh": 58,
+          "wetBulbC": 28.92
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35.1,
+          "rh": 64,
+          "wetBulbC": 29.3
+        }
+      ],
+      "city": {
+        "name": "Sharjah",
+        "countryCode": "AE",
+        "admin1Code": "06",
+        "latitude": 25.3374,
+        "longitude": 55.4121,
+        "population": 1274749
+      }
+    },
+    {
+      "lat": 25.3427,
+      "lon": 55.4221,
+      "peakTempC": 43.9,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 14,
+      "peakWetBulbC": 30.2,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35.1,
+          "rh": 51,
+          "wetBulbC": 26.88
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 39.1,
+          "rh": 31,
+          "wetBulbC": 25.52
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.4,
+          "rh": 18,
+          "wetBulbC": 23.55
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 43.9,
+          "rh": 14,
+          "wetBulbC": 22.78
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 40.6,
+          "rh": 42,
+          "wetBulbC": 29.56
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.2,
+          "rh": 41,
+          "wetBulbC": 28.99
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 39.6,
+          "rh": 45,
+          "wetBulbC": 29.44
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 38.5,
+          "rh": 48,
+          "wetBulbC": 29.18
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 37.7,
+          "rh": 53,
+          "wetBulbC": 29.53
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 36.9,
+          "rh": 60,
+          "wetBulbC": 30.2
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.8,
+          "rh": 55,
+          "wetBulbC": 29.14
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.9,
+          "rh": 58,
+          "wetBulbC": 28.92
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35.1,
+          "rh": 64,
+          "wetBulbC": 29.3
+        }
+      ],
+      "city": {
+        "name": "Al Majaz",
+        "countryCode": "AE",
+        "admin1Code": "06",
+        "latitude": 25.3235,
+        "longitude": 55.3877,
+        "population": 116503
+      }
+    },
+    {
+      "lat": 24.4991,
+      "lon": 56.5385,
+      "peakTempC": 40.5,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 32,
+      "peakWetBulbC": 30.2,
+      "peakWetBulbTime": "2026-08-02T08:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 36.9,
+          "rh": 22,
+          "wetBulbC": 21.25
+        },
+        {
+          "time": "2026-08-01T22:00:00Z",
+          "tempC": 36.5,
+          "rh": 22,
+          "wetBulbC": 20.97
+        },
+        {
+          "time": "2026-08-01T23:00:00Z",
+          "tempC": 36.5,
+          "rh": 20,
+          "wetBulbC": 20.32
+        },
+        {
+          "time": "2026-08-02T00:00:00Z",
+          "tempC": 36.4,
+          "rh": 21,
+          "wetBulbC": 20.58
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35.5,
+          "rh": 52,
+          "wetBulbC": 27.42
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38,
+          "rh": 38,
+          "wetBulbC": 26.47
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 40.4,
+          "rh": 27,
+          "wetBulbC": 25.32
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 40.5,
+          "rh": 32,
+          "wetBulbC": 26.87
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 38.7,
+          "rh": 52,
+          "wetBulbC": 30.2
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 38.2,
+          "rh": 52,
+          "wetBulbC": 29.76
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 37.9,
+          "rh": 54,
+          "wetBulbC": 29.91
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 37.7,
+          "rh": 54,
+          "wetBulbC": 29.74
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 36.9,
+          "rh": 58,
+          "wetBulbC": 29.81
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37.8,
+          "rh": 45,
+          "wetBulbC": 27.93
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 37.1,
+          "rh": 46,
+          "wetBulbC": 27.56
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 36.5,
+          "rh": 47,
+          "wetBulbC": 27.26
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35.4,
+          "rh": 57,
+          "wetBulbC": 28.29
+        }
+      ],
+      "city": {
+        "name": "Liwá",
+        "countryCode": "OM",
+        "admin1Code": "11",
+        "latitude": 24.5308,
+        "longitude": 56.563,
+        "population": 26372
+      }
+    },
+    {
+      "lat": 25.2021,
+      "lon": 55.3024,
+      "peakTempC": 44,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.19,
+      "peakWetBulbTime": "2026-08-02T09:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 33.3,
+          "rh": 79,
+          "wetBulbC": 30.14
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.5,
+          "rh": 35,
+          "wetBulbC": 26.12
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.8,
+          "rh": 21,
+          "wetBulbC": 24.3
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44,
+          "rh": 15,
+          "wetBulbC": 23.3
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 43.2,
+          "rh": 25,
+          "wetBulbC": 26.71
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.5,
+          "rh": 45,
+          "wetBulbC": 30.19
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40,
+          "rh": 45,
+          "wetBulbC": 29.77
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.2,
+          "rh": 49,
+          "wetBulbC": 29.99
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.3,
+          "rh": 52,
+          "wetBulbC": 29.85
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.7,
+          "rh": 55,
+          "wetBulbC": 29.06
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.5,
+          "rh": 60,
+          "wetBulbC": 28.94
+        }
+      ],
+      "city": {
+        "name": "Business Bay",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.1854,
+        "longitude": 55.2697,
+        "population": 191000
+      }
+    },
+    {
+      "lat": 25.2021,
+      "lon": 55.3024,
+      "peakTempC": 44,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.19,
+      "peakWetBulbTime": "2026-08-02T09:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 33.3,
+          "rh": 79,
+          "wetBulbC": 30.14
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.5,
+          "rh": 35,
+          "wetBulbC": 26.12
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.8,
+          "rh": 21,
+          "wetBulbC": 24.3
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44,
+          "rh": 15,
+          "wetBulbC": 23.3
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 43.2,
+          "rh": 25,
+          "wetBulbC": 26.71
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.5,
+          "rh": 45,
+          "wetBulbC": 30.19
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40,
+          "rh": 45,
+          "wetBulbC": 29.77
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.2,
+          "rh": 49,
+          "wetBulbC": 29.99
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.3,
+          "rh": 52,
+          "wetBulbC": 29.85
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.7,
+          "rh": 55,
+          "wetBulbC": 29.06
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.5,
+          "rh": 60,
+          "wetBulbC": 28.94
+        }
+      ],
+      "city": {
+        "name": "Al Karama",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.24,
+        "longitude": 55.3011,
+        "population": 75560
+      }
+    },
+    {
+      "lat": 25.2021,
+      "lon": 55.3024,
+      "peakTempC": 44,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.19,
+      "peakWetBulbTime": "2026-08-02T09:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 33.3,
+          "rh": 79,
+          "wetBulbC": 30.14
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.5,
+          "rh": 35,
+          "wetBulbC": 26.12
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.8,
+          "rh": 21,
+          "wetBulbC": 24.3
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44,
+          "rh": 15,
+          "wetBulbC": 23.3
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 43.2,
+          "rh": 25,
+          "wetBulbC": 26.71
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.5,
+          "rh": 45,
+          "wetBulbC": 30.19
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40,
+          "rh": 45,
+          "wetBulbC": 29.77
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.2,
+          "rh": 49,
+          "wetBulbC": 29.99
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.3,
+          "rh": 52,
+          "wetBulbC": 29.85
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.7,
+          "rh": 55,
+          "wetBulbC": 29.06
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.5,
+          "rh": 60,
+          "wetBulbC": 28.94
+        }
+      ],
+      "city": {
+        "name": "As Saţwah",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.2219,
+        "longitude": 55.2746,
+        "population": 40997
+      }
+    },
+    {
+      "lat": 25.2021,
+      "lon": 55.3024,
+      "peakTempC": 44,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.19,
+      "peakWetBulbTime": "2026-08-02T09:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 33.3,
+          "rh": 79,
+          "wetBulbC": 30.14
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.5,
+          "rh": 35,
+          "wetBulbC": 26.12
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.8,
+          "rh": 21,
+          "wetBulbC": 24.3
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44,
+          "rh": 15,
+          "wetBulbC": 23.3
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 43.2,
+          "rh": 25,
+          "wetBulbC": 26.71
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.5,
+          "rh": 45,
+          "wetBulbC": 30.19
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40,
+          "rh": 45,
+          "wetBulbC": 29.77
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.2,
+          "rh": 49,
+          "wetBulbC": 29.99
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.3,
+          "rh": 52,
+          "wetBulbC": 29.85
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.7,
+          "rh": 55,
+          "wetBulbC": 29.06
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.5,
+          "rh": 60,
+          "wetBulbC": 28.94
+        }
+      ],
+      "city": {
+        "name": "Dubai International Financial Centre",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.2106,
+        "longitude": 55.2779,
+        "population": 36000
+      }
+    },
+    {
+      "lat": 34.9,
+      "lon": 128.625,
+      "peakTempC": 38.4,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 53,
+      "peakWetBulbC": 30.14,
+      "peakWetBulbTime": "2026-08-02T05:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 35.5,
+          "rh": 63,
+          "wetBulbC": 29.48
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 37.1,
+          "rh": 58,
+          "wetBulbC": 29.99
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.4,
+          "rh": 53,
+          "wetBulbC": 30.14
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 38.4,
+          "rh": 53,
+          "wetBulbC": 30.14
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 35,
+          "rh": 66,
+          "wetBulbC": 29.56
+        }
+      ],
+      "city": {
+        "name": "Sinhyeon",
+        "countryCode": "KR",
+        "admin1Code": "20",
+        "latitude": 34.8825,
+        "longitude": 128.6267,
+        "population": 82560
+      }
+    },
+    {
+      "lat": 24.1476,
+      "lon": 56.9075,
+      "peakTempC": 39.1,
+      "peakTempTime": "2026-08-02T06:00:00Z",
+      "rhAtPeakTemp": 33,
+      "peakWetBulbC": 30.12,
+      "peakWetBulbTime": "2026-08-02T11:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 35.3,
+          "rh": 26,
+          "wetBulbC": 21.3
+        },
+        {
+          "time": "2026-08-01T22:00:00Z",
+          "tempC": 35.1,
+          "rh": 25,
+          "wetBulbC": 20.87
+        },
+        {
+          "time": "2026-08-01T23:00:00Z",
+          "tempC": 35,
+          "rh": 21,
+          "wetBulbC": 19.62
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35.8,
+          "rh": 41,
+          "wetBulbC": 25.39
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.3,
+          "rh": 30,
+          "wetBulbC": 24.64
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 39.1,
+          "rh": 33,
+          "wetBulbC": 26.07
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 37.8,
+          "rh": 51,
+          "wetBulbC": 29.21
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 37.5,
+          "rh": 50,
+          "wetBulbC": 28.74
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 36.9,
+          "rh": 56,
+          "wetBulbC": 29.43
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 36.3,
+          "rh": 58,
+          "wetBulbC": 29.28
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 36,
+          "rh": 64,
+          "wetBulbC": 30.12
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 36.3,
+          "rh": 57,
+          "wetBulbC": 29.09
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 49,
+          "wetBulbC": 28.11
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 35.6,
+          "rh": 55,
+          "wetBulbC": 28.09
+        }
+      ],
+      "city": {
+        "name": "Şaḩam",
+        "countryCode": "OM",
+        "admin1Code": "11",
+        "latitude": 24.1722,
+        "longitude": 56.8886,
+        "population": 140000
+      }
+    },
+    {
+      "lat": 32.45,
+      "lon": 130.1875,
+      "peakTempC": 36.6,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 61,
+      "peakWetBulbC": 30.12,
+      "peakWetBulbTime": "2026-08-02T06:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 36,
+          "rh": 63,
+          "wetBulbC": 29.94
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 36.6,
+          "rh": 61,
+          "wetBulbC": 30.11
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 36.2,
+          "rh": 63,
+          "wetBulbC": 30.12
+        }
+      ],
+      "city": {
+        "name": "Amakusa",
+        "countryCode": "JP",
+        "admin1Code": "21",
+        "latitude": 32.4586,
+        "longitude": 130.1931,
+        "population": 83082
+      }
+    },
+    {
+      "lat": 25.1318,
+      "lon": 51.5534,
+      "peakTempC": 46.4,
+      "peakTempTime": "2026-08-02T09:00:00Z",
+      "rhAtPeakTemp": 11,
+      "peakWetBulbC": 30.11,
+      "peakWetBulbTime": "2026-08-02T11:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 37.6,
+          "rh": 37,
+          "wetBulbC": 25.91
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 40.9,
+          "rh": 22,
+          "wetBulbC": 24.03
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 43.3,
+          "rh": 16,
+          "wetBulbC": 23.3
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 45,
+          "rh": 13,
+          "wetBulbC": 22.97
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 46.4,
+          "rh": 11,
+          "wetBulbC": 22.76
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 45.8,
+          "rh": 17,
+          "wetBulbC": 25.36
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 42.2,
+          "rh": 39,
+          "wetBulbC": 30.11
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 41.8,
+          "rh": 33,
+          "wetBulbC": 28.16
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 41.4,
+          "rh": 30,
+          "wetBulbC": 26.98
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 39.8,
+          "rh": 40,
+          "wetBulbC": 28.42
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 37.6,
+          "rh": 49,
+          "wetBulbC": 28.62
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 36.5,
+          "rh": 53,
+          "wetBulbC": 28.49
+        },
+        {
+          "time": "2026-08-02T17:00:00Z",
+          "tempC": 36.2,
+          "rh": 56,
+          "wetBulbC": 28.81
+        },
+        {
+          "time": "2026-08-02T18:00:00Z",
+          "tempC": 35.6,
+          "rh": 59,
+          "wetBulbC": 28.84
+        }
+      ],
+      "city": {
+        "name": "Al Wakrah",
+        "countryCode": "QA",
+        "admin1Code": "10",
+        "latitude": 25.1715,
+        "longitude": 51.6034,
+        "population": 26436
+      }
+    },
+    {
+      "lat": 25.2021,
+      "lon": 55.3024,
+      "peakTempC": 44,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.11,
+      "peakWetBulbTime": "2026-08-02T09:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 33.2,
+          "rh": 79,
+          "wetBulbC": 30.04
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.5,
+          "rh": 35,
+          "wetBulbC": 26.12
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.8,
+          "rh": 21,
+          "wetBulbC": 24.3
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44,
+          "rh": 15,
+          "wetBulbC": 23.3
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 43.1,
+          "rh": 25,
+          "wetBulbC": 26.63
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.4,
+          "rh": 45,
+          "wetBulbC": 30.11
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40,
+          "rh": 45,
+          "wetBulbC": 29.77
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.1,
+          "rh": 49,
+          "wetBulbC": 29.9
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.2,
+          "rh": 52,
+          "wetBulbC": 29.76
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.6,
+          "rh": 55,
+          "wetBulbC": 28.97
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.4,
+          "rh": 60,
+          "wetBulbC": 28.85
+        }
+      ],
+      "city": {
+        "name": "Mankhūl",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.2461,
+        "longitude": 55.2922,
+        "population": 41244
+      }
+    },
+    {
+      "lat": 25.2021,
+      "lon": 55.3024,
+      "peakTempC": 44,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.11,
+      "peakWetBulbTime": "2026-08-02T09:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 33.2,
+          "rh": 79,
+          "wetBulbC": 30.04
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.5,
+          "rh": 35,
+          "wetBulbC": 26.12
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 41.8,
+          "rh": 21,
+          "wetBulbC": 24.3
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44,
+          "rh": 15,
+          "wetBulbC": 23.3
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 43.1,
+          "rh": 25,
+          "wetBulbC": 26.63
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.4,
+          "rh": 45,
+          "wetBulbC": 30.11
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40,
+          "rh": 45,
+          "wetBulbC": 29.77
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.1,
+          "rh": 49,
+          "wetBulbC": 29.9
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.2,
+          "rh": 52,
+          "wetBulbC": 29.76
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.6,
+          "rh": 55,
+          "wetBulbC": 28.97
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.4,
+          "rh": 60,
+          "wetBulbC": 28.85
+        }
+      ],
+      "city": {
+        "name": "Jumayrā",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.208,
+        "longitude": 55.2497,
+        "population": 39080
+      }
+    },
+    {
+      "lat": 25.2724,
+      "lon": 55.3622,
+      "peakTempC": 44.1,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.1,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.9,
+          "rh": 33,
+          "wetBulbC": 25.91
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.2,
+          "rh": 20,
+          "wetBulbC": 24.2
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.1,
+          "rh": 15,
+          "wetBulbC": 23.37
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 42.4,
+          "rh": 31,
+          "wetBulbC": 28.03
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.9,
+          "rh": 40,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40.6,
+          "rh": 41,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.2,
+          "rh": 47,
+          "wetBulbC": 29.55
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.4,
+          "rh": 50,
+          "wetBulbC": 29.52
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.8,
+          "rh": 54,
+          "wetBulbC": 28.95
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.8,
+          "rh": 58,
+          "wetBulbC": 28.83
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35.2,
+          "rh": 61,
+          "wetBulbC": 28.85
+        }
+      ],
+      "city": {
+        "name": "Hawr al ‘Anz",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.2774,
+        "longitude": 55.3368,
+        "population": 84661
+      }
+    },
+    {
+      "lat": 25.2724,
+      "lon": 55.3622,
+      "peakTempC": 44.1,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.1,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.9,
+          "rh": 33,
+          "wetBulbC": 25.91
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.2,
+          "rh": 20,
+          "wetBulbC": 24.2
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.1,
+          "rh": 15,
+          "wetBulbC": 23.37
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 42.4,
+          "rh": 31,
+          "wetBulbC": 28.03
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.9,
+          "rh": 40,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40.6,
+          "rh": 41,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.2,
+          "rh": 47,
+          "wetBulbC": 29.55
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.4,
+          "rh": 50,
+          "wetBulbC": 29.52
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.8,
+          "rh": 54,
+          "wetBulbC": 28.95
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.8,
+          "rh": 58,
+          "wetBulbC": 28.83
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35.2,
+          "rh": 61,
+          "wetBulbC": 28.85
+        }
+      ],
+      "city": {
+        "name": "Al Muteena",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.2737,
+        "longitude": 55.3227,
+        "population": 48739
+      }
+    },
+    {
+      "lat": 25.2724,
+      "lon": 55.3622,
+      "peakTempC": 44.1,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.1,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.9,
+          "rh": 33,
+          "wetBulbC": 25.91
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.2,
+          "rh": 20,
+          "wetBulbC": 24.2
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44.1,
+          "rh": 15,
+          "wetBulbC": 23.37
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 42.4,
+          "rh": 31,
+          "wetBulbC": 28.03
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.9,
+          "rh": 40,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40.6,
+          "rh": 41,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.2,
+          "rh": 47,
+          "wetBulbC": 29.55
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.4,
+          "rh": 50,
+          "wetBulbC": 29.52
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.8,
+          "rh": 54,
+          "wetBulbC": 28.95
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.8,
+          "rh": 58,
+          "wetBulbC": 28.83
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35.2,
+          "rh": 61,
+          "wetBulbC": 28.85
+        }
+      ],
+      "city": {
+        "name": "Al Qusais 1",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.2793,
+        "longitude": 55.37,
+        "population": 48378
+      }
+    },
+    {
+      "lat": 25.2724,
+      "lon": 55.3622,
+      "peakTempC": 44,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.1,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.9,
+          "rh": 33,
+          "wetBulbC": 25.91
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.2,
+          "rh": 20,
+          "wetBulbC": 24.2
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44,
+          "rh": 15,
+          "wetBulbC": 23.3
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 42.3,
+          "rh": 31,
+          "wetBulbC": 27.96
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.9,
+          "rh": 40,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40.6,
+          "rh": 41,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.1,
+          "rh": 47,
+          "wetBulbC": 29.47
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.3,
+          "rh": 50,
+          "wetBulbC": 29.43
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.8,
+          "rh": 54,
+          "wetBulbC": 28.95
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.8,
+          "rh": 58,
+          "wetBulbC": 28.83
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35.1,
+          "rh": 61,
+          "wetBulbC": 28.76
+        }
+      ],
+      "city": {
+        "name": "Dayrah",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.2714,
+        "longitude": 55.3021,
+        "population": 400000
+      }
+    },
+    {
+      "lat": 25.2724,
+      "lon": 55.3622,
+      "peakTempC": 44,
+      "peakTempTime": "2026-08-02T07:00:00Z",
+      "rhAtPeakTemp": 15,
+      "peakWetBulbC": 30.1,
+      "peakWetBulbTime": "2026-08-02T13:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.9,
+          "rh": 33,
+          "wetBulbC": 25.91
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 42.2,
+          "rh": 20,
+          "wetBulbC": 24.2
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 44,
+          "rh": 15,
+          "wetBulbC": 23.3
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 42.3,
+          "rh": 31,
+          "wetBulbC": 27.96
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 40.9,
+          "rh": 40,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 40.6,
+          "rh": 41,
+          "wetBulbC": 29.31
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 39.1,
+          "rh": 47,
+          "wetBulbC": 29.47
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 38.3,
+          "rh": 50,
+          "wetBulbC": 29.43
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 37,
+          "rh": 59,
+          "wetBulbC": 30.1
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36.8,
+          "rh": 54,
+          "wetBulbC": 28.95
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 35.8,
+          "rh": 58,
+          "wetBulbC": 28.83
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35.1,
+          "rh": 61,
+          "wetBulbC": 28.76
+        }
+      ],
+      "city": {
+        "name": "Nāyf",
+        "countryCode": "AE",
+        "admin1Code": "03",
+        "latitude": 25.2714,
+        "longitude": 55.3032,
+        "population": 53075
+      }
+    },
+    {
+      "lat": 35.35,
+      "lon": 136.6875,
+      "peakTempC": 38.1,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 54,
+      "peakWetBulbC": 30.09,
+      "peakWetBulbTime": "2026-08-02T05:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T02:00:00Z",
+          "tempC": 35.7,
+          "rh": 59,
+          "wetBulbC": 28.93
+        },
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 37,
+          "rh": 56,
+          "wetBulbC": 29.52
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 37.8,
+          "rh": 55,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.1,
+          "rh": 54,
+          "wetBulbC": 30.09
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 37.9,
+          "rh": 54,
+          "wetBulbC": 29.91
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 37.2,
+          "rh": 55,
+          "wetBulbC": 29.5
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 36.1,
+          "rh": 58,
+          "wetBulbC": 29.1
+        }
+      ],
+      "city": {
+        "name": "Hashima",
+        "countryCode": "JP",
+        "admin1Code": "09",
+        "latitude": 35.329,
+        "longitude": 136.6805,
+        "population": 67909
+      }
+    },
+    {
+      "lat": 32.45,
+      "lon": 130.1875,
+      "peakTempC": 36.5,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 61,
+      "peakWetBulbC": 30.03,
+      "peakWetBulbTime": "2026-08-02T06:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35.9,
+          "rh": 63,
+          "wetBulbC": 29.85
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 36.5,
+          "rh": 61,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 36.1,
+          "rh": 63,
+          "wetBulbC": 30.03
+        }
+      ],
+      "city": {
+        "name": "Hondomachi-hondo",
+        "countryCode": "JP",
+        "admin1Code": "21",
+        "latitude": 32.4599,
+        "longitude": 130.1671,
+        "population": 40787
+      }
+    },
+    {
+      "lat": 24.4288,
+      "lon": 54.6531,
+      "peakTempC": 48,
+      "peakTempTime": "2026-08-02T10:00:00Z",
+      "rhAtPeakTemp": 10,
+      "peakWetBulbC": 30.02,
+      "peakWetBulbTime": "2026-08-02T16:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 37.6,
+          "rh": 41,
+          "wetBulbC": 26.86
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 40.8,
+          "rh": 27,
+          "wetBulbC": 25.61
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 43.7,
+          "rh": 18,
+          "wetBulbC": 24.41
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 45.9,
+          "rh": 13,
+          "wetBulbC": 23.52
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 47.3,
+          "rh": 11,
+          "wetBulbC": 23.29
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 48,
+          "rh": 10,
+          "wetBulbC": 23.12
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 46,
+          "rh": 21,
+          "wetBulbC": 27.19
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 42.9,
+          "rh": 28,
+          "wetBulbC": 27.48
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 41.1,
+          "rh": 33,
+          "wetBulbC": 27.61
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 39.1,
+          "rh": 40,
+          "wetBulbC": 27.85
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 36.7,
+          "rh": 57,
+          "wetBulbC": 29.44
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 35.7,
+          "rh": 65,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T17:00:00Z",
+          "tempC": 35.3,
+          "rh": 65,
+          "wetBulbC": 29.66
+        }
+      ],
+      "city": {
+        "name": "Khalifah A City",
+        "countryCode": "AE",
+        "admin1Code": "01",
+        "latitude": 24.4259,
+        "longitude": 54.605,
+        "population": 85374
+      }
+    },
+    {
+      "lat": 33.3,
+      "lon": 130.4375,
+      "peakTempC": 39.2,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 49,
+      "peakWetBulbC": 30.02,
+      "peakWetBulbTime": "2026-08-02T04:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 36,
+          "rh": 62,
+          "wetBulbC": 29.76
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 38.5,
+          "rh": 52,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 39.2,
+          "rh": 49,
+          "wetBulbC": 29.99
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 38.8,
+          "rh": 49,
+          "wetBulbC": 29.65
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 38.1,
+          "rh": 49,
+          "wetBulbC": 29.05
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 36.8,
+          "rh": 51,
+          "wetBulbC": 28.35
+        }
+      ],
+      "city": {
+        "name": "Nakatsukuma",
+        "countryCode": "JP",
+        "admin1Code": "33",
+        "latitude": 33.3235,
+        "longitude": 130.4422,
+        "population": 25511
+      }
+    },
+    {
+      "lat": 32.85,
+      "lon": 130.8125,
+      "peakTempC": 36.7,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 58,
+      "peakWetBulbC": 30.02,
+      "peakWetBulbTime": "2026-08-02T06:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35.6,
+          "rh": 61,
+          "wetBulbC": 29.21
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 36.7,
+          "rh": 58,
+          "wetBulbC": 29.64
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 36.5,
+          "rh": 61,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 36,
+          "rh": 62,
+          "wetBulbC": 29.76
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 35.4,
+          "rh": 61,
+          "wetBulbC": 29.03
+        }
+      ],
+      "city": {
+        "name": "Okino",
+        "countryCode": "JP",
+        "admin1Code": "21",
+        "latitude": 32.8701,
+        "longitude": 130.7917,
+        "population": 43337
+      }
+    },
+    {
+      "lat": 32.7,
+      "lon": 130.6875,
+      "peakTempC": 35.9,
+      "peakTempTime": "2026-08-02T06:00:00Z",
+      "rhAtPeakTemp": 63,
+      "peakWetBulbC": 30.02,
+      "peakWetBulbTime": "2026-08-02T05:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35,
+          "rh": 67,
+          "wetBulbC": 29.73
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 35.5,
+          "rh": 66,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 35.9,
+          "rh": 63,
+          "wetBulbC": 29.85
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 35.6,
+          "rh": 63,
+          "wetBulbC": 29.57
+        }
+      ],
+      "city": {
+        "name": "Uto",
+        "countryCode": "JP",
+        "admin1Code": "21",
+        "latitude": 32.6833,
+        "longitude": 130.6667,
+        "population": 37442
+      }
+    },
+    {
+      "lat": 32.6,
+      "lon": 130.6875,
+      "peakTempC": 35.7,
+      "peakTempTime": "2026-08-02T06:00:00Z",
+      "rhAtPeakTemp": 65,
+      "peakWetBulbC": 30.02,
+      "peakWetBulbTime": "2026-08-02T06:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 35.4,
+          "rh": 66,
+          "wetBulbC": 29.93
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 35.7,
+          "rh": 65,
+          "wetBulbC": 30.02
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 35,
+          "rh": 67,
+          "wetBulbC": 29.73
+        }
+      ],
+      "city": {
+        "name": "Uki",
+        "countryCode": "JP",
+        "admin1Code": "21",
+        "latitude": 32.6222,
+        "longitude": 130.6618,
+        "population": 59928
+      }
+    },
+    {
+      "lat": 31.75,
+      "lon": 130.75,
+      "peakTempC": 37.8,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 54,
+      "peakWetBulbC": 30.01,
+      "peakWetBulbTime": "2026-08-02T06:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T02:00:00Z",
+          "tempC": 35.6,
+          "rh": 60,
+          "wetBulbC": 29.03
+        },
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 36.5,
+          "rh": 57,
+          "wetBulbC": 29.27
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 37.1,
+          "rh": 56,
+          "wetBulbC": 29.61
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 37.8,
+          "rh": 54,
+          "wetBulbC": 29.82
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 36.9,
+          "rh": 59,
+          "wetBulbC": 30.01
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 36,
+          "rh": 61,
+          "wetBulbC": 29.57
+        }
+      ],
+      "city": {
+        "name": "Kokubu-matsuki",
+        "countryCode": "JP",
+        "admin1Code": "18",
+        "latitude": 31.7333,
+        "longitude": 130.7667,
+        "population": 57896
+      }
+    },
+    {
+      "lat": 31.75,
+      "lon": 130.75,
+      "peakTempC": 37.7,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 54,
+      "peakWetBulbC": 30.01,
+      "peakWetBulbTime": "2026-08-02T06:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T02:00:00Z",
+          "tempC": 35.5,
+          "rh": 60,
+          "wetBulbC": 28.94
+        },
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 36.5,
+          "rh": 57,
+          "wetBulbC": 29.27
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 37,
+          "rh": 56,
+          "wetBulbC": 29.52
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 37.7,
+          "rh": 54,
+          "wetBulbC": 29.74
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 36.9,
+          "rh": 59,
+          "wetBulbC": 30.01
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 36,
+          "rh": 61,
+          "wetBulbC": 29.57
+        }
+      ],
+      "city": {
+        "name": "Kirishima",
+        "countryCode": "JP",
+        "admin1Code": "18",
+        "latitude": 31.7409,
+        "longitude": 130.7629,
+        "population": 123205
+      }
+    },
+    {
+      "lat": 28.9279,
+      "lon": 50.8247,
+      "peakTempC": 44.1,
+      "peakTempTime": "2026-08-02T10:00:00Z",
+      "rhAtPeakTemp": 20,
+      "peakWetBulbC": 29.96,
+      "peakWetBulbTime": "2026-08-02T14:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 37,
+          "rh": 36,
+          "wetBulbC": 25.19
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 39.2,
+          "rh": 26,
+          "wetBulbC": 24.13
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 41.5,
+          "rh": 20,
+          "wetBulbC": 23.72
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 43.1,
+          "rh": 19,
+          "wetBulbC": 24.42
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 44,
+          "rh": 20,
+          "wetBulbC": 25.43
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 44.1,
+          "rh": 20,
+          "wetBulbC": 25.49
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 44.1,
+          "rh": 21,
+          "wetBulbC": 25.88
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 42.3,
+          "rh": 26,
+          "wetBulbC": 26.39
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 39.6,
+          "rh": 38,
+          "wetBulbC": 27.76
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 37.5,
+          "rh": 56,
+          "wetBulbC": 29.96
+        },
+        {
+          "time": "2026-08-02T15:00:00Z",
+          "tempC": 37.3,
+          "rh": 53,
+          "wetBulbC": 29.19
+        },
+        {
+          "time": "2026-08-02T16:00:00Z",
+          "tempC": 37.1,
+          "rh": 51,
+          "wetBulbC": 28.61
+        },
+        {
+          "time": "2026-08-02T17:00:00Z",
+          "tempC": 36.7,
+          "rh": 51,
+          "wetBulbC": 28.26
+        },
+        {
+          "time": "2026-08-02T18:00:00Z",
+          "tempC": 36.8,
+          "rh": 44,
+          "wetBulbC": 26.87
+        },
+        {
+          "time": "2026-08-02T19:00:00Z",
+          "tempC": 35.7,
+          "rh": 46,
+          "wetBulbC": 26.38
+        },
+        {
+          "time": "2026-08-02T20:00:00Z",
+          "tempC": 35.7,
+          "rh": 44,
+          "wetBulbC": 25.96
+        }
+      ],
+      "city": {
+        "name": "Bushehr",
+        "countryCode": "IR",
+        "admin1Code": "22",
+        "latitude": 28.9689,
+        "longitude": 50.8366,
+        "population": 165377
+      }
+    },
+    {
+      "lat": 24.3585,
+      "lon": 56.7058,
+      "peakTempC": 40.8,
+      "peakTempTime": "2026-08-02T06:00:00Z",
+      "rhAtPeakTemp": 27,
+      "peakWetBulbC": 29.93,
+      "peakWetBulbTime": "2026-08-02T11:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-01T21:00:00Z",
+          "tempC": 35.3,
+          "rh": 22,
+          "wetBulbC": 20.13
+        },
+        {
+          "time": "2026-08-01T22:00:00Z",
+          "tempC": 35.1,
+          "rh": 22,
+          "wetBulbC": 19.99
+        },
+        {
+          "time": "2026-08-01T23:00:00Z",
+          "tempC": 35.2,
+          "rh": 21,
+          "wetBulbC": 19.75
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 36,
+          "rh": 43,
+          "wetBulbC": 25.99
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.8,
+          "rh": 32,
+          "wetBulbC": 25.57
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 40.8,
+          "rh": 27,
+          "wetBulbC": 25.61
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 40.5,
+          "rh": 34,
+          "wetBulbC": 27.43
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 39,
+          "rh": 49,
+          "wetBulbC": 29.82
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 38.5,
+          "rh": 48,
+          "wetBulbC": 29.18
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 38,
+          "rh": 49,
+          "wetBulbC": 28.96
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 36.6,
+          "rh": 60,
+          "wetBulbC": 29.93
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 36.5,
+          "rh": 56,
+          "wetBulbC": 29.07
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 36.8,
+          "rh": 46,
+          "wetBulbC": 27.31
+        },
+        {
+          "time": "2026-08-02T14:00:00Z",
+          "tempC": 36,
+          "rh": 58,
+          "wetBulbC": 29.01
+        }
+      ],
+      "city": {
+        "name": "Sohar",
+        "countryCode": "OM",
+        "admin1Code": "11",
+        "latitude": 24.3474,
+        "longitude": 56.7094,
+        "population": 108274
+      }
+    },
+    {
+      "lat": 35.4,
+      "lon": 136.6875,
+      "peakTempC": 37.9,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 54,
+      "peakWetBulbC": 29.91,
+      "peakWetBulbTime": "2026-08-02T05:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T02:00:00Z",
+          "tempC": 35.6,
+          "rh": 58,
+          "wetBulbC": 28.66
+        },
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 36.9,
+          "rh": 56,
+          "wetBulbC": 29.43
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 37.6,
+          "rh": 55,
+          "wetBulbC": 29.85
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 37.9,
+          "rh": 54,
+          "wetBulbC": 29.91
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 37.8,
+          "rh": 54,
+          "wetBulbC": 29.82
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 37.1,
+          "rh": 55,
+          "wetBulbC": 29.41
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 36.1,
+          "rh": 57,
+          "wetBulbC": 28.91
+        }
+      ],
+      "city": {
+        "name": "Mizuho",
+        "countryCode": "JP",
+        "admin1Code": "09",
+        "latitude": 35.3943,
+        "longitude": 136.669,
+        "population": 56388
+      }
+    },
+    {
+      "lat": 33.2,
+      "lon": 130.5,
+      "peakTempC": 38.2,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 51,
+      "peakWetBulbC": 29.9,
+      "peakWetBulbTime": "2026-08-02T04:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 35.2,
+          "rh": 64,
+          "wetBulbC": 29.39
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 37,
+          "rh": 58,
+          "wetBulbC": 29.9
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38.2,
+          "rh": 51,
+          "wetBulbC": 29.56
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 38.1,
+          "rh": 51,
+          "wetBulbC": 29.47
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 37.6,
+          "rh": 50,
+          "wetBulbC": 28.83
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 36.5,
+          "rh": 51,
+          "wetBulbC": 28.09
+        }
+      ],
+      "city": {
+        "name": "Chikugo",
+        "countryCode": "JP",
+        "admin1Code": "07",
+        "latitude": 33.2054,
+        "longitude": 130.4918,
+        "population": 48827
+      }
+    },
+    {
+      "lat": 33.4,
+      "lon": 130.6875,
+      "peakTempC": 37.8,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 54,
+      "peakWetBulbC": 29.85,
+      "peakWetBulbTime": "2026-08-02T06:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 35.3,
+          "rh": 64,
+          "wetBulbC": 29.48
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 37,
+          "rh": 57,
+          "wetBulbC": 29.71
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 37.8,
+          "rh": 54,
+          "wetBulbC": 29.82
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 37.6,
+          "rh": 55,
+          "wetBulbC": 29.85
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 36.7,
+          "rh": 56,
+          "wetBulbC": 29.25
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 35.3,
+          "rh": 57,
+          "wetBulbC": 28.2
+        }
+      ],
+      "city": {
+        "name": "Asakura",
+        "countryCode": "JP",
+        "admin1Code": "07",
+        "latitude": 33.4144,
+        "longitude": 130.7188,
+        "population": 50273
+      }
+    },
+    {
+      "lat": 36.55,
+      "lon": 128.75,
+      "peakTempC": 37,
+      "peakTempTime": "2026-08-02T06:00:00Z",
+      "rhAtPeakTemp": 56,
+      "peakWetBulbC": 29.84,
+      "peakWetBulbTime": "2026-08-02T05:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35.2,
+          "rh": 65,
+          "wetBulbC": 29.57
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 36.3,
+          "rh": 61,
+          "wetBulbC": 29.84
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 37,
+          "rh": 56,
+          "wetBulbC": 29.52
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 37,
+          "rh": 55,
+          "wetBulbC": 29.32
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 36.3,
+          "rh": 56,
+          "wetBulbC": 28.9
+        }
+      ],
+      "city": {
+        "name": "Andong",
+        "countryCode": "KR",
+        "admin1Code": "14",
+        "latitude": 36.5664,
+        "longitude": 128.7227,
+        "population": 158765
+      }
+    },
+    {
+      "lat": 35.35,
+      "lon": 136.5625,
+      "peakTempC": 36.8,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 58,
+      "peakWetBulbC": 29.84,
+      "peakWetBulbTime": "2026-08-02T06:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T02:00:00Z",
+          "tempC": 35.2,
+          "rh": 60,
+          "wetBulbC": 28.67
+        },
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 36.2,
+          "rh": 59,
+          "wetBulbC": 29.38
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 36.6,
+          "rh": 58,
+          "wetBulbC": 29.55
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 36.8,
+          "rh": 58,
+          "wetBulbC": 29.73
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 36.5,
+          "rh": 60,
+          "wetBulbC": 29.84
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 35.8,
+          "rh": 61,
+          "wetBulbC": 29.39
+        }
+      ],
+      "city": {
+        "name": "Tarui",
+        "countryCode": "JP",
+        "admin1Code": "09",
+        "latitude": 35.3667,
+        "longitude": 136.5333,
+        "population": 27439
+      }
+    },
+    {
+      "lat": 23.6555,
+      "lon": 58.1962,
+      "peakTempC": 39.4,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 34,
+      "peakWetBulbC": 29.8,
+      "peakWetBulbTime": "2026-08-02T07:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 36.5,
+          "rh": 46,
+          "wetBulbC": 27.05
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 39.4,
+          "rh": 34,
+          "wetBulbC": 26.57
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 38.9,
+          "rh": 45,
+          "wetBulbC": 28.85
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 38,
+          "rh": 53,
+          "wetBulbC": 29.8
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 37.7,
+          "rh": 51,
+          "wetBulbC": 29.12
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 36.8,
+          "rh": 56,
+          "wetBulbC": 29.34
+        },
+        {
+          "time": "2026-08-02T10:00:00Z",
+          "tempC": 36.3,
+          "rh": 57,
+          "wetBulbC": 29.09
+        },
+        {
+          "time": "2026-08-02T11:00:00Z",
+          "tempC": 35.9,
+          "rh": 60,
+          "wetBulbC": 29.3
+        },
+        {
+          "time": "2026-08-02T12:00:00Z",
+          "tempC": 35.5,
+          "rh": 59,
+          "wetBulbC": 28.75
+        },
+        {
+          "time": "2026-08-02T13:00:00Z",
+          "tempC": 35.1,
+          "rh": 61,
+          "wetBulbC": 28.76
+        }
+      ],
+      "city": {
+        "name": "Seeb",
+        "countryCode": "OM",
+        "admin1Code": "06",
+        "latitude": 23.6703,
+        "longitude": 58.1891,
+        "population": 470878
+      }
+    },
+    {
+      "lat": 35,
+      "lon": 128.3125,
+      "peakTempC": 38.3,
+      "peakTempTime": "2026-08-02T04:00:00Z",
+      "rhAtPeakTemp": 51,
+      "peakWetBulbC": 29.8,
+      "peakWetBulbTime": "2026-08-02T05:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T03:00:00Z",
+          "tempC": 36.8,
+          "rh": 55,
+          "wetBulbC": 29.14
+        },
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 38.3,
+          "rh": 51,
+          "wetBulbC": 29.64
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 38,
+          "rh": 53,
+          "wetBulbC": 29.8
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 35,
+          "rh": 61,
+          "wetBulbC": 28.67
+        }
+      ],
+      "city": {
+        "name": "Goseong",
+        "countryCode": "KR",
+        "admin1Code": "20",
+        "latitude": 34.9763,
+        "longitude": 128.3236,
+        "population": 26704
+      }
+    },
+    {
+      "lat": 32.9,
+      "lon": 130.75,
+      "peakTempC": 36.6,
+      "peakTempTime": "2026-08-02T05:00:00Z",
+      "rhAtPeakTemp": 58,
+      "peakWetBulbC": 29.76,
+      "peakWetBulbTime": "2026-08-02T06:00:00Z",
+      "hotHours": [
+        {
+          "time": "2026-08-02T04:00:00Z",
+          "tempC": 35.8,
+          "rh": 60,
+          "wetBulbC": 29.21
+        },
+        {
+          "time": "2026-08-02T05:00:00Z",
+          "tempC": 36.6,
+          "rh": 58,
+          "wetBulbC": 29.55
+        },
+        {
+          "time": "2026-08-02T06:00:00Z",
+          "tempC": 36,
+          "rh": 62,
+          "wetBulbC": 29.76
+        },
+        {
+          "time": "2026-08-02T07:00:00Z",
+          "tempC": 35.8,
+          "rh": 61,
+          "wetBulbC": 29.39
+        },
+        {
+          "time": "2026-08-02T08:00:00Z",
+          "tempC": 35.7,
+          "rh": 59,
+          "wetBulbC": 28.93
+        },
+        {
+          "time": "2026-08-02T09:00:00Z",
+          "tempC": 35.5,
+          "rh": 55,
+          "wetBulbC": 28
+        }
+      ],
+      "city": {
+        "name": "Kōshi",
+        "countryCode": "JP",
+        "admin1Code": "21",
+        "latitude": 32.8927,
+        "longitude": 130.7757,
+        "population": 61772
+      }
+    }
+  ],
+  "snapshot": {
+    "generatedBy": "manual",
+    "source": "open-meteo",
+    "expiresAt": "2026-08-03T04:18:46.000Z"
+  },
+  "schemaVersion": 1
+}

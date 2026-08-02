@@ -172,6 +172,13 @@ async function generateMainSitemap() {
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>\n`;
+
+  // Add inhabited hotspot forecast preview
+  xml += `  <url>
+    <loc>${BASE_URL}/inhabited-hotspots</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>\n`;
   
   xml += '</urlset>';
   
