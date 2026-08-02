@@ -1,0 +1,73 @@
+name: Refresh inhabited hotspots
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 1 * * *'
+
+concurrency:
+  group: inhabited-hotspots-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+      INHABITED_FORECAST_HOURS: '24'
+      INHABITED_MIN_POPULATION: '25000'
+      INHABITED_GATE_TEMP_THRESHOLD_C: '30'
+      INHABITED_GATE_WETBULB_THRESHOLD_C: '26'
+      INHABITED_TEMP_THRESHOLD_C: '35'
+      INHABITED_WETBULB_THRESHOLD_C: '30'
+      INHABITED_MAX_CANDIDATE_CITIES: '1000'
+      INHABITED_HOTSPOT_LIMIT: '50'
+      OPEN_METEO_BATCH_SIZE: '75'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run focused tests
+        run: |
+          npm run test:static-prototype
+          npm test -- tests/lib/utils/inhabitedHotspotScan.test.ts tests/lib/utils/inhabitedHotspotLocations.test.ts tests/lib/utils/openMeteoForecast.test.ts tests/lib/utils/hotspotSnapshot.test.ts tests/scripts/publish-inhabited-hotspots.test.ts
+
+      - name: Generate snapshot
+        run: npm run generate-inhabited-hotspots
+
+      - name: Validate and upload snapshot
+        id: publish
+        run: |
+          result="$(npm run --silent publish-inhabited-hotspots)"
+          echo "$result"
+          url="$(node -e 'const fs = require("node:fs"); const input = fs.readFileSync(0, "utf8"); const parsed = JSON.parse(input); process.stdout.write(parsed.url || "");' <<< "$result")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Write summary
+        env:
+          BLOB_URL: ${{ steps.publish.outputs.url }}
+        run: |
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require("node:fs");
+          const snapshot = JSON.parse(fs.readFileSync("public/data/hotspots/inhabited-latest.json", "utf8"));
+          const leader = snapshot.hotspots[0];
+          console.log("## Inhabited hotspot refresh");
+          console.log("");
+          console.log(`- Generated at: ${snapshot.scan.generatedAt}`);
+          console.log(`- Eligible population: ${snapshot.scan.populationQualifiedCities}`);
+          console.log(`- Grid-qualified cities: ${snapshot.scan.gridQualifiedCandidateCities}`);
+          console.log(`- Candidate cap: ${snapshot.scan.maxCandidateCities}`);
+          console.log(`- Excluded by cap: ${snapshot.scan.citiesExcludedByCandidateCap}`);
+          console.log(`- Cities scanned: ${snapshot.scan.citiesScanned}`);
+          console.log(`- Result count: ${snapshot.hotspots.length}`);
+          console.log(`- Leader: ${leader ? `${leader.city.name}, ${leader.city.country || leader.city.countryCode} (${leader.peakWetBulbC.toFixed(1)}C)` : "none"}`);
+          console.log(`- Blob URL: ${process.env.BLOB_URL || "not reported"}`);
+          NODE

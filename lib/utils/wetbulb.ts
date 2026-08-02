@@ -21,6 +21,33 @@ export function calculateWetBulb(temperature: number, relativeHumidity: number):
   return Math.round(wetBulb * 100) / 100;
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+/**
+ * Forecast-safe wet-bulb calculation for weather model arrays.
+ * Keeps the public strict helper unchanged while clamping RH into Stull's range.
+ */
+export function calculateForecastWetBulb(
+  temperature: number,
+  relativeHumidity: number,
+): number {
+  if (!Number.isFinite(temperature) || !Number.isFinite(relativeHumidity)) {
+    throw new Error('Temperature and humidity must be finite numbers');
+  }
+
+  const formulaHumidity = clamp(relativeHumidity, 5, 99);
+
+  const wetBulb = temperature * Math.atan(0.151977 * Math.sqrt(formulaHumidity + 8.313659)) +
+                  Math.atan(temperature + formulaHumidity) -
+                  Math.atan(formulaHumidity - 1.676331) +
+                  0.00391838 * Math.pow(formulaHumidity, 1.5) * Math.atan(0.023101 * formulaHumidity) -
+                  4.686035;
+
+  return Math.round(wetBulb * 100) / 100;
+}
+
 /**
  * Converts temperature from Kelvin to Celsius
  */

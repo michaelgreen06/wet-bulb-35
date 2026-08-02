@@ -15,6 +15,7 @@ import {
   renderCountryPage,
   renderGoogleAnalyticsScripts,
   renderHomePage,
+  renderInhabitedHotspotsPage,
   renderStatePage,
   routePathForCity,
 } from "../scripts/prototype-static-generator.mjs";
@@ -211,6 +212,8 @@ test("page templates include expected listings and route counts", () => {
 
   assert.match(homeHtml, /Current Wet Bulb Temperature/);
   assert.match(homeHtml, /Search for a location\.\.\./);
+  assert.match(homeHtml, /Forecast inhabited hotspots/);
+  assert.match(homeHtml, /href="\/inhabited-hotspots\/"/);
   assert.match(homeHtml, /bg-white text-black placeholder-gray-700 caret-black/);
   assert.match(homeHtml, /Use Current Location/);
   assert.doesNotMatch(homeHtml, /maps\.googleapis\.com\/maps\/api\/js/);
@@ -233,6 +236,13 @@ test("page templates include expected listings and route counts", () => {
   assert.match(stateHtml, /Raleigh/);
   assert.doesNotMatch(stateHtml, /35\.53°/);
   assert.doesNotMatch(stateHtml, /-81\.03°/);
+
+  const inhabitedHtml = renderInhabitedHotspotsPage({ siteUrl: "https://example.test" });
+  assert.match(inhabitedHtml, /Inhabited wet-bulb hotspots/);
+  assert.match(inhabitedHtml, /up to 1,000 grid-prioritized populated places/);
+  assert.match(inhabitedHtml, /data-inhabited-hotspots/);
+  assert.match(inhabitedHtml, /Open-Meteo/);
+  assert.match(inhabitedHtml, /https:\/\/open-meteo\.com\//);
 
   for (const html of [homeHtml, browseHtml, countryHtml, stateHtml]) {
     assertLegacyPrototypeClassesAbsent(html);
@@ -269,6 +279,10 @@ test("client runtime wires Google Places selection to in-place weather refresh",
   assert.match(runtime, /input\.dataset\.placesSelected = "true"/);
   assert.match(runtime, /if \(input\.dataset\.placesSelected === "true"\)/);
   assert.match(runtime, /window\.location\.href = partial\.url/);
+  assert.match(runtime, /\/api\/inhabited-hotspots/);
+  assert.match(runtime, /X-Hotspot-Data-Source/);
+  assert.match(runtime, /Showing bundled fallback data/);
+  assert.match(runtime, /This forecast snapshot is expired/);
 });
 
 test("generated pages share stable DOM fingerprints per page type", () => {
@@ -305,10 +319,11 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
     googleAnalyticsId: "G-STATIC123",
   });
 
-  assert.equal(result.written, 15);
+  assert.equal(result.written, 16);
 
   const expectedFiles = [
     "index.html",
+    "inhabited-hotspots/index.html",
     "wetbulb-temperature/index.html",
     "wetbulb-temperature/andorra/index.html",
     "wetbulb-temperature/andorra/encamp/index.html",

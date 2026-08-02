@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import SearchBox from '../components/SearchBox';
 import WeatherDisplay from '../components/WeatherDisplay';
@@ -65,6 +66,15 @@ function HomeContent() {
   return (
     <div className="space-y-6">
       <SearchBox onLocationSelect={handleLocationSelect} />
+
+      <div className="text-center">
+        <Link
+          href="/inhabited-hotspots/"
+          className="inline-block rounded-lg border border-blue-200 bg-white px-4 py-2 font-semibold text-blue-700 transition-colors hover:bg-blue-50"
+        >
+          Forecast inhabited hotspots
+        </Link>
+      </div>
       
       <CurrentLocationButton onClick={getCurrentLocationWeather} />
 

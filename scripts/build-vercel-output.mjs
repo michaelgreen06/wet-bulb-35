@@ -4,7 +4,9 @@ import { generateStaticSite } from "./prototype-static-generator.mjs";
 
 const OUTPUT_DIR = path.resolve(".vercel/output");
 const STATIC_DIR = path.join(OUTPUT_DIR, "static");
-const FUNCTION_DIR = path.join(OUTPUT_DIR, "functions/api/weather.func");
+const WEATHER_FUNCTION_DIR = path.join(OUTPUT_DIR, "functions/api/weather.func");
+const INHABITED_FUNCTION_DIR = path.join(OUTPUT_DIR, "functions/api/inhabited-hotspots.func");
+const INHABITED_SNAPSHOT_PATH = path.resolve("public/data/hotspots/inhabited-latest.json");
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -134,6 +136,149 @@ module.exports = async function weatherHandler(req, res) {
 `;
 }
 
+function inhabitedHotspotsFunctionSource() {
+  return String.raw`const fs = require("node:fs");
+const path = require("node:path");
+
+const CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=3600";
+
+function isObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isIsoDateString(value) {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
+function isValidHotspot(value) {
+  if (!isObject(value)) return false;
+  const city = value.city;
+  return (
+    isFiniteNumber(value.lat) &&
+    isFiniteNumber(value.lon) &&
+    isFiniteNumber(value.peakTempC) &&
+    isIsoDateString(value.peakTempTime) &&
+    isFiniteNumber(value.rhAtPeakTemp) &&
+    isFiniteNumber(value.peakWetBulbC) &&
+    isIsoDateString(value.peakWetBulbTime) &&
+    Array.isArray(value.hotHours) &&
+    isObject(city) &&
+    typeof city.name === "string" &&
+    isFiniteNumber(city.latitude) &&
+    isFiniteNumber(city.longitude) &&
+    isFiniteNumber(city.population)
+  );
+}
+
+function validateSnapshot(value) {
+  if (!isObject(value)) return false;
+  const scan = value.scan;
+  const thresholds = value.thresholds;
+  const snapshot = value.snapshot;
+  const hotspots = value.hotspots;
+
+  if (
+    value.schemaVersion !== 1 ||
+    typeof value.label !== "string" ||
+    !isObject(scan) ||
+    scan.algorithm !== "grid-cell-v1" ||
+    !isFiniteNumber(scan.forecastHours) ||
+    !isFiniteNumber(scan.candidateCities) ||
+    !isFiniteNumber(scan.citiesScanned) ||
+    !isFiniteNumber(scan.batchCount) ||
+    !isIsoDateString(scan.generatedAt) ||
+    !isObject(thresholds) ||
+    !isFiniteNumber(thresholds.tempC) ||
+    !isFiniteNumber(thresholds.wetBulbC) ||
+    !isFiniteNumber(value.minPopulation) ||
+    !isFiniteNumber(value.limit) ||
+    !Array.isArray(hotspots) ||
+    !isObject(snapshot) ||
+    !["cron", "manual"].includes(snapshot.generatedBy) ||
+    snapshot.source !== "open-meteo" ||
+    (snapshot.expiresAt !== undefined && !isIsoDateString(snapshot.expiresAt))
+  ) {
+    return false;
+  }
+
+  for (let index = 0; index < hotspots.length; index += 1) {
+    if (!isValidHotspot(hotspots[index])) return false;
+    if (
+      index > 0 &&
+      hotspots[index].peakWetBulbC > hotspots[index - 1].peakWetBulbC
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function setJson(res, statusCode, payload) {
+  res.statusCode = statusCode;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(payload));
+}
+
+async function readBlobSnapshot() {
+  const url = (process.env.INHABITED_HOTSPOT_DATA_URL || "").trim();
+  if (!url) return null;
+
+  const response = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!response.ok) return null;
+
+  const payload = await response.json();
+  return validateSnapshot(payload) ? payload : null;
+}
+
+function readBundledSnapshot() {
+  const filePath = path.join(__dirname, "inhabited-latest.json");
+  const payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  if (!validateSnapshot(payload)) {
+    throw new Error("Bundled inhabited hotspot snapshot is invalid.");
+  }
+  return payload;
+}
+
+module.exports = async function inhabitedHotspotsHandler(req, res) {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
+    setJson(res, 405, { error: "Method not allowed." });
+    return;
+  }
+
+  const blobSnapshot = await readBlobSnapshot().catch(() => null);
+  const source = blobSnapshot ? "blob" : "bundled-fallback";
+  const payload = blobSnapshot || readBundledSnapshot();
+
+  res.setHeader("Cache-Control", CACHE_CONTROL);
+  res.setHeader("X-Hotspot-Data-Source", source);
+  setJson(res, 200, payload);
+};
+`;
+}
+
+function writeNodeFunction(functionDir, source, extraFiles = []) {
+  fs.mkdirSync(functionDir, { recursive: true });
+  fs.writeFileSync(path.join(functionDir, "index.js"), source);
+  for (const extraFile of extraFiles) {
+    fs.copyFileSync(extraFile.from, path.join(functionDir, extraFile.to));
+  }
+  writeJson(path.join(functionDir, "package.json"), {
+    type: "commonjs",
+  });
+  writeJson(path.join(functionDir, ".vc-config.json"), {
+    runtime: "nodejs22.x",
+    handler: "index.js",
+    launcherType: "Nodejs",
+    shouldAddHelpers: true,
+  });
+}
+
 export function buildVercelOutput() {
   fs.rmSync(OUTPUT_DIR, { recursive: true, force: true });
   fs.mkdirSync(STATIC_DIR, { recursive: true });
@@ -143,17 +288,17 @@ export function buildVercelOutput() {
     limit: 130684,
   });
 
-  fs.mkdirSync(FUNCTION_DIR, { recursive: true });
-  fs.writeFileSync(path.join(FUNCTION_DIR, "index.js"), weatherFunctionSource());
-  writeJson(path.join(FUNCTION_DIR, ".vc-config.json"), {
-    runtime: "nodejs22.x",
-    handler: "index.js",
-    launcherType: "Nodejs",
-    shouldAddHelpers: true,
-  });
+  writeNodeFunction(WEATHER_FUNCTION_DIR, weatherFunctionSource());
+  writeNodeFunction(INHABITED_FUNCTION_DIR, inhabitedHotspotsFunctionSource(), [
+    { from: INHABITED_SNAPSHOT_PATH, to: "inhabited-latest.json" },
+  ]);
   writeJson(path.join(OUTPUT_DIR, "config.json"), {
     version: 3,
     routes: [
+      {
+        src: "^/api/inhabited-hotspots$",
+        dest: "/api/inhabited-hotspots",
+      },
       {
         src: "^/api/weather$",
         dest: "/api/weather",
