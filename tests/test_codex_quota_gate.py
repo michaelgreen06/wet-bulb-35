@@ -6,11 +6,15 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import importlib.util
 from pathlib import Path
+import os
+import subprocess
 import sys
+import tempfile
 import unittest
 
 
 MODULE_PATH = Path(__file__).parents[1] / "scripts" / "codex-quota-gate.py"
+WRAPPER_PATH = MODULE_PATH.with_suffix("")
 SPEC = importlib.util.spec_from_file_location("codex_quota_gate", MODULE_PATH)
 assert SPEC and SPEC.loader
 quota_gate = importlib.util.module_from_spec(SPEC)
@@ -72,6 +76,12 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(11, result.exit_code)
         self.assertIsNone(result.next_eligible_at)
 
+    def test_critical_blocks_without_a_valid_snapshot(self):
+        for usage in (None, snapshot(float("nan"), 0)):
+            with self.subTest(usage=usage):
+                result = quota_gate.evaluate_snapshot(usage, "critical")
+                self.assertEqual(("BLOCK", 11), (result.decision, result.exit_code))
+
     def test_unavailable_and_malformed_snapshots_fail_closed(self):
         unavailable = quota_gate.evaluate_snapshot(None, "trivial")
         malformed = quota_gate.evaluate_snapshot(snapshot(float("nan"), 0), "trivial")
@@ -90,6 +100,52 @@ class PolicyTests(unittest.TestCase):
         )
         self.assertEqual({"Session", "Weekly"}, set(payload["windows"]))
         self.assertEqual({"used_percent", "remaining_percent", "reset_at"}, set(payload["windows"]["Session"]))
+
+
+class WrapperTests(unittest.TestCase):
+    def _fake_python(self, path: Path) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("#!/bin/sh\nprintf '%s\\n' \"$@\"\n")
+        path.chmod(0o755)
+        return path
+
+    def test_wrapper_uses_hermes_home_default(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / "hermes"
+            self._fake_python(home / "hermes-agent" / "venv" / "bin" / "python")
+            completed = subprocess.run(
+                [str(WRAPPER_PATH), "trivial"],
+                check=False,
+                capture_output=True,
+                env={**os.environ, "HOME": "/unused", "HERMES_HOME": str(home)},
+                text=True,
+            )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertEqual([str(MODULE_PATH), "trivial"], completed.stdout.splitlines())
+
+    def test_wrapper_honors_python_override(self):
+        with tempfile.TemporaryDirectory() as directory:
+            interpreter = self._fake_python(Path(directory) / "python")
+            completed = subprocess.run(
+                [str(WRAPPER_PATH), "critical"],
+                check=False,
+                capture_output=True,
+                env={**os.environ, "HERMES_PYTHON": str(interpreter)},
+                text=True,
+            )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertEqual([str(MODULE_PATH), "critical"], completed.stdout.splitlines())
+
+    def test_wrapper_reports_a_missing_interpreter(self):
+        completed = subprocess.run(
+            [str(WRAPPER_PATH), "trivial"],
+            check=False,
+            capture_output=True,
+            env={**os.environ, "HERMES_PYTHON": "/not/a/python"},
+            text=True,
+        )
+        self.assertEqual(127, completed.returncode)
+        self.assertIn("Hermes Python interpreter is not executable: /not/a/python", completed.stderr)
 
 
 if __name__ == "__main__":

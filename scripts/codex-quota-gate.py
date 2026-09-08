@@ -78,9 +78,6 @@ def normalized_windows(snapshot: Any) -> Optional[dict[str, dict[str, Any]]]:
 
 def evaluate_snapshot(snapshot: Any, risk_class: str) -> GateResult:
     """Apply the launch policy without network access; suitable for dependency-injected tests."""
-    windows = normalized_windows(snapshot)
-    if windows is None:
-        return GateResult("UNAVAILABLE", "Codex quota data is unavailable or malformed.", None, None, EXIT_UNAVAILABLE)
     if risk_class == "critical":
         return GateResult(
             "BLOCK",
@@ -89,6 +86,9 @@ def evaluate_snapshot(snapshot: Any, risk_class: str) -> GateResult:
             None,
             EXIT_BLOCK_CRITICAL,
         )
+    windows = normalized_windows(snapshot)
+    if windows is None:
+        return GateResult("UNAVAILABLE", "Codex quota data is unavailable or malformed.", None, None, EXIT_UNAVAILABLE)
 
     failed = [
         label for label in WINDOW_ORDER
