@@ -10,6 +10,15 @@
 - Production is served on the canonical `https://www.wetbulb35.com` host through Cloudflare and Vercel. The previous live audit observed HTTP-to-HTTPS and apex-to-`www` 308 redirects. The nine bounded captures request only the canonical HTTPS host, so they do not independently revalidate that redirect chain.
 - Vercel's `ignoreCommand` examines deployment inputs and skips builds for changes outside them unless `FORCE_VERCEL_BUILD` is set. Documentation/capture changes are not listed deployment inputs.
 
+### Verified Vercel account baseline
+
+- Vercel scope: `michaels-projects-899a0e11`. The linked project is `wetbulb2` (`prj_5MhIySYFwcqz6P5N0HhCL8s0ZsuZ`), configured with Framework **Other**, root directory `.`, Node.js **22.x**, install command `npm ci`, and build command `npm run vercel-build`.
+- Current production deployment: `dpl_98CXao2fnVfTWFmn8AxFeuNSnUXe`, from `f6acf975...`, at `https://wetbulb2-nc0ku4gtp-michaels-projects-899a0e11.vercel.app`. Its aliases include both wetbulb35 hosts and `wetbulb2.vercel.app`.
+- The project has one Node.js 22 function: `/api/weather` in `iad1`, configured for 1,024 MB and 10 seconds.
+- Environment variables recorded by name and scope only: `OPENWEATHER_API_KEY` is a secret in Production; `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY`, and `NEXT_PUBLIC_OPENWEATHER_API_KEY` are configuration variables in Production, Preview, and Development. `NEXT_PUBLIC_OPENWEATHER_API_KEY` is an existing exposure risk, not approved remediation.
+- The domain is third-party-managed from Vercel's view. There are 34 retained/listed deployments; the latest production deployment is `f6acf97`, and the latest READY preview is commit `128e19c` on `integration/inhabited-hotspots-preview`.
+- Vercel CLI usage returned `Costs not found` (404). Request/function metrics require Observability Plus. The Vercel Web Analytics query returned no data.
+
 ## Routes and representative behavior
 
 | Page type | Captured path | Status | Server-visible baseline |
@@ -54,6 +63,7 @@ All captured successful HTML routes have `meta robots="index, follow"`. The rout
 - `scripts/resolved_cities.json` has **130,684** rows and is **19,923,105** bytes. The Vercel-output generator's production limit is 130,684, so any full static rebuild materializes the complete route corpus rather than a small sample.
 - Sitemap generation loads the full JSON repeatedly for country/state counting and streams it for individual country sitemap writes. It serializes country sitemap jobs in batches of 10 and index work in batches of 50; these are source-level memory/concurrency controls, not confirmed provider limits.
 - Cloudflare is demonstrably in the delivery path and injects/manages part of `robots.txt`. Do not assume a repository change fully controls edge behavior. Cache rules, WAF/bot controls, Workers, zones, DNS, plan quotas, purge permissions, observability, and Cloudflare account-level limits are **unknown** until authenticated account inspection.
+- At the current [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/), the predicted complete static output of **134,676 files** exceeds the Paid static-asset cap of 100,000 files by **34,676**. The **19.9 MB** resolved-cities dataset is below the 64 MiB Worker size limit, and the **17.9 MB** generated locations search index is below the 25 MiB individual static-asset limit. Parsing, heap, and CPU behavior still require benchmarking against the 128 MB isolate-memory limit. These figures do not imply that R2 is required.
 - Do not broaden crawls or prewarm the 130k-page corpus during Phase 1.1. The raw captures are deliberately capped at nine allowlisted URLs; child sitemaps are excluded.
 
 ## Build, test, and security baseline
@@ -67,7 +77,7 @@ All captured successful HTML routes have `meta robots="index, follow"`. The rout
 
 | Dependency | Observed role | Baseline handling |
 |---|---|---|
-| Vercel | Static Build Output, serverless weather function, deployment cache | Account/deployment data unavailable. |
+| Vercel | Static Build Output, serverless weather function, deployment cache | Account/deployment baseline recorded above; request/function metrics remain unavailable without Observability Plus. |
 | Cloudflare | Edge delivery, managed robots policy, Insights/email decode | Account configuration unavailable. |
 | OpenWeather | Server-side weather current-conditions endpoint | Never called for this capture. |
 | Google Maps Places | Search autocomplete after user interaction | Never loaded/called for this capture. |
@@ -84,11 +94,11 @@ All captured successful HTML routes have `meta robots="index, follow"`. The rout
 
 ## Missing account and measurement data
 
-The following are explicitly **not** available in this artifact:
+The following account and measurement gaps remain:
 
-- **Vercel:** CLI is logged out. Project identity, production/preview deployment IDs and timestamps, environment-variable names/values, function logs/metrics, bandwidth/build usage, cache configuration, domains, rollbacks, and datastore integrations are unverified.
 - **Google Search Console:** the current Google session has no property access. Index coverage, canonical selection, sitemap processing, crawl stats, URL inspection, manual actions, and performance data are unverified.
 - **Cloudflare account:** Wrangler is installed but unauthenticated. Zone/account identity, DNS, redirects, Cache Rules, WAF, bot management, Workers, rate limits, plan, analytics, purge history, and configuration ownership are unverified.
+- **Vercel measurement:** costs were not returned by the CLI (`Costs not found`, 404); request/function metrics require Observability Plus, and the Web Analytics query returned no data.
 
 ## Capture contents and repeatability
 
