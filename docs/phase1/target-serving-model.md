@@ -53,25 +53,27 @@ The 134,676 projected static output files exceed the supplied 100,000 static-ass
 | All generated HTML as static assets | Rejected: projected file count is over the supplied cap. |
 | One 19.9 MB JSON document parsed per request/isolate | Rejected: technically below the verified 64 MiB uncompressed Worker limit before bundle overhead, but needless full parsing risks the 128 MB isolate limit and cold-start cost. |
 | Cloudflare KV/D1/R2 | Deferred: account capability, cost, latency, and operational need are unverified. R2 is not introduced without measured need. |
-| **Generated, compact static-asset metadata shards plus a small Worker route manifest** | **Preferred pending probe.** Build-time country shards are served through the static-asset binding and selected by a small country/state manifest bundled with the Worker; the Worker reads only the requested shard. This avoids bundling the data corpus. The packaging probe must correct/confirm binding behavior and add the minimal binding integration before this becomes the implementation default. A separately generated `/assets/locations.json` preserves the current client static-directory search contract. This needs no R2. |
+| **Generated, compact static-asset metadata shards plus a small Worker route manifest** | **Preferred pending binding integration.** Build-time country shards are served through the static-asset binding and selected by a small country/state manifest; the Worker reads only the requested shard. The packaging probe now preserves collision-safe route identity using the production JavaScript generator. A separately generated `/assets/locations.json` preserves the current client static-directory search contract. This needs no R2. |
 
-**Decision:** the Worker dynamically renders route-matched HTML from the preferred metadata package and caches it; it does not store 130,684 HTML files. Metadata shards are build-time-generated static assets read through the binding at runtime, not public application routes or an external datastore. The renderer must reproduce current generated output semantically (DOM, visible strings, canonical/metadata, links, and widget attributes), subject to Phase 1.2 acceptance tests.
+**Decision:** the Worker dynamically renders route-matched HTML from the preferred metadata package and caches it; it does not store 130,684 HTML files. Metadata shards are immutable, build-time-generated static assets—not operational persistence or a required database. Keep metadata access behind a replaceable adapter so a future database can replace shards without changing public URLs, templates, or SEO behavior. The Durable Object proposed for weather-call coordination is separate and is not the location datastore. The renderer must reproduce current generated output semantically (DOM, visible strings, canonical/metadata, links, and widget attributes), subject to Phase 1.2 acceptance tests.
 
 ### Dataset measurement
 
-Method: Python 3 standard-library `json` parsed `scripts/resolved_cities.json`; a Node attempt to run the existing generator could not resolve the uninstalled `slugify` dependency, so it was not used for derived-route counts.
+Method: the packaging probe uses Python plus a Node adapter that calls the production `prepareCities`/`getRouteParts` logic. Generated files exist only in a temporary directory.
 
 | Result | Value |
 | --- | --- |
 | Rows | 130,684 |
-| File size | 19,923,105 bytes |
-| Parse time on this checkout | 0.237 s |
-| Required fields present and non-empty | all rows: `name`, `resolvedCountryName`, `resolvedAdmin1Code`, `latitude`, `longitude` |
-| Distinct countries / raw country-state pairs | 224 / 3,525 |
-| Latitude range / longitude range | -54.93355..78.22334 / -179.11838..179.36451 |
-| Supplied projected static output | 134,676 files (>100,000 cap) |
+| Source file size | 19,923,105 bytes |
+| Distinct countries / country-state pairs | 224 / 3,525 |
+| Collision groups / affected rows | 1,419 / 3,014 |
+| Distinct collision-safe city paths | 130,684, with zero duplicates |
+| Compact shards plus manifest | 7,800,362 raw bytes / 2,511,189 gzip bytes |
+| Runtime artifact count | 225 |
+| Largest compact shard | United States: 955,923 raw bytes / 308,072 gzip bytes |
+| Supplied projected static HTML output | 134,676 files (>100,000 cap) |
 
-This is a shape check, not a Cloudflare benchmark. Before implementation, run the current Worker non-deploying dry-run and startup checks: verify the produced artifact is below the official 64 MiB **uncompressed** limit and startup completes within the official 1 s limit; also measure requested-shard read/parse time and static search-index size. Reject the preferred packaging if any limit is approached or the binding probe cannot support the minimal integration.
+This is a packaging measurement, not a Cloudflare benchmark. Before implementation, run the Hono/static-assets binding integration plus current Worker non-deploying dry-run and startup checks: verify the produced artifact is below the official 64 MiB **uncompressed** limit and startup completes within the official 1 s limit; also measure requested-shard read/parse time and static search-index size. Reject the preferred packaging if any limit is approached or the binding probe cannot support the minimal integration.
 
 ## HTML caching
 
