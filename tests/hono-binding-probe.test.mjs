@@ -64,7 +64,7 @@ async function startWrangler(port) {
   const startedAt = performance.now();
   const child = spawn(path.join(root, "node_modules/.bin/wrangler"), [
     "dev", "--local", "--config", "wrangler.probe-test.toml", "--ip", "127.0.0.1", "--port", String(port),
-  ], { cwd: root, stdio: ["ignore", "pipe", "pipe"] });
+  ], { cwd: root, detached: true, stdio: ["ignore", "pipe", "pipe"] });
   let output = "";
   child.stdout.on("data", (chunk) => { output += chunk; });
   child.stderr.on("data", (chunk) => { output += chunk; });
@@ -78,13 +78,28 @@ async function startWrangler(port) {
     } catch {}
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  child.kill("SIGTERM");
+  await stopWrangler(child);
   throw new Error(`wrangler did not start: ${output}`);
 }
 
+function waitForExit(child, timeoutMs) {
+  if (child.exitCode !== null) return Promise.resolve();
+  return Promise.race([
+    new Promise((resolve) => child.once("exit", resolve)),
+    new Promise((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+}
+
 async function stopWrangler(child) {
-  if (child.exitCode === null) child.kill("SIGTERM");
-  await new Promise((resolve) => child.once("exit", resolve));
+  if (child.exitCode === null) {
+    try { process.kill(-child.pid, "SIGTERM"); } catch { child.kill("SIGTERM"); }
+    await waitForExit(child, 5_000);
+  }
+  if (child.exitCode === null) {
+    try { process.kill(-child.pid, "SIGKILL"); } catch { child.kill("SIGKILL"); }
+    await waitForExit(child, 5_000);
+  }
+  if (child.exitCode === null) throw new Error("Wrangler process did not terminate");
 }
 
 test("binding fixture is generated through production collision identity", () => {

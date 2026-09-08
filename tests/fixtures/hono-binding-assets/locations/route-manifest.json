@@ -1,1 +1,1 @@
-{"v":1,"countries":[{"country":"Andorra","countrySlug":"andorra","file":"andorra.json","states":[{"slug":"encamp","name":"Encamp"}]},{"country":"Armenia","countrySlug":"armenia","file":"armenia.json","states":[{"slug":"armavir","name":"Armavir"}]}]}
+{"v":1,"countries":[{"country":"Andorra","countrySlug":"andorra","file":"andorra.json","count":1,"states":[{"slug":"encamp","name":"Encamp","count":1}]},{"country":"Armenia","countrySlug":"armenia","file":"armenia.json","count":2,"states":[{"slug":"armavir","name":"Armavir","count":2}]}]}

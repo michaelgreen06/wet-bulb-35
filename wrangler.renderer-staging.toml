@@ -1,0 +1,13 @@
+name = "wetbulb35-hono-renderer-staging"
+main = "workers/hono-page-renderer.mjs"
+compatibility_date = "2026-09-08"
+
+# Local dry-run / isolated staging only. No route, zone, or custom domain is configured.
+[assets]
+directory = "worker-assets"
+binding = "ASSETS"
+run_worker_first = true
+
+[vars]
+CANONICAL_ORIGIN = "https://www.wetbulb35.com"
+GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"
