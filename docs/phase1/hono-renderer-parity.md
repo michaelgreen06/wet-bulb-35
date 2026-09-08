@@ -21,8 +21,12 @@ The renderer asset build creates public CSS, client JS, locations index, copied 
 - Full production asset build: 130,684 rows; 224 countries; 225 metadata files before public assets.
 - Production-assets Wrangler dry-run: 471 asset files; Worker upload 98.55 KiB (25.43 KiB gzip).
 
+## Isolated staging verification
+
+Deployed Worker `wetbulb35-hono-renderer-staging`, version `b6a0c2e3-011d-47d2-ade8-67de638a05ec`, only at `https://wetbulb35-hono-renderer-staging.mgdevstuff.workers.dev`. Wrangler reported **6 ms Worker Startup Time**. Live verification matched all 15 immutable golden page hashes, passed HEAD and public-asset checks, kept metadata URLs private, returned the expected static-staging `501` for `/api/weather`, and confirmed the `wetbulb35.com` zone still has zero custom Worker routes.
+
 ## Remaining differences / tradeoffs
 
 - Metadata resolution currently parses an entire country shard for state and city pages. It avoids 130k HTML files and retains at most eight parsed country shards in access-order LRU state per Worker instance. Same-key in-flight reads coalesce; rejected and invalid loads are not retained. Large-country first requests still cost more than a per-state shard design.
 - No live-weather endpoint is implemented in this bounded Phase 1 renderer. `/api/weather` returns a deterministic `501` JSON error and never consults a provider binding. The preserved client JS may request it after browser-side interaction/initial city widget setup; resulting live weather is deliberately outside staging acceptance.
-- This change does not alter the isolated staging Worker. It supplies a separate local/dry-run-only `wrangler.renderer-staging.toml`; no deploy, domain, route, DNS, secret, database, Durable Object, or production resource was changed.
+- The renderer is deployed only to the isolated `workers.dev` staging hostname. No custom domain, zone route, DNS, production secret, database, Durable Object, provider request, or production resource was changed.
