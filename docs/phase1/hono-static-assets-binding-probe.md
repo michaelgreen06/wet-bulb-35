@@ -1,6 +1,6 @@
 # Phase 1 Hono static-assets binding probe
 
-**Status:** local-only probe; no Worker was deployed and no Cloudflare account resource was created.
+**Status:** deployed only to the isolated `workers.dev` staging hostname. No custom domain, zone route, DNS record, production secret, database, Durable Object, or weather-provider integration exists.
 
 ## What this proves
 
@@ -12,7 +12,7 @@
 
 ## Staging configuration
 
-`wrangler.staging.toml` declares only the generated `ASSETS` binding, a probe-only name, main module, compatibility date, trusted canonical-origin variable, and `run_worker_first = true`. The probe config has the same Worker-first asset behavior. They contain no `route`, `routes`, `custom_domain`, secret, provider URL, or production cache binding. They are intended only for the non-deploying commands below.
+`wrangler.staging.toml` declares only the generated `ASSETS` binding, a probe-only name, main module, compatibility date, trusted canonical-origin variable, and `run_worker_first = true`. The probe config has the same Worker-first asset behavior. They contain no `route`, `routes`, `custom_domain`, secret, provider URL, or production cache binding.
 
 ## Measured local run (2026-09-08)
 
@@ -24,12 +24,22 @@
 | Local runner readiness | **1,337.002 ms** from Wrangler spawn to first local `404` readiness response, using the small fixture assets |
 | Local integration | 4/4 tests passed; both forms of 5 recognized fixture routes returned `200`; missing route and direct manifest/shard requests returned `404` |
 
+## Isolated staging verification
+
+Deployed Worker `wetbulb35-hono-binding-probe-staging`, version `d3f34bea-af5b-44a1-9129-2076455b9cd5`, to `https://wetbulb35-hono-binding-probe-staging.mgdevstuff.workers.dev` after explicit approval. Wrangler reported **6 ms Worker Startup Time**. Live checks confirmed:
+
+- slashful and slashless country routes return `200` with the production-host slashful canonical;
+- both tested collision-safe Metsamor routes return `200` with the intended canonicals;
+- direct manifest and shard URLs return `404`;
+- an unknown route returns `404`;
+- the `wetbulb35.com` zone has **zero custom Worker routes**.
+
 ## Limitations / gate outcome
 
-- The 1,337.002 ms local runner-readiness measurement includes Wrangler process startup, Miniflare initialization, and polling granularity. It is **not** the Cloudflare 1 s script-startup metric and must not be compared to that gate. A separately designed staging script-startup validation is required before any staging deployment decision.
+- The 1,337.002 ms local runner-readiness measurement includes Wrangler process startup, Miniflare initialization, and polling granularity. It is **not** the Cloudflare 1 s script-startup metric and must not be compared to that gate. The isolated staging deployment reported the actual Worker startup metric as 6 ms.
 - The original packaging measurement's compact manifest had only country entries. This probe adds production-generated state-slug-to-name entries to the same route manifest so the Worker never recreates state slugs. That raises the candidate directory from the earlier 7,800,362-byte compact-shard-plus-manifest measurement to 7,957,370 bytes. This is an integration artifact measurement, not approval of a final package schema.
 - The local fixture is deliberately tiny. It proves binding path/response behavior, not full-inventory route parity, Cloudflare production limits, edge-cache behavior, real cold starts, DNS/custom-domain behavior, or provider behavior.
-- No deployment command, authentication, secret, route/domain/DNS, Durable Object, R2, database, or provider request was used.
+- Staging deployment used the dedicated scoped token. No custom route/domain/DNS, production secret, Durable Object, R2, database, or provider request was used.
 
 ## Reproduce
 
