@@ -5,6 +5,7 @@
     "source_sha": "f6acf975b57d3352cfaaa45db3164e5389ea2c3a",
     "url": "wetbulb2-nc0ku4gtp-michaels-projects-899a0e11.vercel.app"
   },
+  "detected_cli_version": "59.11.7",
   "files": [
     "scope.json",
     "project.json",

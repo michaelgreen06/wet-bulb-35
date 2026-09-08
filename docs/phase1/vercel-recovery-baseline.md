@@ -1,6 +1,6 @@
 # Vercel recovery baseline
 
-Captured **2026-09-08T15:00:01Z** by `scripts/capture-vercel-recovery-baseline.sh`. The script uses authenticated Vercel CLI reads and a production HEAD request only; it does not deploy, promote, rollback, edit Vercel settings, domains, or environment variables.
+Captured **2026-09-08T15:00:01Z** by `scripts/capture-vercel-recovery-baseline.sh` with Vercel CLI `59.11.7`. The script uses authenticated Vercel CLI reads and a production HEAD request only; it does not deploy, promote, rollback, edit Vercel settings, domains, or environment variables.
 
 ## Recovery identity
 
@@ -41,4 +41,4 @@ From the repository root:
 ./scripts/capture-vercel-recovery-baseline.sh
 ```
 
-Optional environment overrides: `VERCEL_SCOPE`, `VERCEL_PROJECT`, `VERCEL_CAPTURE_DIR`, `VERCEL_BACKUP_DIR`, `VERCEL_CLI_VERSION`, and `VERCEL_BIN`. The default pins Vercel CLI `59.11.7` through `npx`; authentication must already be present. Each run replaces sanitized repository captures and creates a new timestamped private backup under `~/.hermes/backups/wetbulb35/vercel/`.
+Optional environment overrides: `VERCEL_SCOPE`, `VERCEL_PROJECT`, `VERCEL_CAPTURE_DIR`, `VERCEL_BACKUP_DIR`, and `VERCEL_BIN`. By default the script resolves the installed `vercel` executable on `PATH`; if it is absent, the script fails before creating capture output or making a remote request. Set `VERCEL_BIN` to an explicit executable name or path when needed. The script never downloads a CLI package. Each run records the detected CLI version in `captures/vercel/recovery-manifest.json`, replaces sanitized repository captures, and creates a new timestamped private backup under `~/.hermes/backups/wetbulb35/vercel/`.

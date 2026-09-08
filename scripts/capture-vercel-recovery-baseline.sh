@@ -7,15 +7,23 @@ SCOPE="${VERCEL_SCOPE:-michaels-projects-899a0e11}"
 PROJECT="${VERCEL_PROJECT:-wetbulb2}"
 OUT_DIR="${VERCEL_CAPTURE_DIR:-docs/phase1/captures/vercel}"
 BACKUP_DIR="${VERCEL_BACKUP_DIR:-$HOME/.hermes/backups/wetbulb35/vercel}"
-CLI_VERSION="${VERCEL_CLI_VERSION:-59.11.7}"
-if [[ -n "${VERCEL_BIN:-}" ]]; then
-  read -r -a VERCEL <<<"$VERCEL_BIN"
-else
-  VERCEL=(npx --yes "vercel@${CLI_VERSION}")
-fi
-
 fail() { printf 'capture failed: %s\n' "$*" >&2; exit 1; }
-run() { "${VERCEL[@]}" "$@" --scope "$SCOPE"; }
+
+# Use only an installed executable. VERCEL_BIN may name one or provide its path.
+VERCEL_BIN="${VERCEL_BIN:-vercel}"
+if [[ "$VERCEL_BIN" == */* ]]; then
+  [[ -x "$VERCEL_BIN" ]] || fail "Vercel executable is not executable: $VERCEL_BIN"
+else
+  VERCEL_BIN="$(command -v "$VERCEL_BIN" || true)"
+  [[ -n "$VERCEL_BIN" ]] || fail 'Vercel executable not found on PATH; install vercel or set VERCEL_BIN to an executable path'
+fi
+VERCEL_VERSION_OUTPUT="$("$VERCEL_BIN" --version 2>&1)" || fail "could not execute Vercel executable: $VERCEL_BIN"
+if [[ "$VERCEL_VERSION_OUTPUT" =~ ([0-9]+(\.[0-9]+){1,2}([-+][0-9A-Za-z.-]+)?) ]]; then
+  VERCEL_VERSION="${BASH_REMATCH[1]}"
+else
+  fail "could not determine Vercel CLI version from: $VERCEL_BIN"
+fi
+run() { "$VERCEL_BIN" "$@" --scope "$SCOPE"; }
 mkdir -p "$OUT_DIR" "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 TMP="$(mktemp -d)"
@@ -70,9 +78,9 @@ else
 fi
 
 # Sanitize all committed evidence via explicit allowlists, and calculate the private backup digest.
-python3 - "$TMP" "$OUT_DIR" "$BACKUP_FILE" "$SCOPE" "$PROJECT" "$STAMP" "$USAGE_STATUS" <<'PY'
+python3 - "$TMP" "$OUT_DIR" "$BACKUP_FILE" "$SCOPE" "$PROJECT" "$STAMP" "$USAGE_STATUS" "$VERCEL_VERSION" <<'PY'
 import datetime, hashlib, json, os, pathlib, re, sys
-root, out, backup, scope, project, stamp, usage_status = map(str, sys.argv[1:])
+root, out, backup, scope, project, stamp, usage_status, vercel_version = map(str, sys.argv[1:])
 out=pathlib.Path(out); out.mkdir(parents=True, exist_ok=True)
 def load(name):
     return json.load(open(pathlib.Path(root)/name))
@@ -82,10 +90,10 @@ def iso(ms):
     return datetime.datetime.fromtimestamp(ms/1000, datetime.timezone.utc).isoformat().replace('+00:00','Z') if ms else None
 teams=load('teams.json')
 dump('scope.json', {'scope_slug':scope,'teams':[{'id':x.get('id'),'slug':x.get('slug'),'name':x.get('name'),'current':x.get('current')} for x in teams.get('teams',[])]})
-# CLI has no JSON project-inspect; parse only stable non-secret lines and retain the source text separately.
+# CLI has no JSON project-inspect; parse only the stable project ID.
 project_text=(pathlib.Path(root)/'project-inspect.txt').read_text()
 project_id=re.search(r'ID\s+([A-Za-z0-9_]+)', project_text)
-dump('project.json', {'id':project_id.group(1) if project_id else None,'name':project,'scope_slug':scope,'inspect_text':project_text})
+dump('project.json', {'id':project_id.group(1) if project_id else None,'name':project,'scope_slug':scope})
 envs=[]
 for e in load('env-list.json').get('envs',[]):
     envs.append({'key':e.get('key'),'type':e.get('type'),'target':e.get('target',[]),'configurationId':e.get('configurationId'),'createdAt':iso(e.get('createdAt')),'updatedAt':iso(e.get('updatedAt'))})
@@ -108,7 +116,10 @@ for b in cur.get('builds') or []:
     for o in b.get('output') or []:
         lam=o.get('lambda') or {}
         outputs.append({'path':o.get('path'),'type':o.get('type'),'size':o.get('size'),'runtime':lam.get('runtime'),'memorySize':lam.get('memorySize'),'timeout':lam.get('timeout'),'deployedTo':lam.get('deployedTo')})
-    builds.append({'id':b.get('id'),'entrypoint':b.get('entrypoint'),'use':b.get('use'),'createdIn':b.get('createdIn'),'config':b.get('config'),'outputs':outputs})
+    raw_config=b.get('config') or {}
+    raw_vercel_config=raw_config.get('vercelConfig') or {}
+    config={'buildCommand':raw_config.get('buildCommand'),'installCommand':raw_config.get('installCommand'),'nodeVersion':raw_config.get('nodeVersion'),'projectCreatedAt':raw_config.get('projectCreatedAt'),'vercelConfig':{'buildCommand':raw_vercel_config.get('buildCommand'),'ignoreCommand':raw_vercel_config.get('ignoreCommand'),'installCommand':raw_vercel_config.get('installCommand')}}
+    builds.append({'id':b.get('id'),'entrypoint':b.get('entrypoint'),'use':b.get('use'),'createdIn':b.get('createdIn'),'config':config,'outputs':outputs})
 meta=cur.get('meta') or {}
 # Deployment inspect omits Git metadata in some CLI versions; use the matching list record.
 listed_current=next((d for d in rawlist if d.get('url') == cur.get('url')), {})
@@ -117,21 +128,17 @@ source_meta={**listed_meta, **meta}
 production={'id':cur.get('id'),'url':cur.get('url'),'readyState':cur.get('readyState'),'target':cur.get('target'),'createdAt':iso(cur.get('createdAt')),'aliases':cur.get('aliases',[]),'source':{'sha':source_meta.get('githubCommitSha'),'ref':source_meta.get('githubCommitRef'),'repository':source_meta.get('githubCommitRepo')},'builds':builds}
 dump('current-production.json', production)
 headers=(pathlib.Path(root)/'production-headers.txt').read_text().splitlines()
-safe_headers=[h for h in headers if h.lower().startswith(('http/','date:','content-type:','cache-control:','x-vercel-','server:'))]
+safe_headers=[h for h in headers if h.lower().startswith(('http/','date:','content-type:','cache-control:','x-vercel-cache:','x-vercel-id:','server:'))]
 dump('production-reachability.json', {'url':'https://www.wetbulb35.com/','head_status':safe_headers[0] if safe_headers else None,'headers':safe_headers})
+# Usage output is not committed because its schema is not a recovery-evidence allowlist.
 usage={'status':usage_status,'capture':'vercel usage --group-by project --json'}
-if usage_status=='available':
-    try: usage['data']=load('usage.json')
-    except Exception: usage['status']='unparseable'
-else:
-    usage['detail']=(pathlib.Path(root)/'usage.err').read_text()[:500]
 usage['analytics_note']='The CLI version has no analytics subcommand; Vercel Web Analytics and Observability request/function metrics may require dashboard/product entitlement.'
 dump('observability-usage.json',usage)
 raw_backup=open(backup,'rb').read(); h=hashlib.sha256(raw_backup).hexdigest(); st=os.stat(backup)
 # Vercel intentionally writes [SENSITIVE] when an existing sensitive value cannot be read.
 # This makes recovery coverage explicit rather than falsely calling a placeholder a backup.
 sensitive_placeholders=raw_backup.count(b'[SENSITIVE]')
-manifest={'schema_version':1,'captured_at_utc':stamp,'read_only':True,'scope_slug':scope,'project':project,'current_production':{'id':production['id'],'url':production['url'],'source_sha':production['source']['sha']},'files':['scope.json','project.json','domains.json','environment-metadata.json','current-production.json','deployment-inventory.json','production-reachability.json','observability-usage.json'],'private_production_environment_backup':{'path':backup,'sha256':h,'bytes':st.st_size,'mode':oct(st.st_mode & 0o777),'values_committed':False,'sensitive_placeholder_count':sensitive_placeholders,'complete':sensitive_placeholders == 0,'gap':'Vercel CLI does not reveal existing sensitive values; recover those from their original secret source.' if sensitive_placeholders else None}}
+manifest={'schema_version':1,'captured_at_utc':stamp,'read_only':True,'scope_slug':scope,'project':project,'detected_cli_version':vercel_version,'current_production':{'id':production['id'],'url':production['url'],'source_sha':production['source']['sha']},'files':['scope.json','project.json','domains.json','environment-metadata.json','current-production.json','deployment-inventory.json','production-reachability.json','observability-usage.json'],'private_production_environment_backup':{'path':backup,'sha256':h,'bytes':st.st_size,'mode':oct(st.st_mode & 0o777),'values_committed':False,'sensitive_placeholder_count':sensitive_placeholders,'complete':sensitive_placeholders == 0,'gap':'Vercel CLI does not reveal existing sensitive values; recover those from their original secret source.' if sensitive_placeholders else None}}
 dump('recovery-manifest.json',manifest)
 PY
 
