@@ -73,7 +73,7 @@ Method: the packaging probe uses Python plus a Node adapter that calls the produ
 | Largest compact shard | United States: 955,923 raw bytes / 308,072 gzip bytes |
 | Supplied projected static HTML output | 134,676 files (>100,000 cap) |
 
-This is a packaging measurement, not a Cloudflare benchmark. Before implementation, run the Hono/static-assets binding integration plus current Worker non-deploying dry-run and startup checks: verify the produced artifact is below the official 64 MiB **uncompressed** limit and startup completes within the official 1 s limit; also measure requested-shard read/parse time and static search-index size. Reject the preferred packaging if any limit is approached or the binding probe cannot support the minimal integration.
+This is a packaging measurement, not a Cloudflare benchmark. Before implementation, run the Hono/static-assets binding integration plus the current Worker non-deploying dry-run: verify the produced artifact is below the official 64 MiB **uncompressed** limit; also measure requested-shard read/parse time and static search-index size. Local Wrangler readiness is not the Cloudflare 1 s script-startup metric. Design and run staging script-startup validation separately before any staging deployment decision. Reject the preferred packaging if any limit is approached or the binding probe cannot support the minimal integration.
 
 ## HTML caching
 

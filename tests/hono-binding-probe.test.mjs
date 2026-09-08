@@ -13,6 +13,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureSource = path.join(root, "tests/fixtures/hono-binding-cities.json");
 const fixtureAssets = path.join(root, "tests/fixtures/hono-binding-assets");
 const base = "http://probe.local";
+const canonicalOrigin = "https://www.wetbulb35.com";
 const recognized = [
   "/wetbulb-temperature/andorra",
   "/wetbulb-temperature/andorra/encamp",
@@ -21,8 +22,8 @@ const recognized = [
   "/wetbulb-temperature/armenia/armavir/metsamor-40-1445-44-1167",
 ];
 
-function canonical(pathname, origin = base) {
-  return `${origin}${pathname}/`;
+function canonical(pathname) {
+  return `${canonicalOrigin}${pathname}/`;
 }
 
 function fixtureAssetBinding(requestedPaths = []) {
@@ -37,13 +38,24 @@ function fixtureAssetBinding(requestedPaths = []) {
   };
 }
 
-async function assertRecognized(fetcher, origin = base) {
+function jsonAssetBinding(assets) {
+  return {
+    async fetch(request) {
+      const body = assets[new URL(request.url).pathname];
+      return body === undefined
+        ? new Response("missing", { status: 404 })
+        : new Response(JSON.stringify(body), { status: 200 });
+    },
+  };
+}
+
+async function assertRecognized(fetcher) {
   for (const route of recognized) {
     for (const pathname of [route, `${route}/`]) {
       const response = await fetcher(pathname);
       assert.equal(response.status, 200, pathname);
       assert.equal(response.headers.get("content-type"), "text/html; charset=UTF-8", pathname);
-      assert.match(await response.text(), new RegExp(`<link rel="canonical" href="${canonical(route, origin)}">`), pathname);
+      assert.match(await response.text(), new RegExp(`<link rel="canonical" href="${canonical(route)}">`), pathname);
     }
   }
 }
@@ -107,19 +119,46 @@ test("Hono probe reads ASSETS and never calls a supplied weather provider for HT
   assert.ok(requestedPaths.includes("/locations/route-manifest.json"));
   assert.ok(requestedPaths.includes("/locations/shards/andorra.json"));
   assert.ok(requestedPaths.includes("/locations/shards/armenia.json"));
+  const stagingLike = await app.fetch(new Request("https://staging.example/wetbulb-temperature/andorra"), env);
+  assert.match(await stagingLike.text(), /https:\/\/www\.wetbulb35\.com\/wetbulb-temperature\/andorra\//);
 });
 
-test("Wrangler local Miniflare serves slashful and slashless ASSETS routes", async (t) => {
+test("Hono probe HTML-escapes asset labels and defaults to the trusted canonical origin", async () => {
+  const app = createHonoBindingProbe();
+  const env = {
+    ASSETS: jsonAssetBinding({
+      "/locations/route-manifest.json": {
+        v: 1,
+        countries: [{ country: '<country&"\'>', countrySlug: "hostile", file: "hostile.json", states: [{ slug: "state", name: '<state&"\'>' }] }],
+      },
+      "/locations/shards/hostile.json": { v: 1, r: [['<city&"\'>', '<state&"\'>', 0, 0, "city"]] },
+    }),
+  };
+  const country = await app.fetch(new Request(`${base}/wetbulb-temperature/hostile`), env);
+  const state = await app.fetch(new Request(`${base}/wetbulb-temperature/hostile/state`), env);
+  const city = await app.fetch(new Request(`${base}/wetbulb-temperature/hostile/state/city`), env);
+  for (const response of [country, state, city]) {
+    const html = await response.text();
+    assert.match(html, /https:\/\/www\.wetbulb35\.com\/wetbulb-temperature\/hostile/);
+    assert.doesNotMatch(html, /<country|<state|<city/);
+    assert.match(html, /&lt;(country|state|city)&amp;&quot;&#39;&gt;/);
+  }
+});
+
+test("Wrangler local keeps metadata assets private while Worker ASSETS.fetch renders routes", async (t) => {
   const port = 20000 + (process.pid % 10000);
   const { child, startupMs } = await startWrangler(port);
   t.diagnostic(`Wrangler local readiness (spawn to first 404): ${startupMs} ms`);
   try {
-    await assertRecognized(
-      (pathname) => fetch(`http://127.0.0.1:${port}${pathname}`),
-      `http://127.0.0.1:${port}`,
-    );
+    await assertRecognized((pathname) => fetch(`http://127.0.0.1:${port}${pathname}`));
     const missing = await fetch(`http://127.0.0.1:${port}/wetbulb-temperature/andorra/encamp/missing`);
     assert.equal(missing.status, 404);
+    const manifest = await fetch(`http://127.0.0.1:${port}/locations/route-manifest.json`);
+    const shard = await fetch(`http://127.0.0.1:${port}/locations/shards/andorra.json`);
+    const secondShard = await fetch(`http://127.0.0.1:${port}/locations/shards/armenia.json`);
+    assert.equal(manifest.status, 404);
+    assert.equal(shard.status, 404);
+    assert.equal(secondShard.status, 404);
   } finally {
     await stopWrangler(child);
   }

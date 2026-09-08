@@ -1,6 +1,16 @@
 import { Hono } from "hono";
 
 const LOCATION_ROOT = "/locations";
+const DEFAULT_CANONICAL_ORIGIN = "https://www.wetbulb35.com";
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
 function assetRequest(request, pathname) {
   return new Request(new URL(pathname, request.url));
@@ -12,10 +22,10 @@ async function readAssetJson(request, assets, pathname) {
   return response.json();
 }
 
-function htmlResponse(request, routePath, label) {
-  const canonical = `${new URL(request.url).origin}${routePath}/`;
+function htmlResponse(canonicalOrigin, routePath, label) {
+  const canonical = `${canonicalOrigin}${routePath}/`;
   return new Response(
-    `<!doctype html><html><head><link rel="canonical" href="${canonical}"></head><body>${label}</body></html>`,
+    `<!doctype html><html><head><link rel="canonical" href="${escapeHtml(canonical)}"></head><body>${escapeHtml(label)}</body></html>`,
     { headers: { "content-type": "text/html; charset=UTF-8" } },
   );
 }
@@ -25,6 +35,7 @@ export function createHonoBindingProbe() {
 
   app.get("*", async (context) => {
     const request = context.req.raw;
+    const canonicalOrigin = context.env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN;
     const parts = new URL(request.url).pathname.split("/").filter(Boolean);
     if (parts[0] !== "wetbulb-temperature" || parts.length < 2 || parts.length > 4) {
       return context.notFound();
@@ -36,7 +47,7 @@ export function createHonoBindingProbe() {
     if (!country || typeof country.file !== "string") return context.notFound();
 
     if (parts.length === 2) {
-      return htmlResponse(request, `/wetbulb-temperature/${parts[1]}`, country.country);
+      return htmlResponse(canonicalOrigin, `/wetbulb-temperature/${parts[1]}`, country.country);
     }
 
     const state = country.states?.find((item) => item.slug === parts[2]);
@@ -47,12 +58,12 @@ export function createHonoBindingProbe() {
     if (!stateRows.length) return context.notFound();
 
     if (parts.length === 3) {
-      return htmlResponse(request, `/wetbulb-temperature/${parts[1]}/${parts[2]}`, parts[2]);
+      return htmlResponse(canonicalOrigin, `/wetbulb-temperature/${parts[1]}/${parts[2]}`, state.name);
     }
 
     const city = stateRows.find((row) => row[4] === parts[3]);
     if (!city) return context.notFound();
-    return htmlResponse(request, `/wetbulb-temperature/${parts[1]}/${parts[2]}/${parts[3]}`, city[0]);
+    return htmlResponse(canonicalOrigin, `/wetbulb-temperature/${parts[1]}/${parts[2]}/${parts[3]}`, city[0]);
   });
 
   return app;
