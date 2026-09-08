@@ -1,0 +1,8 @@
+name = "wetbulb35-hono-binding-probe-staging"
+main = "workers/hono-binding-probe.mjs"
+compatibility_date = "2026-09-08"
+
+# Generated locally by npm run build:hono-binding-assets; never deployed by this probe.
+[assets]
+directory = "worker-assets"
+binding = "ASSETS"
