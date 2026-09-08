@@ -8,6 +8,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { buildHonoRendererAssets } from "../scripts/build-hono-renderer-assets.mjs";
+import { normalizedSha256 } from "../scripts/generate-hono-renderer-goldens.mjs";
 import {
   createSiteData,
   getRouteParts,
@@ -24,6 +25,7 @@ const base = "https://renderer.test";
 const options = { siteUrl: "https://www.wetbulb35.com", googleAnalyticsId: "G-LNPWV0JL7S" };
 const fixtureCities = JSON.parse(fs.readFileSync(path.join(root, "tests/fixtures/hono-binding-cities.json"), "utf8"));
 const fixtureAssets = path.join(root, "tests/fixtures/hono-binding-assets");
+const goldenEvidence = JSON.parse(fs.readFileSync(path.join(root, "tests/fixtures/hono-renderer-goldens.json"), "utf8"));
 
 function reservePort() {
   return new Promise((resolve, reject) => {
@@ -168,6 +170,95 @@ test("Hono renderer is byte-parity with generator for representative pages", asy
   assert.ok(requested.includes("/locations/route-manifest.json"));
   assert.ok(requested.includes("/locations/shards/andorra.json"));
   assert.ok(requested.includes("/locations/shards/armenia.json"));
+});
+
+test("Hono renderer matches immutable pre-extraction golden hashes", { timeout: 30_000 }, async () => {
+  assert.equal(goldenEvidence.provenance.generatorCommit, "ea7d0da");
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "hono-renderer-goldens-"));
+  try {
+    const sourceCities = JSON.parse(fs.readFileSync(path.join(root, "scripts/resolved_cities.json"), "utf8"));
+    buildHonoRendererAssets({ sourceCities, outDir, publicDir: path.join(root, "public") });
+    const assets = { async fetch(request) {
+      const diskPath = path.join(outDir, new URL(request.url).pathname);
+      return fs.existsSync(diskPath) ? new Response(fs.readFileSync(diskPath)) : new Response("missing", { status: 404 });
+    }};
+    const app = createHonoPageRenderer();
+    const mismatches = [];
+    for (const page of goldenEvidence.pages) {
+      const result = await html(app, page.route, { ASSETS: assets });
+      if (result.response.status !== 200 || normalizedSha256(result.body) !== page.sha256) mismatches.push(page.route);
+    }
+    assert.deepEqual(mismatches, []);
+    assert.equal(goldenEvidence.pages.filter((page) => page.type === "country-ordering-sensitive").length, 11);
+  } finally { fs.rmSync(outDir, { recursive: true, force: true }); }
+});
+
+test("weather API is explicitly unavailable and never calls a provider", async () => {
+  let providerCalls = 0;
+  const app = createHonoPageRenderer();
+  const response = await app.fetch(new Request(`${base}/api/weather?lat=1&lon=2`), {
+    ASSETS: fixtureBinding(),
+    WEATHER_PROVIDER: { fetch() { providerCalls += 1; return new Response("unexpected"); } },
+  });
+  assert.equal(response.status, 501);
+  assert.equal(response.headers.get("content-type"), "application/json; charset=UTF-8");
+  assert.deepEqual(await response.json(), { error: "Live weather is not available in the static staging renderer." });
+  assert.equal(providerCalls, 0);
+});
+
+test("location resolver bounds parsed shard LRU, reloads evictions, and coalesces in-flight loads", async () => {
+  const countries = Array.from({ length: 10 }, (_, index) => ({
+    country: `Country ${index}`, countrySlug: `country-${index}`, file: `country-${index}.json`, count: 1,
+    states: [{ name: "State", slug: "state", count: 1 }],
+  }));
+  const counts = new Map();
+  let releaseFirst;
+  const firstBlocked = new Promise((resolve) => { releaseFirst = resolve; });
+  const assets = { async fetch(request) {
+    const pathname = new URL(request.url).pathname;
+    counts.set(pathname, (counts.get(pathname) || 0) + 1);
+    if (pathname === "/locations/route-manifest.json") return Response.json({ v: 1, countries });
+    const match = pathname.match(/^\/locations\/shards\/(country-\d+\.json)$/);
+    if (!match) return new Response("missing", { status: 404 });
+    if (match[1] === "country-0.json") await firstBlocked;
+    return Response.json({ v: 1, r: [["City", "State", 1, 2, "city"]] });
+  }};
+  const resolver = createLocationResolver({ maxCachedShards: 8 });
+  const partsFor = (index) => ["wetbulb-temperature", `country-${index}`, "state"];
+  const request = new Request(base);
+  const first = resolver(request, assets, partsFor(0));
+  const sameKey = resolver(request, assets, partsFor(0));
+  releaseFirst();
+  await Promise.all([first, sameKey]);
+  assert.equal(counts.get("/locations/shards/country-0.json"), 1);
+  for (let index = 1; index < 10; index += 1) await resolver(request, assets, partsFor(index));
+  assert.ok(resolver.cacheStats().parsedShards <= 8);
+  await resolver(request, assets, partsFor(0));
+  assert.equal(counts.get("/locations/shards/country-0.json"), 2);
+
+  let invalidLoads = 0;
+  const invalidAssets = { async fetch(requestForAsset) {
+    const pathname = new URL(requestForAsset.url).pathname;
+    if (pathname === "/locations/route-manifest.json") return Response.json({ v: 1, countries: [countries[0]] });
+    invalidLoads += 1;
+    return Response.json({ v: 0, r: [] });
+  }};
+  const invalidResolver = createLocationResolver({ maxCachedShards: 8 });
+  assert.equal(await invalidResolver(request, invalidAssets, partsFor(0)), null);
+  assert.equal(await invalidResolver(request, invalidAssets, partsFor(0)), null);
+  assert.equal(invalidLoads, 2, "invalid shard data must not be retained");
+
+  let rejectedLoads = 0;
+  const rejectedAssets = { async fetch(requestForAsset) {
+    const pathname = new URL(requestForAsset.url).pathname;
+    if (pathname === "/locations/route-manifest.json") return Response.json({ v: 1, countries: [countries[0]] });
+    rejectedLoads += 1;
+    throw new Error("asset read failed");
+  }};
+  const rejectedResolver = createLocationResolver({ maxCachedShards: 8 });
+  await assert.rejects(rejectedResolver(request, rejectedAssets, partsFor(0)), /asset read failed/);
+  await assert.rejects(rejectedResolver(request, rejectedAssets, partsFor(0)), /asset read failed/);
+  assert.equal(rejectedLoads, 2, "rejected shard loads must not be retained");
 });
 
 test("Hono renderer has production slash, HEAD, 404, and private-metadata behavior", async () => {

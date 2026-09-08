@@ -49,7 +49,8 @@ export function buildHonoBindingAssets({ sourceCities, outDir }) {
       countrySlug,
       file,
       count: countries.get(countrySlug).rows.length,
-      states: [...states].sort(([a], [b]) => a.localeCompare(b)).map(([slug, name]) => ({
+      // Rendered country cards are ordered by display name, not route slug.
+      states: [...states].sort(([, a], [, b]) => a.localeCompare(b)).map(([slug, name]) => ({
         slug,
         name,
         count: countries.get(countrySlug).rows.filter((row) => row[1] === name).length,

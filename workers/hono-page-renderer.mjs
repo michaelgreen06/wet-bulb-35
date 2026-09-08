@@ -4,6 +4,7 @@ import { pageHtml, renderBrowsePage, renderCountryPage, renderHomePage, renderSt
 const LOCATION_ROOT = "/locations";
 const DEFAULT_CANONICAL_ORIGIN = "https://www.wetbulb35.com";
 const DEFAULT_GA_MEASUREMENT_ID = "G-LNPWV0JL7S";
+const DEFAULT_MAX_CACHED_SHARDS = 8;
 
 function assetRequest(request, pathname) { return new Request(new URL(pathname, request.url)); }
 async function readAssetJson(request, assets, pathname) {
@@ -35,9 +36,20 @@ function countryFromManifest(country) { return { name: country.country, slug: co
 function htmlResponse(html) { return new Response(html, { headers: { "content-type": "text/html; charset=UTF-8" } }); }
 
 /** Resolves static metadata only; it deliberately never consults a weather/provider binding. */
-export function createLocationResolver() {
+export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SHARDS } = {}) {
   let manifestPromise;
-  const shardPromises = new Map();
+  const parsedShards = new Map();
+  const inFlightShards = new Map();
+  const shardCacheLimit = Number.isSafeInteger(maxCachedShards) && maxCachedShards > 0
+    ? maxCachedShards
+    : DEFAULT_MAX_CACHED_SHARDS;
+  function touchParsedShard(file, index) {
+    parsedShards.delete(file);
+    parsedShards.set(file, index);
+  }
+  function trimParsedShards() {
+    while (parsedShards.size > shardCacheLimit) parsedShards.delete(parsedShards.keys().next().value);
+  }
   async function manifest(request, assets) {
     if (!manifestPromise) {
       const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/route-manifest.json`);
@@ -47,15 +59,29 @@ export function createLocationResolver() {
     return manifestPromise;
   }
   async function shard(request, assets, country) {
-    if (!shardPromises.has(country.file)) {
-      const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${country.file}`)
-        .then((countryShard) => countryShard?.v === 1 && Array.isArray(countryShard.r) ? indexCountryShard(country, countryShard.r) : null);
-      shardPromises.set(country.file, promise);
-      promise.catch(() => { if (shardPromises.get(country.file) === promise) shardPromises.delete(country.file); });
+    const cached = parsedShards.get(country.file);
+    if (cached) {
+      touchParsedShard(country.file, cached);
+      return cached;
     }
-    return shardPromises.get(country.file);
+    const inFlight = inFlightShards.get(country.file);
+    if (inFlight) return inFlight;
+    const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${country.file}`)
+      .then((countryShard) => countryShard?.v === 1 && Array.isArray(countryShard.r) ? indexCountryShard(country, countryShard.r) : null)
+      .then((index) => {
+        if (!index) return null;
+        touchParsedShard(country.file, index);
+        trimParsedShards();
+        return index;
+      });
+    inFlightShards.set(country.file, promise);
+    promise.then(
+      () => { if (inFlightShards.get(country.file) === promise) inFlightShards.delete(country.file); },
+      () => { if (inFlightShards.get(country.file) === promise) inFlightShards.delete(country.file); },
+    );
+    return promise;
   }
-  return async (request, assets, parts) => {
+  const resolve = async (request, assets, parts) => {
     const index = await manifest(request, assets);
     if (!index || index.v !== 1 || !Array.isArray(index.countries)) return null;
     if (parts.length === 1) return { kind: "browse", index };
@@ -72,6 +98,8 @@ export function createLocationResolver() {
     const city = state.citiesBySlug.get(parts[3]);
     return city ? { kind: "city", city } : null;
   };
+  resolve.cacheStats = () => ({ parsedShards: parsedShards.size, inFlightShards: inFlightShards.size, maxCachedShards: shardCacheLimit });
+  return resolve;
 }
 
 export function createHonoPageRenderer() {
@@ -81,6 +109,12 @@ export function createHonoPageRenderer() {
     const request = context.req.raw;
     const pathname = new URL(request.url).pathname;
     if (pathname.startsWith(`${LOCATION_ROOT}/`) || pathname === LOCATION_ROOT) return context.notFound();
+    if (pathname === "/api/weather") {
+      return new Response(JSON.stringify({ error: "Live weather is not available in the static staging renderer." }), {
+        status: 501,
+        headers: { "content-type": "application/json; charset=UTF-8" },
+      });
+    }
     const parts = pathname.split("/").filter(Boolean);
     const options = rendererOptions(context.env);
     if (parts.length === 0) return htmlResponse(renderHomePage({}, options));

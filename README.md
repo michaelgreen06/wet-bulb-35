@@ -65,3 +65,7 @@ node scripts/should-ignore-vercel-build.mjs
 The script compares the current commit to `VERCEL_GIT_PREVIOUS_SHA`, the last successful deployment SHA provided by Vercel, and skips the build when none of the deployment inputs changed. The build still runs when static generator code, city data, Tailwind config, public assets, package files, or Vercel config changes.
 
 Set `FORCE_VERCEL_BUILD=1` on a deployment to bypass the skip logic.
+
+## Isolated Hono renderer staging
+
+`workers/hono-page-renderer.mjs` is a static HTML/UX renderer for the isolated Workers staging candidate. It has no live-weather provider configuration or credentials. `/api/weather` deterministically returns `501` and is not a staging sign-off criterion; do not use it as evidence of live-weather readiness. `npm run dry-run:hono-page-renderer` packages only the local isolated Worker configuration and does not deploy it.
