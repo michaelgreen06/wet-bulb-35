@@ -55,7 +55,7 @@ All captured successful HTML routes have `meta robots="index, follow"`. The rout
 ## Redirects, errors, and caching
 
 - The prior live audit recorded `http://wetbulb35.com/` → HTTPS apex → HTTPS `www` as two 308 redirects, and HTTPS apex → HTTPS `www` as one 308 redirect. It also recorded plaintext redirect bodies with `Location` and `Refresh` headers.
-- Captured HTML uses `Cache-Control: public, max-age=0, must-revalidate`; successful sampled HTML was Vercel `HIT`. The city route had previously been seen as a Vercel `MISS`, consistent with static/ISR cache population behavior.
+- Captured HTML uses `Cache-Control: public, max-age=0, must-revalidate`; successful sampled HTML was Vercel `HIT`. The city route had previously been seen as a Vercel `MISS`, consistent with static edge-cache population; the custom production output does not use Next ISR.
 - The captured sitemap is `application/xml` and Vercel `HIT`; robots is `text/plain; charset=utf-8`, Vercel `HIT`, and cached for four hours. 404s are Vercel `NOT_FOUND` pages with `public, max-age=0, must-revalidate`, no canonical, no robots directive, and no structured data.
 
 ## Static scale and Cloudflare constraints
