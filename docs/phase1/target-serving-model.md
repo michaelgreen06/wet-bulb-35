@@ -32,7 +32,7 @@ The canonical host remains `www.wetbulb35.com` over HTTPS. Host redirects, if ne
 | Existing public files, including `/robots.txt`, `/sitemap.xml`, `/sitemaps/*`, `/favicon.svg`, `/logo.svg`, and `/assets/*` | exact requested path | Static response, `200` when present; no Worker HTML rendering or provider call. Missing files are `404`. |
 | Other `/api/*` or sitemap-like legacy URLs | none | Preserve the current static `robots.txt` directives; otherwise `404`. |
 
-**Decision:** canonical tags and Open Graph URLs remain the currently generated trailing-slash URLs. This is normalization only; it is explicitly **not** a canonical-tag, sitemap, robots, indexing, or content improvement project.
+**Decision:** canonical tags and Open Graph URLs remain the currently generated trailing-slash URLs. This preserves current behavior; it is explicitly **not** a canonical-tag, sitemap, robots, indexing, or content improvement project.
 
 ## Hono request flow
 
