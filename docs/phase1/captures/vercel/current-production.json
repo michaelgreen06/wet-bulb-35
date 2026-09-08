@@ -1,0 +1,51 @@
+{
+  "aliases": [
+    "www.wetbulb35.com",
+    "wetbulb2.vercel.app",
+    "wetbulb35.com",
+    "wetbulb2-michaels-projects-899a0e11.vercel.app",
+    "wetbulb2-git-main-michaels-projects-899a0e11.vercel.app"
+  ],
+  "builds": [
+    {
+      "config": {
+        "buildCommand": "npm run vercel-build",
+        "installCommand": "npm ci",
+        "nodeVersion": "22.x",
+        "projectCreatedAt": 1739959242448,
+        "vercelConfig": {
+          "buildCommand": "npm run vercel-build",
+          "ignoreCommand": "node scripts/should-ignore-vercel-build.mjs",
+          "installCommand": "npm ci"
+        }
+      },
+      "createdIn": "sfo1",
+      "entrypoint": ".",
+      "id": "bld_m7e3rccyg",
+      "outputs": [
+        {
+          "deployedTo": [
+            "iad1"
+          ],
+          "memorySize": 1024,
+          "path": "api/weather",
+          "runtime": "nodejs22.x",
+          "size": 2766,
+          "timeout": 10,
+          "type": "lambda"
+        }
+      ],
+      "use": "@vercel/vc-build"
+    }
+  ],
+  "createdAt": "2026-07-06T03:31:33.351000Z",
+  "id": "dpl_98CXao2fnVfTWFmn8AxFeuNSnUXe",
+  "readyState": "READY",
+  "source": {
+    "ref": "main",
+    "repository": "wet-bulb-35",
+    "sha": "f6acf975b57d3352cfaaa45db3164e5389ea2c3a"
+  },
+  "target": "production",
+  "url": "wetbulb2-nc0ku4gtp-michaels-projects-899a0e11.vercel.app"
+}

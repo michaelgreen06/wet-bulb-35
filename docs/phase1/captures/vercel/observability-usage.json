@@ -1,0 +1,6 @@
+{
+  "analytics_note": "The CLI version has no analytics subcommand; Vercel Web Analytics and Observability request/function metrics may require dashboard/product entitlement.",
+  "capture": "vercel usage --group-by project --json",
+  "detail": "Error: Costs not found (404)\n",
+  "status": "unavailable"
+}

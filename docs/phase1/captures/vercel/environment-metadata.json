@@ -1,0 +1,51 @@
+{
+  "value_policy": "Values are excluded from Git; a mode-0600 production-only recovery copy is external.",
+  "variables": [
+    {
+      "configurationId": null,
+      "createdAt": "2026-05-21T15:05:27.874000Z",
+      "key": "OPENWEATHER_API_KEY",
+      "target": [
+        "production"
+      ],
+      "type": "sensitive",
+      "updatedAt": "2026-05-21T15:05:27.874000Z"
+    },
+    {
+      "configurationId": null,
+      "createdAt": "2025-02-27T11:00:46.398000Z",
+      "key": "NEXT_PUBLIC_SITE_URL",
+      "target": [
+        "production",
+        "preview",
+        "development"
+      ],
+      "type": "encrypted",
+      "updatedAt": "2025-03-03T08:41:55.807000Z"
+    },
+    {
+      "configurationId": null,
+      "createdAt": "2025-02-19T10:00:42.376000Z",
+      "key": "NEXT_PUBLIC_GOOGLE_PLACES_API_KEY",
+      "target": [
+        "production",
+        "preview",
+        "development"
+      ],
+      "type": "encrypted",
+      "updatedAt": "2025-02-19T10:00:42.376000Z"
+    },
+    {
+      "configurationId": null,
+      "createdAt": "2025-02-19T10:00:42.376000Z",
+      "key": "NEXT_PUBLIC_OPENWEATHER_API_KEY",
+      "target": [
+        "production",
+        "preview",
+        "development"
+      ],
+      "type": "encrypted",
+      "updatedAt": "2025-02-19T10:00:42.376000Z"
+    }
+  ]
+}
