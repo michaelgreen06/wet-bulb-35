@@ -13,11 +13,11 @@
 
 **Verified:** production is generated static HTML plus one uncached Vercel Node weather function. The target runtime is Hono on Cloudflare Workers. HTML location pages already request weather in the browser; the existing API blocks recognized bots with `204`, accepts finite numeric coordinates, and returns `400` for missing/non-numeric coordinates, `405` for non-GET, and `500` for provider failures. The committed city dataset is 130,684 rows / 19,923,105 bytes. The supplied Cloudflare constraints are 100,000 paid static assets, 64 MiB Worker size, 128 MB isolate memory, and 25 MiB individual assets.
 
-**Decision:** retain existing URLs, rendered content, metadata, robots directives, sitemap URLs, status behavior where documented below, and known defects unless an approval explicitly names a change. Do not add SEO features, revise copy, alter titles/descriptions/schema, create redirects beyond slash normalization, or expose weather in server-rendered HTML.
+**Decision:** retain existing URLs, rendered content, metadata, robots directives, sitemap URLs, status behavior where documented below, and known defects unless an approval explicitly names a change. Do not add SEO features, revise copy, alter titles/descriptions/schema, create redirects, or expose weather in server-rendered HTML.
 
 ## Route and canonical contract
 
-The canonical host remains `www.wetbulb35.com` over HTTPS. Host redirects, if necessary, are edge/domain configuration, not Hono application routes. Query strings do not affect an HTML page identity and are preserved when the edge performs slash normalization.
+The canonical host remains `www.wetbulb35.com` over HTTPS. Host redirects, if necessary, are edge/domain configuration, not Hono application routes. Query strings do not affect an HTML page identity.
 
 | Request class | Canonical path / handling | Status and body |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ The canonical host remains `www.wetbulb35.com` over HTTPS. Host redirects, if ne
 | Existing country | `/wetbulb-temperature/{country}/` | `200`, parity HTML shell; no provider call. |
 | Existing state | `/wetbulb-temperature/{country}/{state}/` | `200`, parity HTML shell; no provider call. |
 | Existing city | `/wetbulb-temperature/{country}/{state}/{city}/` | `200`, parity HTML shell and existing canonical/JSON-LD; no provider call. Collision-safe city slugs stay exact. |
-| The preceding HTML paths without the terminal slash | trailing-slash form | `308` for `GET`/`HEAD`, preserving the query string. This aligns request URL and existing generated canonical URLs; no provider call. |
+| The preceding HTML paths without the terminal slash | slashless request path; canonical tags remain trailing-slash URLs | `200`, parity HTML shell; no provider call. Preserve the current duplicate-`200` behavior. Changing it, including by adding a slash redirect, requires later explicit approval. |
 | Unknown, malformed, over-deep, or wrong-case HTML path | none | `404`; no SPA fallback, fuzzy lookup, redirect, or provider call. Case sensitivity is intentional until production behavior is captured. |
 | Weather endpoint | `/api/weather` exactly | API contract below. `/api/weather/` is `404`, not redirected. |
 | Existing public files, including `/robots.txt`, `/sitemap.xml`, `/sitemaps/*`, `/favicon.svg`, `/logo.svg`, and `/assets/*` | exact requested path | Static response, `200` when present; no Worker HTML rendering or provider call. Missing files are `404`. |
@@ -38,7 +38,7 @@ The canonical host remains `www.wetbulb35.com` over HTTPS. Host redirects, if ne
 
 1. The Worker receives a request after domain/TLS handling.
 2. Exact public/static assets are delegated to the static-asset binding. Hono does not intercept a valid asset to synthesize an HTML page.
-3. Hono handles `GET`/`HEAD` HTML routes. It applies the route matrix, returns `308` only for recognized slashless HTML routes, resolves location metadata locally, renders the parity template, and stores/serves HTML from the edge cache. Rendering never imports weather code and never calls a provider.
+3. Hono handles `GET`/`HEAD` HTML routes. It applies the route matrix, serves both recognized slashful and slashless HTML routes with `200` while retaining slashful canonical tags, resolves location metadata locally, renders the parity template, and stores/serves HTML from the edge cache. Rendering never imports weather code and never calls a provider. Changing this duplicate-`200` behavior requires later explicit approval.
 4. Hono handles `/api/weather` separately. It performs bot and method checks, validation/normalization, cache lookup, and only then one provider fetch on a cache miss. It returns JSON only.
 5. Everything else is `404`. Error middleware must not convert a missing page to `200` or an API error to HTML.
 
@@ -75,7 +75,7 @@ This is a shape check, not a Cloudflare benchmark. Before implementation, measur
 
 ## HTML caching
 
-**Decision:** cache only successful `GET` HTML responses by normalized canonical path. `HEAD` mirrors headers/status and does not create an independent object. Cache key excludes query strings; the response body remains parity HTML, including the existing browser-side weather widget.
+**Decision:** cache only successful `GET` HTML responses by resolved HTML route. `HEAD` mirrors headers/status and does not create an independent object. Cache key excludes query strings; the response body remains parity HTML, including the existing browser-side weather widget.
 
 - Fresh HTML lifetime: **approval required — propose 24 hours**.
 - Stale window: **approval required — propose 7 days**, served while a single best-effort background regeneration runs.
@@ -94,7 +94,7 @@ The cache implementation must be selected only after confirming account/runtime 
 
 **Approval required:** reject `lat` outside `[-90, 90]` and `lon` outside `[-180, 180]`. This is desirable abuse protection but would change the parity-locked current API behavior, so it is not silently adopted.
 
-For cache identity, normalize each accepted number to decimal degrees rounded half away from zero only as JavaScript `toFixed(4)` specifies; convert negative zero to `0.0000`. Use the internal key:
+For cache identity, normalize each accepted number using canonical JavaScript `toFixed(4)` semantics; normalize negative zero to `0.0000`. Use the internal key:
 
 ```
 weather:v1:lat:{normalized-lat}:lon:{normalized-lon}
@@ -156,7 +156,7 @@ Production cutover occurs only after an approved parity evidence set. Rollback i
 | --- | --- | --- | --- |
 | D-01 | Dynamic Worker rendering plus edge HTML cache; no static HTML-per-city assets | 134,676 projected files exceed the 100,000 cap | Decided |
 | D-02 | Build-time, sharded Worker metadata; no R2 | Dataset is 19.9 MB and R2 need is unmeasured | Decided |
-| D-03 | Slashful HTML URLs are canonical; recognized slashless routes 308 | Matches generated canonical route form | Decided |
+| D-03 | Slashful HTML URLs are canonical; recognized slashless routes return `200` | Preserves current duplicate-`200` behavior while retaining generated canonical route form; any change requires later explicit approval | Decided |
 | D-04 | HTML never calls weather; browser calls `/api/weather` | Required Phase 1 separation | Decided |
 | D-05 | API accepts finite coordinates only; no range rejection | Preserves present behavior | Decided |
 | D-06 | Normalize to four decimals and cache provider results/stale responses | Controls duplicate calls without response-schema change | Pending TTL approval |
@@ -165,7 +165,7 @@ Production cutover occurs only after an approved parity evidence set. Rollback i
 
 ## Phase 1.2 acceptance tests
 
-1. Route fixtures cover home, browse, one country, one state, a normal city, and a collision-safe city: canonical slashful URL returns `200`; slashless equivalent returns `308`; unknown/wrong-case/over-deep routes return `404`.
+1. Route fixtures cover home, browse, one country, one state, a normal city, and a collision-safe city: canonical slashful URL and slashless equivalent each return `200`; canonical tags remain slashful; unknown/wrong-case/over-deep routes return `404`. The tests must reject any unapproved redirect or other change to this duplicate-`200` behavior.
 2. HTML snapshot/semantic comparison proves the selected fixtures retain visible copy, DOM/widget attributes, title, description, robots, canonical, Open Graph, JSON-LD, links, and no server-side provider invocation. It must explicitly prove that an HTML request performs zero provider calls.
 3. Asset tests fetch/inspect `robots.txt`, `sitemap.xml`, representative `/sitemaps/*`, favicon/logo, and `/assets/locations.json`; expected paths/content and `200` behavior are unchanged. Missing assets are `404`.
 4. Metadata tests resolve every route produced by the source dataset, preserve collision-safe routes, and report bundle size plus representative largest-shard parse time. The Worker artifact is below 64 MiB and the test does not require R2.
