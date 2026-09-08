@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+exec /home/laclaw/.hermes/hermes-agent/venv/bin/python "$(dirname "$0")/codex-quota-gate.py" "$@"
