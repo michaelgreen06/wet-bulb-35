@@ -1,0 +1,18 @@
+HTTP/2 200 
+date: Tue, 08 Sep 2026 01:21:38 GMT
+content-type: text/plain; charset=utf-8
+content-length: 2636
+access-control-allow-origin: *
+age: 65303
+cache-control: public, max-age=14400, must-revalidate
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+strict-transport-security: max-age=63072000
+x-vercel-cache: HIT
+x-vercel-id: sfo1::9pjgk-1788829542246-b9b8d9f87baa
+server-timing: cfCacheStatus;desc="REVALIDATED"
+cf-cache-status: REVALIDATED
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=DeHa%2BEPi6yQBKvh%2BxySjrkNSrKgrL4o1ESUGBLm0e%2BwaqUKuLhMo%2BxbCW7SMrIB2Nba1Ezi99U9vRIn3rczN%2FOl0%2BxA18rZJO47nTHIJyV6K94ibxJZHJrYTAXRe%2F%2FW%2BzMOZhA%3D%3D"}]}
+cf-ray: a37a23352982e64d-DEN
+alt-svc: h3=":443"; ma=86400
+

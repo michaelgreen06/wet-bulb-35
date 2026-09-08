@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wet Bulb Temperature by Country</title>
+  <meta name="description" content="Browse wet bulb temperature data by country, then drill into states and cities.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.wetbulb35.com/wetbulb-temperature/">
+  <meta property="og:title" content="Wet Bulb Temperature by Country">
+  <meta property="og:description" content="Browse wet bulb temperature data by country, then drill into states and cities.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.wetbulb35.com/wetbulb-temperature/">
+  <meta property="og:image" content="https://www.wetbulb35.com/images/wetbulb-default.jpg">
+  <meta property="og:site_name" content="Wet Bulb Temperature">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Wet Bulb Temperature by Country">
+  <meta name="twitter:description" content="Browse wet bulb temperature data by country, then drill into states and cities.">
+  <meta name="twitter:image" content="https://www.wetbulb35.com/images/wetbulb-default.jpg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LNPWV0JL7S"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-LNPWV0JL7S");
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Wet Bulb Temperature","item":"https://www.wetbulb35.com/wetbulb-temperature/"}]}</script>
+</head>
+<body>
+  <main class="min-h-screen bg-gray-50 py-8 px-4">
+    <div class="max-w-4xl mx-auto space-y-8">
+      <header class="text-center mb-8">
+    <div class="flex justify-center mb-4">
+      <a href="/" class="cursor-pointer">
+        <img src="/logo.svg" alt="Wet Bulb Temperature Logo" width="80" height="80">
+      </a>
+    </div>
+    <h1 class="text-4xl font-bold text-gray-900 mb-2">Current Wet Bulb Temperature</h1>
+    <p class="text-gray-600">Get real-time wet bulb temperature for any location</p>
+  </header>
+      <div class="space-y-6">
+    <div class="mt-6">
+    
+    <h1 class="text-3xl font-bold mb-6">Browse Wet Bulb Temperature by Country</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/afghanistan/">
+      <div class="font-semibold">Afghanistan</div>
+      <div class="text-sm text-gray-500">97 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/aland-islands/">
+      <div class="font-semibold">Åland Islands</div>
+      <div class="text-sm text-gray-500">9 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/albania/">
+      <div class="font-semibold">Albania</div>
+      <div class="text-sm text-gray-500">123 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/algeria/">
+      <div class="font-semibold">Algeria</div>
+      <div class="text-sm text-gray-500">342 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/american-samoa/">
+      <div class="font-semibold">American Samoa</div>
+      <div class="text-sm text-gray-500">11 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/andorra/">
+      <div class="font-semibold">Andorra</div>
+      <div class="text-sm text-gray-500">13 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/angola/">
+      <div class="font-semibold">Angola</div>
+      <div class="text-sm text-gray-500">136 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/anguilla/">
+      <div class="font-semibold">Anguilla</div>
+      <div class="text-sm text-gray-500">1 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/argentina/">
+      <div class="font-semibold">Argentina</div>
+      <div class="text-sm text-gray-500">787 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/armenia/">
+      <div class="font-semibold">Armenia</div>
+      <div class="text-sm text-gray-500">449 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/australia/">
+      <div class="font-semibold">Australia</div>
+      <div class="text-sm text-gray-500">3828 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/austria/">
+      <div class="font-semibold">Austria</div>
+      <div class="text-sm text-gray-500">1308 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/azerbaijan/">
+      <div class="font-semibold">Azerbaijan</div>
+      <div class="text-sm text-gray-500">174 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/bahamas/">
+      <div class="font-semibold">Bahamas</div>
+      <div class="text-sm text-gray-500">15 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/bahrain/">
+      <div class="font-semibold">Bahrain</div>
+      <div class="text-sm text-gray-500">10 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/bangladesh/">
+      <div class="font-semibold">Bangladesh</div>
+      <div class="text-sm text-gray-500">134 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/barbados/">
+      <div class="font-semibold">Barbados</div>
+      <div class="text-sm text-gray-500">6 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/barbuda/">
+      <div class="font-semibold">Barbuda</div>
+      <div class="text-sm text-gray-500">7 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/belarus/">
+      <div class="font-semibold">Belarus</div>
+      <div class="text-sm text-gray-500">260 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/belgium/">
+      <div class="font-semibold">Belgium</div>
+      <div class="text-sm text-gray-500">1735 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/belize/">
+      <div class="font-semibold">Belize</div>
+      <div class="text-sm text-gray-500">27 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/benin/">
+      <div class="font-semibold">Benin</div>
+      <div class="text-sm text-gray-500">72 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/bermuda/">
+      <div class="font-semibold">Bermuda</div>
+      <div class="text-sm text-gray-500">1 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/bhutan/">
+      <div class="font-semibold">Bhutan</div>
+      <div class="text-sm text-gray-500">21 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/bolivia/">
+      <div class="font-semibold">Bolivia</div>
+      <div class="text-sm text-gray-500">125 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/bosnia/">
+      <div class="font-semibold">Bosnia</div>
+      <div class="text-sm text-gray-500">246 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/botswana/">
+      <div class="font-semibold">Botswana</div>
+      <div class="text-sm text-gray-500">107 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/brazil/">
+      <div class="font-semibold">Brazil</div>
+      <div class="text-sm text-gray-500">2133 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/brunei/">
+      <div class="font-semibold">Brunei</div>
+      <div class="text-sm text-gray-500">23 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/bulgaria/">
+      <div class="font-semibold">Bulgaria</div>
+      <div class="text-sm text-gray-500">275 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/burkina-faso/">
+      <div class="font-semibold">Burkina Faso</div>
+      <div class="text-sm text-gray-500">81 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/burundi/">
+      <div class="font-semibold">Burundi</div>
+      <div class="text-sm text-gray-500">27 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/cambodia/">
+      <div class="font-semibold">Cambodia</div>
+      <div class="text-sm text-gray-500">32 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/cameroon/">
+      <div class="font-semibold">Cameroon</div>
+      <div class="text-sm text-gray-500">139 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/canada/">
+      <div class="font-semibold">Canada</div>
+      <div class="text-sm text-gray-500">1247 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/cape-verde/">
+      <div class="font-semibold">Cape Verde</div>
+      <div class="text-sm text-gray-500">23 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/caribbean-netherlands/">
+      <div class="font-semibold">Caribbean Netherlands</div>
+      <div class="text-sm text-gray-500">6 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/cayman-islands/">
+      <div class="font-semibold">Cayman Islands</div>
+      <div class="text-sm text-gray-500">5 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/central-african-republic/">
+      <div class="font-semibold">Central African Republic</div>
+      <div class="text-sm text-gray-500">46 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/chad/">
+      <div class="font-semibold">Chad</div>
+      <div class="text-sm text-gray-500">71 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/chile/">
+      <div class="font-semibold">Chile</div>
+      <div class="text-sm text-gray-500">150 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/china/">
+      <div class="font-semibold">China</div>
+      <div class="text-sm text-gray-500">3053 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/colombia/">
+      <div class="font-semibold">Colombia</div>
+      <div class="text-sm text-gray-500">957 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/comoros/">
+      <div class="font-semibold">Comoros</div>
+      <div class="text-sm text-gray-500">92 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/cook-islands/">
+      <div class="font-semibold">Cook Islands</div>
+      <div class="text-sm text-gray-500">1 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/costa-rica/">
+      <div class="font-semibold">Costa Rica</div>
+      <div class="text-sm text-gray-500">119 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/croatia/">
+      <div class="font-semibold">Croatia</div>
+      <div class="text-sm text-gray-500">493 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/cuba/">
+      <div class="font-semibold">Cuba</div>
+      <div class="text-sm text-gray-500">180 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/cyprus/">
+      <div class="font-semibold">Cyprus</div>
+      <div class="text-sm text-gray-500">92 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/czechia/">
+      <div class="font-semibold">Czechia</div>
+      <div class="text-sm text-gray-500">1293 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/denmark/">
+      <div class="font-semibold">Denmark</div>
+      <div class="text-sm text-gray-500">413 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/djibouti/">
+      <div class="font-semibold">Djibouti</div>
+      <div class="text-sm text-gray-500">12 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/dominica/">
+      <div class="font-semibold">Dominica</div>
+      <div class="text-sm text-gray-500">14 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/dominican-republic/">
+      <div class="font-semibold">Dominican Republic</div>
+      <div class="text-sm text-gray-500">207 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/dr-congo/">
+      <div class="font-semibold">DR Congo</div>
+      <div class="text-sm text-gray-500">116 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/east-timor/">
+      <div class="font-semibold">East Timor</div>
+      <div class="text-sm text-gray-500">18 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/ecuador/">
+      <div class="font-semibold">Ecuador</div>
+      <div class="text-sm text-gray-500">119 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/egypt/">
+      <div class="font-semibold">Egypt</div>
+      <div class="text-sm text-gray-500">242 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/el-salvador/">
+      <div class="font-semibold">El Salvador</div>
+      <div class="text-sm text-gray-500">100 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/equatorial-guinea/">
+      <div class="font-semibold">Equatorial Guinea</div>
+      <div class="text-sm text-gray-500">25 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/eritrea/">
+      <div class="font-semibold">Eritrea</div>
+      <div class="text-sm text-gray-500">14 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/estonia/">
+      <div class="font-semibold">Estonia</div>
+      <div class="text-sm text-gray-500">92 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/ethiopia/">
+      <div class="font-semibold">Ethiopia</div>
+      <div class="text-sm text-gray-500">235 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/faroe-islands/">
+      <div class="font-semibold">Faroe Islands</div>
+      <div class="text-sm text-gray-500">12 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/fiji/">
+      <div class="font-semibold">Fiji</div>
+      <div class="text-sm text-gray-500">8 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/finland/">
+      <div class="font-semibold">Finland</div>
+      <div class="text-sm text-gray-500">814 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/france/">
+      <div class="font-semibold">France</div>
+      <div class="text-sm text-gray-500">8881 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/french-guiana/">
+      <div class="font-semibold">French Guiana</div>
+      <div class="text-sm text-gray-500">14 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/french-polynesia/">
+      <div class="font-semibold">French Polynesia</div>
+      <div class="text-sm text-gray-500">33 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/gabon/">
+      <div class="font-semibold">Gabon</div>
+      <div class="text-sm text-gray-500">48 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/gambia/">
+      <div class="font-semibold">Gambia</div>
+      <div class="text-sm text-gray-500">118 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/georgia/">
+      <div class="font-semibold">Georgia</div>
+      <div class="text-sm text-gray-500">112 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/germany/">
+      <div class="font-semibold">Germany</div>
+      <div class="text-sm text-gray-500">7409 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/ghana/">
+      <div class="font-semibold">Ghana</div>
+      <div class="text-sm text-gray-500">107 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/greece/">
+      <div class="font-semibold">Greece</div>
+      <div class="text-sm text-gray-500">1060 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/greenland/">
+      <div class="font-semibold">Greenland</div>
+      <div class="text-sm text-gray-500">13 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/grenada/">
+      <div class="font-semibold">Grenada</div>
+      <div class="text-sm text-gray-500">7 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/guadeloupe/">
+      <div class="font-semibold">Guadeloupe</div>
+      <div class="text-sm text-gray-500">25 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/guam/">
+      <div class="font-semibold">Guam</div>
+      <div class="text-sm text-gray-500">20 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/guatemala/">
+      <div class="font-semibold">Guatemala</div>
+      <div class="text-sm text-gray-500">315 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/guernsey/">
+      <div class="font-semibold">Guernsey</div>
+      <div class="text-sm text-gray-500">2 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/guinea/">
+      <div class="font-semibold">Guinea</div>
+      <div class="text-sm text-gray-500">50 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/guinea-bissau/">
+      <div class="font-semibold">Guinea-Bissau</div>
+      <div class="text-sm text-gray-500">31 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/guyana/">
+      <div class="font-semibold">Guyana</div>
+      <div class="text-sm text-gray-500">13 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/haiti/">
+      <div class="font-semibold">Haiti</div>
+      <div class="text-sm text-gray-500">104 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/honduras/">
+      <div class="font-semibold">Honduras</div>
+      <div class="text-sm text-gray-500">422 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/hong-kong/">
+      <div class="font-semibold">Hong Kong</div>
+      <div class="text-sm text-gray-500">315 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/hungary/">
+      <div class="font-semibold">Hungary</div>
+      <div class="text-sm text-gray-500">960 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/iceland/">
+      <div class="font-semibold">Iceland</div>
+      <div class="text-sm text-gray-500">35 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/india/">
+      <div class="font-semibold">India</div>
+      <div class="text-sm text-gray-500">4384 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/indonesia/">
+      <div class="font-semibold">Indonesia</div>
+      <div class="text-sm text-gray-500">451 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/iran/">
+      <div class="font-semibold">Iran</div>
+      <div class="text-sm text-gray-500">246 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/iraq/">
+      <div class="font-semibold">Iraq</div>
+      <div class="text-sm text-gray-500">81 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/ireland/">
+      <div class="font-semibold">Ireland</div>
+      <div class="text-sm text-gray-500">369 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/israel/">
+      <div class="font-semibold">Israel</div>
+      <div class="text-sm text-gray-500">419 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/italy/">
+      <div class="font-semibold">Italy</div>
+      <div class="text-sm text-gray-500">6682 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/ivory-coast/">
+      <div class="font-semibold">Ivory Coast</div>
+      <div class="text-sm text-gray-500">3771 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/jamaica/">
+      <div class="font-semibold">Jamaica</div>
+      <div class="text-sm text-gray-500">92 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/japan/">
+      <div class="font-semibold">Japan</div>
+      <div class="text-sm text-gray-500">2032 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/jersey/">
+      <div class="font-semibold">Jersey</div>
+      <div class="text-sm text-gray-500">2 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/jordan/">
+      <div class="font-semibold">Jordan</div>
+      <div class="text-sm text-gray-500">84 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/kazakhstan/">
+      <div class="font-semibold">Kazakhstan</div>
+      <div class="text-sm text-gray-500">260 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/kenya/">
+      <div class="font-semibold">Kenya</div>
+      <div class="text-sm text-gray-500">324 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/kiribati/">
+      <div class="font-semibold">Kiribati</div>
+      <div class="text-sm text-gray-500">18 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/kuwait/">
+      <div class="font-semibold">Kuwait</div>
+      <div class="text-sm text-gray-500">27 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/kyrgyzstan/">
+      <div class="font-semibold">Kyrgyzstan</div>
+      <div class="text-sm text-gray-500">65 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/laos/">
+      <div class="font-semibold">Laos</div>
+      <div class="text-sm text-gray-500">25 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/latvia/">
+      <div class="font-semibold">Latvia</div>
+      <div class="text-sm text-gray-500">107 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/lebanon/">
+      <div class="font-semibold">Lebanon</div>
+      <div class="text-sm text-gray-500">29 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/lesotho/">
+      <div class="font-semibold">Lesotho</div>
+      <div class="text-sm text-gray-500">35 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/liberia/">
+      <div class="font-semibold">Liberia</div>
+      <div class="text-sm text-gray-500">24 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/libya/">
+      <div class="font-semibold">Libya</div>
+      <div class="text-sm text-gray-500">119 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/liechtenstein/">
+      <div class="font-semibold">Liechtenstein</div>
+      <div class="text-sm text-gray-500">11 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/lithuania/">
+      <div class="font-semibold">Lithuania</div>
+      <div class="text-sm text-gray-500">124 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/luxembourg/">
+      <div class="font-semibold">Luxembourg</div>
+      <div class="text-sm text-gray-500">119 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/macao/">
+      <div class="font-semibold">Macao</div>
+      <div class="text-sm text-gray-500">3 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/madagascar/">
+      <div class="font-semibold">Madagascar</div>
+      <div class="text-sm text-gray-500">136 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/malawi/">
+      <div class="font-semibold">Malawi</div>
+      <div class="text-sm text-gray-500">35 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/malaysia/">
+      <div class="font-semibold">Malaysia</div>
+      <div class="text-sm text-gray-500">726 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/maldives/">
+      <div class="font-semibold">Maldives</div>
+      <div class="text-sm text-gray-500">26 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/mali/">
+      <div class="font-semibold">Mali</div>
+      <div class="text-sm text-gray-500">65 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/malta/">
+      <div class="font-semibold">Malta</div>
+      <div class="text-sm text-gray-500">64 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/man/">
+      <div class="font-semibold">Man</div>
+      <div class="text-sm text-gray-500">6 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/marshall-islands/">
+      <div class="font-semibold">Marshall Islands</div>
+      <div class="text-sm text-gray-500">4 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/martinique/">
+      <div class="font-semibold">Martinique</div>
+      <div class="text-sm text-gray-500">20 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/mauritania/">
+      <div class="font-semibold">Mauritania</div>
+      <div class="text-sm text-gray-500">72 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/mauritius/">
+      <div class="font-semibold">Mauritius</div>
+      <div class="text-sm text-gray-500">99 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/mayotte/">
+      <div class="font-semibold">Mayotte</div>
+      <div class="text-sm text-gray-500">57 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/mexico/">
+      <div class="font-semibold">Mexico</div>
+      <div class="text-sm text-gray-500">8706 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/micronesia/">
+      <div class="font-semibold">Micronesia</div>
+      <div class="text-sm text-gray-500">6 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/moldova/">
+      <div class="font-semibold">Moldova</div>
+      <div class="text-sm text-gray-500">79 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/monaco/">
+      <div class="font-semibold">Monaco</div>
+      <div class="text-sm text-gray-500">6 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/mongolia/">
+      <div class="font-semibold">Mongolia</div>
+      <div class="text-sm text-gray-500">30 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/montenegro/">
+      <div class="font-semibold">Montenegro</div>
+      <div class="text-sm text-gray-500">36 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/montserrat/">
+      <div class="font-semibold">Montserrat</div>
+      <div class="text-sm text-gray-500">2 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/morocco/">
+      <div class="font-semibold">Morocco</div>
+      <div class="text-sm text-gray-500">386 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/mozambique/">
+      <div class="font-semibold">Mozambique</div>
+      <div class="text-sm text-gray-500">91 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/myanmar/">
+      <div class="font-semibold">Myanmar</div>
+      <div class="text-sm text-gray-500">79 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/namibia/">
+      <div class="font-semibold">Namibia</div>
+      <div class="text-sm text-gray-500">76 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/nauru/">
+      <div class="font-semibold">Nauru</div>
+      <div class="text-sm text-gray-500">4 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/nepal/">
+      <div class="font-semibold">Nepal</div>
+      <div class="text-sm text-gray-500">59 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/netherlands/">
+      <div class="font-semibold">Netherlands</div>
+      <div class="text-sm text-gray-500">1441 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/new-caledonia/">
+      <div class="font-semibold">New Caledonia</div>
+      <div class="text-sm text-gray-500">27 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/new-zealand/">
+      <div class="font-semibold">New Zealand</div>
+      <div class="text-sm text-gray-500">641 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/nicaragua/">
+      <div class="font-semibold">Nicaragua</div>
+      <div class="text-sm text-gray-500">127 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/niger/">
+      <div class="font-semibold">Niger</div>
+      <div class="text-sm text-gray-500">69 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/nigeria/">
+      <div class="font-semibold">Nigeria</div>
+      <div class="text-sm text-gray-500">471 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/north-korea/">
+      <div class="font-semibold">North Korea</div>
+      <div class="text-sm text-gray-500">112 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/north-macedonia/">
+      <div class="font-semibold">North Macedonia</div>
+      <div class="text-sm text-gray-500">197 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/northern-mariana-islands/">
+      <div class="font-semibold">Northern Mariana Islands</div>
+      <div class="text-sm text-gray-500">2 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/norway/">
+      <div class="font-semibold">Norway</div>
+      <div class="text-sm text-gray-500">328 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/oman/">
+      <div class="font-semibold">Oman</div>
+      <div class="text-sm text-gray-500">31 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/pakistan/">
+      <div class="font-semibold">Pakistan</div>
+      <div class="text-sm text-gray-500">473 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/palau/">
+      <div class="font-semibold">Palau</div>
+      <div class="text-sm text-gray-500">6 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/palestine/">
+      <div class="font-semibold">Palestine</div>
+      <div class="text-sm text-gray-500">366 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/panama/">
+      <div class="font-semibold">Panama</div>
+      <div class="text-sm text-gray-500">258 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/papua-new-guinea/">
+      <div class="font-semibold">Papua New Guinea</div>
+      <div class="text-sm text-gray-500">37 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/paraguay/">
+      <div class="font-semibold">Paraguay</div>
+      <div class="text-sm text-gray-500">142 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/peru/">
+      <div class="font-semibold">Peru</div>
+      <div class="text-sm text-gray-500">373 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/philippines/">
+      <div class="font-semibold">Philippines</div>
+      <div class="text-sm text-gray-500">4224 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/poland/">
+      <div class="font-semibold">Poland</div>
+      <div class="text-sm text-gray-500">2573 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/portugal/">
+      <div class="font-semibold">Portugal</div>
+      <div class="text-sm text-gray-500">900 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/puerto-rico/">
+      <div class="font-semibold">Puerto Rico</div>
+      <div class="text-sm text-gray-500">219 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/qatar/">
+      <div class="font-semibold">Qatar</div>
+      <div class="text-sm text-gray-500">39 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/republic-of-congo/">
+      <div class="font-semibold">Republic of Congo</div>
+      <div class="text-sm text-gray-500">56 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/reunion/">
+      <div class="font-semibold">Reunion</div>
+      <div class="text-sm text-gray-500">25 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/romania/">
+      <div class="font-semibold">Romania</div>
+      <div class="text-sm text-gray-500">4301 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/russia/">
+      <div class="font-semibold">Russia</div>
+      <div class="text-sm text-gray-500">4749 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/rwanda/">
+      <div class="font-semibold">Rwanda</div>
+      <div class="text-sm text-gray-500">42 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/saint-helena/">
+      <div class="font-semibold">Saint Helena</div>
+      <div class="text-sm text-gray-500">3 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/samoa/">
+      <div class="font-semibold">Samoa</div>
+      <div class="text-sm text-gray-500">18 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/san-marino/">
+      <div class="font-semibold">San Marino</div>
+      <div class="text-sm text-gray-500">8 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/sao-tome/">
+      <div class="font-semibold">Sao Tome</div>
+      <div class="text-sm text-gray-500">10 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/saudi-arabia/">
+      <div class="font-semibold">Saudi Arabia</div>
+      <div class="text-sm text-gray-500">110 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/senegal/">
+      <div class="font-semibold">Senegal</div>
+      <div class="text-sm text-gray-500">148 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/serbia/">
+      <div class="font-semibold">Serbia</div>
+      <div class="text-sm text-gray-500">353 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/seychelles/">
+      <div class="font-semibold">Seychelles</div>
+      <div class="text-sm text-gray-500">8 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/sierra-leone/">
+      <div class="font-semibold">Sierra Leone</div>
+      <div class="text-sm text-gray-500">87 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/slovakia/">
+      <div class="font-semibold">Slovakia</div>
+      <div class="text-sm text-gray-500">337 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/slovenia/">
+      <div class="font-semibold">Slovenia</div>
+      <div class="text-sm text-gray-500">217 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/solomon-islands/">
+      <div class="font-semibold">Solomon Islands</div>
+      <div class="text-sm text-gray-500">8 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/somalia/">
+      <div class="font-semibold">Somalia</div>
+      <div class="text-sm text-gray-500">64 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/south-africa/">
+      <div class="font-semibold">South Africa</div>
+      <div class="text-sm text-gray-500">828 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/south-korea/">
+      <div class="font-semibold">South Korea</div>
+      <div class="text-sm text-gray-500">134 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/south-sudan/">
+      <div class="font-semibold">South Sudan</div>
+      <div class="text-sm text-gray-500">23 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/spain/">
+      <div class="font-semibold">Spain</div>
+      <div class="text-sm text-gray-500">3107 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/sri-lanka/">
+      <div class="font-semibold">Sri Lanka</div>
+      <div class="text-sm text-gray-500">79 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/st-kitts-and-nevis/">
+      <div class="font-semibold">St Kitts and Nevis</div>
+      <div class="text-sm text-gray-500">11 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/st-lucia/">
+      <div class="font-semibold">St Lucia</div>
+      <div class="text-sm text-gray-500">37 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/st-pierre-and-miquelon/">
+      <div class="font-semibold">St Pierre and Miquelon</div>
+      <div class="text-sm text-gray-500">2 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/st-vincent-and-grenadines/">
+      <div class="font-semibold">St Vincent and Grenadines</div>
+      <div class="text-sm text-gray-500">6 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/sudan/">
+      <div class="font-semibold">Sudan</div>
+      <div class="text-sm text-gray-500">99 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/suriname/">
+      <div class="font-semibold">Suriname</div>
+      <div class="text-sm text-gray-500">14 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/svalbard/">
+      <div class="font-semibold">Svalbard</div>
+      <div class="text-sm text-gray-500">1 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/swaziland/">
+      <div class="font-semibold">Swaziland</div>
+      <div class="text-sm text-gray-500">21 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/sweden/">
+      <div class="font-semibold">Sweden</div>
+      <div class="text-sm text-gray-500">817 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/switzerland/">
+      <div class="font-semibold">Switzerland</div>
+      <div class="text-sm text-gray-500">1332 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/syria/">
+      <div class="font-semibold">Syria</div>
+      <div class="text-sm text-gray-500">97 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/taiwan/">
+      <div class="font-semibold">Taiwan</div>
+      <div class="text-sm text-gray-500">73 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/tajikistan/">
+      <div class="font-semibold">Tajikistan</div>
+      <div class="text-sm text-gray-500">68 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/tanzania/">
+      <div class="font-semibold">Tanzania</div>
+      <div class="text-sm text-gray-500">318 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/thailand/">
+      <div class="font-semibold">Thailand</div>
+      <div class="text-sm text-gray-500">336 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/tobago/">
+      <div class="font-semibold">Tobago</div>
+      <div class="text-sm text-gray-500">27 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/togo/">
+      <div class="font-semibold">Togo</div>
+      <div class="text-sm text-gray-500">31 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/tonga/">
+      <div class="font-semibold">Tonga</div>
+      <div class="text-sm text-gray-500">11 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/tunisia/">
+      <div class="font-semibold">Tunisia</div>
+      <div class="text-sm text-gray-500">285 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/turkey/">
+      <div class="font-semibold">Turkey</div>
+      <div class="text-sm text-gray-500">1682 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/turkmenistan/">
+      <div class="font-semibold">Turkmenistan</div>
+      <div class="text-sm text-gray-500">29 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/tuvalu/">
+      <div class="font-semibold">Tuvalu</div>
+      <div class="text-sm text-gray-500">4 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/uganda/">
+      <div class="font-semibold">Uganda</div>
+      <div class="text-sm text-gray-500">163 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/ukraine/">
+      <div class="font-semibold">Ukraine</div>
+      <div class="text-sm text-gray-500">2129 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-arab-emirates/">
+      <div class="font-semibold">United Arab Emirates</div>
+      <div class="text-sm text-gray-500">102 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-kingdom/">
+      <div class="font-semibold">United Kingdom</div>
+      <div class="text-sm text-gray-500">3960 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/">
+      <div class="font-semibold">United States</div>
+      <div class="text-sm text-gray-500">16498 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/uruguay/">
+      <div class="font-semibold">Uruguay</div>
+      <div class="text-sm text-gray-500">129 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/us-virgin-islands/">
+      <div class="font-semibold">US Virgin Islands</div>
+      <div class="text-sm text-gray-500">4 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/uzbekistan/">
+      <div class="font-semibold">Uzbekistan</div>
+      <div class="text-sm text-gray-500">132 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/vanuatu/">
+      <div class="font-semibold">Vanuatu</div>
+      <div class="text-sm text-gray-500">6 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/venezuela/">
+      <div class="font-semibold">Venezuela</div>
+      <div class="text-sm text-gray-500">237 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/vietnam/">
+      <div class="font-semibold">Vietnam</div>
+      <div class="text-sm text-gray-500">151 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/wallis-and-futuna-islands/">
+      <div class="font-semibold">Wallis and Futuna Islands</div>
+      <div class="text-sm text-gray-500">1 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/yemen/">
+      <div class="font-semibold">Yemen</div>
+      <div class="text-sm text-gray-500">44 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/zambia/">
+      <div class="font-semibold">Zambia</div>
+      <div class="text-sm text-gray-500">98 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/zimbabwe/">
+      <div class="font-semibold">Zimbabwe</div>
+      <div class="text-sm text-gray-500">68 locations</div>
+    </a></div>
+  </div>
+  </div>
+    </div>
+    <footer class="mt-12 py-6 border-t border-gray-200">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <p class="text-sm text-gray-600">© 2026 Wet Bulb Temperature Monitor</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Contact us at: <span class="font-medium"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4b22252d240b3c2e3f293e2729787e65282426">[email&#160;protected]</a></span></p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  </main>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="/assets/app.js" defer></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"3310282ac9354e67970cce65f62bb939","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

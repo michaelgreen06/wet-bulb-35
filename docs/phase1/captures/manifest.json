@@ -1,0 +1,149 @@
+{
+  "method": "curl without JavaScript; fixed allowlist; redirects followed; child sitemaps excluded",
+  "records": [
+    {
+      "body_file": "home.body",
+      "captured_at_utc": "2026-09-08T01:21:36Z",
+      "content_bytes": 6590,
+      "content_sha256": "6d3901897d82afb2256d6f3c59b7de7844bf37a3000a8e4adb4b3cfa081a910b",
+      "final_status": 200,
+      "final_url": "https://www.wetbulb35.com/",
+      "headers_file": "home.headers.txt",
+      "redirect_chain": [
+        {
+          "location": null,
+          "status": 200
+        }
+      ],
+      "requested_url": "https://www.wetbulb35.com/"
+    },
+    {
+      "body_file": "wetbulb-temperature.body",
+      "captured_at_utc": "2026-09-08T01:21:36Z",
+      "content_bytes": 54111,
+      "content_sha256": "ee95adf4ee47465120cafe855dbb54ca1dd3fdb84326e75ed5e531aec5bd1922",
+      "final_status": 200,
+      "final_url": "https://www.wetbulb35.com/wetbulb-temperature",
+      "headers_file": "wetbulb-temperature.headers.txt",
+      "redirect_chain": [
+        {
+          "location": null,
+          "status": 200
+        }
+      ],
+      "requested_url": "https://www.wetbulb35.com/wetbulb-temperature"
+    },
+    {
+      "body_file": "wetbulb-temperature--united-states.body",
+      "captured_at_utc": "2026-09-08T01:21:37Z",
+      "content_bytes": 16300,
+      "content_sha256": "ac139713b56c206399094b25f7e9b25f38d193de305a3a7083fa1e04bb64e229",
+      "final_status": 200,
+      "final_url": "https://www.wetbulb35.com/wetbulb-temperature/united-states",
+      "headers_file": "wetbulb-temperature--united-states.headers.txt",
+      "redirect_chain": [
+        {
+          "location": null,
+          "status": 200
+        }
+      ],
+      "requested_url": "https://www.wetbulb35.com/wetbulb-temperature/united-states"
+    },
+    {
+      "body_file": "wetbulb-temperature--united-states--texas.body",
+      "captured_at_utc": "2026-09-08T01:21:37Z",
+      "content_bytes": 191411,
+      "content_sha256": "9522109e3d35c9e6bdb282e2bfe5eeba7c590a32293ede5a41ff1efb71a45bec",
+      "final_status": 200,
+      "final_url": "https://www.wetbulb35.com/wetbulb-temperature/united-states/texas",
+      "headers_file": "wetbulb-temperature--united-states--texas.headers.txt",
+      "redirect_chain": [
+        {
+          "location": null,
+          "status": 200
+        }
+      ],
+      "requested_url": "https://www.wetbulb35.com/wetbulb-temperature/united-states/texas"
+    },
+    {
+      "body_file": "wetbulb-temperature--united-states--alabama--birmingham.body",
+      "captured_at_utc": "2026-09-08T01:21:37Z",
+      "content_bytes": 7196,
+      "content_sha256": "6e9c60ce7dcb9c2599270ca75629e42101bbc3597f091dcea20eb093d1abfb0a",
+      "final_status": 200,
+      "final_url": "https://www.wetbulb35.com/wetbulb-temperature/united-states/alabama/birmingham",
+      "headers_file": "wetbulb-temperature--united-states--alabama--birmingham.headers.txt",
+      "redirect_chain": [
+        {
+          "location": null,
+          "status": 200
+        }
+      ],
+      "requested_url": "https://www.wetbulb35.com/wetbulb-temperature/united-states/alabama/birmingham"
+    },
+    {
+      "body_file": "about.body",
+      "captured_at_utc": "2026-09-08T01:21:37Z",
+      "content_bytes": 4085,
+      "content_sha256": "cf245d8ced97ac10531cfa68bbb05b23715a8bd9f409bfc5125758537464caaf",
+      "final_status": 404,
+      "final_url": "https://www.wetbulb35.com/about",
+      "headers_file": "about.headers.txt",
+      "redirect_chain": [
+        {
+          "location": null,
+          "status": 404
+        }
+      ],
+      "requested_url": "https://www.wetbulb35.com/about"
+    },
+    {
+      "body_file": "not-a-real-page-9b1e3d.body",
+      "captured_at_utc": "2026-09-08T01:21:37Z",
+      "content_bytes": 4085,
+      "content_sha256": "cbd3e3c56543c5483dc3220311203894b537b2dc798d9f9c6be75b9cb3cda59b",
+      "final_status": 404,
+      "final_url": "https://www.wetbulb35.com/not-a-real-page-9b1e3d",
+      "headers_file": "not-a-real-page-9b1e3d.headers.txt",
+      "redirect_chain": [
+        {
+          "location": null,
+          "status": 404
+        }
+      ],
+      "requested_url": "https://www.wetbulb35.com/not-a-real-page-9b1e3d"
+    },
+    {
+      "body_file": "robots.body",
+      "captured_at_utc": "2026-09-08T01:21:38Z",
+      "content_bytes": 2636,
+      "content_sha256": "790de8c4228df1172914d164d925f5965efd1e33867454d7651be7b15d2316f8",
+      "final_status": 200,
+      "final_url": "https://www.wetbulb35.com/robots.txt",
+      "headers_file": "robots.headers.txt",
+      "redirect_chain": [
+        {
+          "location": null,
+          "status": 200
+        }
+      ],
+      "requested_url": "https://www.wetbulb35.com/robots.txt"
+    },
+    {
+      "body_file": "sitemap.body",
+      "captured_at_utc": "2026-09-08T01:21:38Z",
+      "content_bytes": 34736,
+      "content_sha256": "6af6f8cbbdcc86ebe65a6c24033e6071d71a62debbc8cc81ce01ca93a40c6bd0",
+      "final_status": 200,
+      "final_url": "https://www.wetbulb35.com/sitemap.xml",
+      "headers_file": "sitemap.headers.txt",
+      "redirect_chain": [
+        {
+          "location": null,
+          "status": 200
+        }
+      ],
+      "requested_url": "https://www.wetbulb35.com/sitemap.xml"
+    }
+  ]
+}

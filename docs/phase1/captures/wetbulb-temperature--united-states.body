@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wet Bulb Temperature in United States</title>
+  <meta name="description" content="Browse wet bulb temperature data for states and provinces in United States.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.wetbulb35.com/wetbulb-temperature/united-states/">
+  <meta property="og:title" content="Wet Bulb Temperature in United States">
+  <meta property="og:description" content="Browse wet bulb temperature data for states and provinces in United States.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.wetbulb35.com/wetbulb-temperature/united-states/">
+  <meta property="og:image" content="https://www.wetbulb35.com/images/wetbulb-default.jpg">
+  <meta property="og:site_name" content="Wet Bulb Temperature">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Wet Bulb Temperature in United States">
+  <meta name="twitter:description" content="Browse wet bulb temperature data for states and provinces in United States.">
+  <meta name="twitter:image" content="https://www.wetbulb35.com/images/wetbulb-default.jpg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LNPWV0JL7S"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-LNPWV0JL7S");
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Wet Bulb Temperature","item":"https://www.wetbulb35.com/wetbulb-temperature/"},{"@type":"ListItem","position":2,"name":"United States","item":"https://www.wetbulb35.com/wetbulb-temperature/united-states/"}]}</script>
+</head>
+<body>
+  <main class="min-h-screen bg-gray-50 py-8 px-4">
+    <div class="max-w-4xl mx-auto space-y-8">
+      <header class="text-center mb-8">
+    <div class="flex justify-center mb-4">
+      <a href="/" class="cursor-pointer">
+        <img src="/logo.svg" alt="Wet Bulb Temperature Logo" width="80" height="80">
+      </a>
+    </div>
+    <h1 class="text-4xl font-bold text-gray-900 mb-2">Current Wet Bulb Temperature</h1>
+    <p class="text-gray-600">Get real-time wet bulb temperature for any location</p>
+  </header>
+      <div class="space-y-6">
+    <div class="mt-6">
+    <div class="mb-6"><a href="/wetbulb-temperature/" class="text-blue-600 hover:underline">← Back to Countries</a></div>
+    <h1 class="text-3xl font-bold mb-6">Browse United States by State/Province</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/alabama/">
+      <div class="font-semibold">Alabama</div>
+      <div class="text-sm text-gray-500">311 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/alaska/">
+      <div class="font-semibold">Alaska</div>
+      <div class="text-sm text-gray-500">70 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/arizona/">
+      <div class="font-semibold">Arizona</div>
+      <div class="text-sm text-gray-500">214 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/arkansas/">
+      <div class="font-semibold">Arkansas</div>
+      <div class="text-sm text-gray-500">211 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/california/">
+      <div class="font-semibold">California</div>
+      <div class="text-sm text-gray-500">1111 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/colorado/">
+      <div class="font-semibold">Colorado</div>
+      <div class="text-sm text-gray-500">210 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/connecticut/">
+      <div class="font-semibold">Connecticut</div>
+      <div class="text-sm text-gray-500">186 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/delaware/">
+      <div class="font-semibold">Delaware</div>
+      <div class="text-sm text-gray-500">52 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/district-of-columbia/">
+      <div class="font-semibold">District of Columbia</div>
+      <div class="text-sm text-gray-500">5 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/florida/">
+      <div class="font-semibold">Florida</div>
+      <div class="text-sm text-gray-500">789 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/georgia/">
+      <div class="font-semibold">Georgia</div>
+      <div class="text-sm text-gray-500">371 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/hawaii/">
+      <div class="font-semibold">Hawaii</div>
+      <div class="text-sm text-gray-500">215 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/idaho/">
+      <div class="font-semibold">Idaho</div>
+      <div class="text-sm text-gray-500">89 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/illinois/">
+      <div class="font-semibold">Illinois</div>
+      <div class="text-sm text-gray-500">762 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/indiana/">
+      <div class="font-semibold">Indiana</div>
+      <div class="text-sm text-gray-500">348 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/iowa/">
+      <div class="font-semibold">Iowa</div>
+      <div class="text-sm text-gray-500">283 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/kansas/">
+      <div class="font-semibold">Kansas</div>
+      <div class="text-sm text-gray-500">201 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/kentucky/">
+      <div class="font-semibold">Kentucky</div>
+      <div class="text-sm text-gray-500">256 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/louisiana/">
+      <div class="font-semibold">Louisiana</div>
+      <div class="text-sm text-gray-500">280 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/maine/">
+      <div class="font-semibold">Maine</div>
+      <div class="text-sm text-gray-500">256 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/maryland/">
+      <div class="font-semibold">Maryland</div>
+      <div class="text-sm text-gray-500">350 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/massachusetts/">
+      <div class="font-semibold">Massachusetts</div>
+      <div class="text-sm text-gray-500">391 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/michigan/">
+      <div class="font-semibold">Michigan</div>
+      <div class="text-sm text-gray-500">444 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/minnesota/">
+      <div class="font-semibold">Minnesota</div>
+      <div class="text-sm text-gray-500">370 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/mississippi/">
+      <div class="font-semibold">Mississippi</div>
+      <div class="text-sm text-gray-500">206 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/missouri/">
+      <div class="font-semibold">Missouri</div>
+      <div class="text-sm text-gray-500">375 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/montana/">
+      <div class="font-semibold">Montana</div>
+      <div class="text-sm text-gray-500">88 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/nebraska/">
+      <div class="font-semibold">Nebraska</div>
+      <div class="text-sm text-gray-500">114 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/nevada/">
+      <div class="font-semibold">Nevada</div>
+      <div class="text-sm text-gray-500">63 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/new-hampshire/">
+      <div class="font-semibold">New Hampshire</div>
+      <div class="text-sm text-gray-500">176 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/new-jersey/">
+      <div class="font-semibold">New Jersey</div>
+      <div class="text-sm text-gray-500">551 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/new-mexico/">
+      <div class="font-semibold">New Mexico</div>
+      <div class="text-sm text-gray-500">146 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/new-york/">
+      <div class="font-semibold">New York</div>
+      <div class="text-sm text-gray-500">1038 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/north-carolina/">
+      <div class="font-semibold">North Carolina</div>
+      <div class="text-sm text-gray-500">447 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/north-dakota/">
+      <div class="font-semibold">North Dakota</div>
+      <div class="text-sm text-gray-500">58 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/ohio/">
+      <div class="font-semibold">Ohio</div>
+      <div class="text-sm text-gray-500">687 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/oklahoma/">
+      <div class="font-semibold">Oklahoma</div>
+      <div class="text-sm text-gray-500">239 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/oregon/">
+      <div class="font-semibold">Oregon</div>
+      <div class="text-sm text-gray-500">216 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/pennsylvania/">
+      <div class="font-semibold">Pennsylvania</div>
+      <div class="text-sm text-gray-500">1022 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/rhode-island/">
+      <div class="font-semibold">Rhode Island</div>
+      <div class="text-sm text-gray-500">49 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/south-carolina/">
+      <div class="font-semibold">South Carolina</div>
+      <div class="text-sm text-gray-500">244 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/south-dakota/">
+      <div class="font-semibold">South Dakota</div>
+      <div class="text-sm text-gray-500">73 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/tennessee/">
+      <div class="font-semibold">Tennessee</div>
+      <div class="text-sm text-gray-500">298 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/texas/">
+      <div class="font-semibold">Texas</div>
+      <div class="text-sm text-gray-500">1009 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/utah/">
+      <div class="font-semibold">Utah</div>
+      <div class="text-sm text-gray-500">176 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/vermont/">
+      <div class="font-semibold">Vermont</div>
+      <div class="text-sm text-gray-500">79 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/virginia/">
+      <div class="font-semibold">Virginia</div>
+      <div class="text-sm text-gray-500">342 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/washington/">
+      <div class="font-semibold">Washington</div>
+      <div class="text-sm text-gray-500">399 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/west-virginia/">
+      <div class="font-semibold">West Virginia</div>
+      <div class="text-sm text-gray-500">154 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/wisconsin/">
+      <div class="font-semibold">Wisconsin</div>
+      <div class="text-sm text-gray-500">417 locations</div>
+    </a><a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/wetbulb-temperature/united-states/wyoming/">
+      <div class="font-semibold">Wyoming</div>
+      <div class="text-sm text-gray-500">57 locations</div>
+    </a></div>
+  </div>
+  </div>
+    </div>
+    <footer class="mt-12 py-6 border-t border-gray-200">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <p class="text-sm text-gray-600">© 2026 Wet Bulb Temperature Monitor</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Contact us at: <span class="font-medium"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="9bf2f5fdf4dbecfeeff9eef7f9a8aeb5f8f4f6">[email&#160;protected]</a></span></p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  </main>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="/assets/app.js" defer></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"3310282ac9354e67970cce65f62bb939","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

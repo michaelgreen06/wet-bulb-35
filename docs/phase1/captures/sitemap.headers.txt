@@ -1,0 +1,22 @@
+HTTP/2 200 
+date: Tue, 08 Sep 2026 01:21:38 GMT
+content-type: application/xml
+access-control-allow-origin: *
+age: 8244
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="sitemap.xml"
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+etag: W/"515abcce0875cbd058a26ac11cff2fea"
+last-modified: Mon, 07 Sep 2026 23:04:13 GMT
+server: cloudflare
+strict-transport-security: max-age=63072000
+x-vercel-cache: HIT
+x-vercel-id: sfo1::lmdtd-1788830498424-28d57fd886c2
+cf-cache-status: DYNAMIC
+vary: accept-encoding
+server-timing: cfCacheStatus;desc="DYNAMIC"
+server-timing: cfEdge;dur=49,cfOrigin;dur=38
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=G8VYtSA4UaEkLUwQTzCkOwPtFPwIg4SlapzQga%2FPnhkQRuiA5i46wddbkxOQwcuPUV5yifxAXcMGo8RYHaIb0vpuj694eBmCyqeGSHUMZt3m8aUFATn4%2FRETbRdXlfth4v7Fvw%3D%3D"}]}
+cf-ray: a37a2336c9d653de-DEN
+alt-svc: h3=":443"; ma=86400
+

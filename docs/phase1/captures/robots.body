@@ -1,0 +1,89 @@
+# As a condition of accessing this website, you agree to abide by the following
+# content signals:
+
+# (a)  If a Content-Signal = yes, you may collect content for the corresponding
+#      use.
+# (b)  If a Content-Signal = no, you may not collect content for the
+#      corresponding use.
+# (c)  If the website operator does not include a Content-Signal for a
+#      corresponding use, the website operator neither grants nor restricts
+#      permission via Content-Signal with respect to the corresponding use.
+
+# The content signals and their meanings are:
+
+# search:   building a search index and providing search results (e.g., returning
+#           hyperlinks and short excerpts from your website's contents). Search does not
+#           include providing AI-generated search summaries.
+# ai-input: inputting content into one or more AI models (e.g., retrieval
+#           augmented generation, grounding, or other real-time taking of content for
+#           generative AI search answers).
+# ai-train: training or fine-tuning AI models.
+# use:      how AI systems may consume the content (immediate, reference, or full).
+
+# ANY RESTRICTIONS EXPRESSED VIA CONTENT SIGNALS ARE EXPRESS RESERVATIONS OF
+# RIGHTS UNDER ARTICLE 4 OF THE EUROPEAN UNION DIRECTIVE 2019/790 ON COPYRIGHT
+# AND RELATED RIGHTS IN THE DIGITAL SINGLE MARKET.
+
+# BEGIN Cloudflare Managed content
+
+User-agent: *
+Content-Signal: search=yes,ai-train=no,use=reference
+Allow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: CloudflareBrowserRenderingCrawler
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+# END Cloudflare Managed Content
+
+User-agent: *
+Allow: /
+Allow: /sitemap.xml
+Allow: /sitemaps/
+Allow: /sitemaps/*.xml
+
+# Block old API-based sitemap URLs
+Disallow: /api/sitemap-*.xml
+Disallow: /api/sitemap-index.xml
+
+# Block old sitemap-locations files
+Disallow: /sitemap-locations-1.xml
+Disallow: /sitemap-locations-2.xml
+Disallow: /sitemap-locations-3.xml
+Disallow: /sitemap-locations-4.xml
+Disallow: /sitemap-locations-5.xml
+Disallow: /sitemap-locations-6.xml
+Disallow: /sitemap-locations-7.xml
+Disallow: /sitemap-locations-8.xml
+Disallow: /sitemap-locations-9.xml
+Disallow: /sitemap-locations-10.xml
+Disallow: /sitemap-locations-11.xml
+Disallow: /sitemap-locations-12.xml
+Disallow: /sitemap-locations-13.xml
+Disallow: /sitemap-locations-14.xml
+
+# Specify the location of the sitemap
+Sitemap: https://www.wetbulb35.com/sitemap.xml
