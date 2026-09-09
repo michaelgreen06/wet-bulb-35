@@ -1,6 +1,6 @@
 # Phase 1 production cutover runbook
 
-**Status:** preparation only. This document authorizes nothing. No route, DNS, domain, deployment, secret, merge, retarget, Vercel change, weather request, alert, or log action was performed while preparing it.
+**Status:** the route-free production Worker and encrypted secret are provisioned; no public target, route, DNS, custom domain, traffic, merge, retarget, Vercel change, weather request, alert, or log action occurred. Route attachment remains unauthorized.
 
 ## Recommendation and evidence
 
@@ -55,6 +55,8 @@ Run each line separately only after the preceding merge is visible on `main` and
 
 ## 2. Provision a production-named Worker with no route
 
+Completed under Michael's authorization on 2026-09-09. Sanitized evidence is in `evidence/route-free-production-worker.json`: Worker `wetbulb35-weather-production`, deployment `c3473d0f-e269-49d7-9abb-56b5647550d4`, version `368ecf1b-04b0-4444-b9ec-3cbcf33685d8` at 100%, zero deployed targets, zero production-zone routes, and zero custom domains. Future updates still require approval.
+
 Gate: serial stack merged; reviewed production configuration is route-free; Cloudflare owner, window, rollback owner, and Vercel observer are named; no production serving change is approved yet.
 
 ```sh
@@ -66,6 +68,8 @@ npm run build:hono-renderer-assets # NOT AUTHORIZED production preflight
 Immediately read-confirm the Worker identity/version and that the zone route/custom-domain inventories are still zero. If either inventory differs, abort before secret installation. This command may create a Worker but cannot be used to serve `www` without a later route attachment.
 
 ## 3. Install the encrypted secret by name
+
+Completed under the same authorization. Read-back lists only `OPENWEATHER_API_KEY`; its value is not present in repository evidence or command output. No public endpoint exists for this Worker.
 
 Gate: the approved secret custodian supplies the value only through the terminal prompt; evidence records only `OPENWEATHER_API_KEY` as a name. Never paste, log, commit, export, or capture a value.
 

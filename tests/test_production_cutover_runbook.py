@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RUNBOOK = ROOT / "docs/phase1/production-cutover-runbook.md"
 CHECKLIST = ROOT / "docs/phase1/production-cutover-checklist.json"
+ROUTE_FREE_EVIDENCE = ROOT / "docs/phase1/evidence/route-free-production-worker.json"
 ROUTE_FREE = ROOT / "wrangler.weather-production.toml"
 ROUTE_BEARING = ROOT / "wrangler.weather-production-route.toml"
 
@@ -15,6 +16,7 @@ class ProductionCutoverRunbookTests(unittest.TestCase):
     def setUp(self):
         self.text = RUNBOOK.read_text(encoding="utf-8")
         self.checklist = json.loads(CHECKLIST.read_text(encoding="utf-8"))
+        self.route_free_evidence = json.loads(ROUTE_FREE_EVIDENCE.read_text(encoding="utf-8"))
 
     def test_required_gates_and_evidence_are_present(self):
         for required in (
@@ -73,6 +75,20 @@ class ProductionCutoverRunbookTests(unittest.TestCase):
         self.assertIn("abort_conditions", self.checklist)
         self.assertIn("approvals", self.checklist)
         self.assertEqual(self.checklist["recommendation"]["control_plane"], "route")
+
+    def test_route_free_production_evidence_has_no_public_target(self):
+        evidence = self.route_free_evidence
+        self.assertTrue(evidence["sanitized"])
+        self.assertEqual(evidence["worker"], "wetbulb35-weather-production")
+        self.assertFalse(evidence["configuration"]["workers_dev"])
+        self.assertFalse(evidence["configuration"]["preview_urls"])
+        self.assertEqual(evidence["configuration"]["route_keys"], [])
+        self.assertEqual(evidence["deployment"]["targets_deployed"], 0)
+        self.assertEqual(evidence["secret_names"], ["OPENWEATHER_API_KEY"])
+        self.assertEqual(evidence["postconditions"]["production_zone_worker_routes"], 0)
+        self.assertEqual(evidence["postconditions"]["account_custom_domains"], 0)
+        self.assertFalse(evidence["postconditions"]["production_traffic_changed"])
+        self.assertEqual(evidence["postconditions"]["weather_requests_made"], 0)
 
 
 if __name__ == "__main__":

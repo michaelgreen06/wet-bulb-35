@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "captured_at_utc": "2026-09-09T18:51:50Z",
+  "worker": "wetbulb35-weather-production",
+  "configuration": {
+    "workers_dev": false,
+    "preview_urls": false,
+    "route_keys": [],
+    "custom_domain": false
+  },
+  "deployment": {
+    "id": "c3473d0f-e269-49d7-9abb-56b5647550d4",
+    "versions": [
+      {
+        "version_id": "368ecf1b-04b0-4444-b9ec-3cbcf33685d8",
+        "percentage": 100
+      }
+    ],
+    "targets_deployed": 0
+  },
+  "secret_names": [
+    "OPENWEATHER_API_KEY"
+  ],
+  "postconditions": {
+    "production_zone_worker_routes": 0,
+    "account_custom_domains": 0,
+    "wetbulb35_dns_changed": false,
+    "public_worker_endpoint_enabled": false,
+    "production_traffic_changed": false,
+    "weather_requests_made": 0
+  },
+  "sanitized": true
+}

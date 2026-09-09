@@ -17,7 +17,15 @@
     "staging_deployment": "fee68cf9-4982-47a1-90d2-97396450d2c7",
     "vercel_rollback_deployment": "dpl_98CXao2fnVfTWFmn8AxFeuNSnUXe",
     "vercel_retained_deployments": 42,
-    "staging_parity": "8/16; eight GET HTML differences are production-zone email transformation only"
+    "staging_parity": "8/16; eight GET HTML differences are production-zone email transformation only",
+    "route_free_production_worker": {
+      "deployment_id": "c3473d0f-e269-49d7-9abb-56b5647550d4",
+      "version_id": "368ecf1b-04b0-4444-b9ec-3cbcf33685d8",
+      "targets": 0,
+      "production_zone_routes": 0,
+      "account_custom_domains": 0,
+      "secret_names": ["OPENWEATHER_API_KEY"]
+    }
   },
   "gates": [
     "all PR checks complete and mergeable after each serial merge/retarget",
