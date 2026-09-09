@@ -2,18 +2,19 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { createHonoBindingProbe } from "../workers/hono-binding-probe.mjs";
 import { buildHonoBindingAssets } from "../scripts/build-hono-binding-assets.mjs";
+import { attachDetachedCleanup, spawnDetached, stopDetached } from "./helpers/detached-process-registry.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureSource = path.join(root, "tests/fixtures/hono-binding-cities.json");
 const fixtureAssets = path.join(root, "tests/fixtures/hono-binding-assets");
 const base = "http://probe.local";
 const canonicalOrigin = "https://www.wetbulb35.com";
+const FETCH_TIMEOUT_MS = 2_000;
 const recognized = [
   "/wetbulb-temperature/andorra",
   "/wetbulb-temperature/andorra/encamp",
@@ -24,6 +25,10 @@ const recognized = [
 
 function canonical(pathname) {
   return `${canonicalOrigin}${pathname}/`;
+}
+
+function localFetch(port, pathname, init) {
+  return fetch(`http://127.0.0.1:${port}${pathname}`, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
 }
 
 function fixtureAssetBinding(requestedPaths = []) {
@@ -62,7 +67,7 @@ async function assertRecognized(fetcher) {
 
 async function startWrangler(port) {
   const startedAt = performance.now();
-  const child = spawn(path.join(root, "node_modules/.bin/wrangler"), [
+  const child = spawnDetached(path.join(root, "node_modules/.bin/wrangler"), [
     "dev", "--local", "--config", "wrangler.probe-test.toml", "--ip", "127.0.0.1", "--port", String(port),
   ], { cwd: root, detached: true, stdio: ["ignore", "pipe", "pipe"] });
   let output = "";
@@ -71,35 +76,15 @@ async function startWrangler(port) {
   for (let attempt = 0; attempt < 50; attempt += 1) {
     if (child.exitCode !== null) throw new Error(`wrangler exited early: ${output}`);
     try {
-      const response = await fetch(`http://127.0.0.1:${port}/not-ready`);
+      const response = await localFetch(port, "/not-ready");
       if (response.status === 404) {
         return { child, output: () => output, startupMs: Number((performance.now() - startedAt).toFixed(3)) };
       }
     } catch {}
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  await stopWrangler(child);
+  await stopDetached(child);
   throw new Error(`wrangler did not start: ${output}`);
-}
-
-function waitForExit(child, timeoutMs) {
-  if (child.exitCode !== null) return Promise.resolve();
-  return Promise.race([
-    new Promise((resolve) => child.once("exit", resolve)),
-    new Promise((resolve) => setTimeout(resolve, timeoutMs)),
-  ]);
-}
-
-async function stopWrangler(child) {
-  if (child.exitCode === null) {
-    try { process.kill(-child.pid, "SIGTERM"); } catch { child.kill("SIGTERM"); }
-    await waitForExit(child, 5_000);
-  }
-  if (child.exitCode === null) {
-    try { process.kill(-child.pid, "SIGKILL"); } catch { child.kill("SIGKILL"); }
-    await waitForExit(child, 5_000);
-  }
-  if (child.exitCode === null) throw new Error("Wrangler process did not terminate");
 }
 
 test("binding fixture is generated through production collision identity", () => {
@@ -161,20 +146,21 @@ test("Hono probe HTML-escapes asset labels and defaults to the trusted canonical
 });
 
 test("Wrangler local keeps metadata assets private while Worker ASSETS.fetch renders routes", async (t) => {
+  attachDetachedCleanup(t);
   const port = 20000 + (process.pid % 10000);
   const { child, startupMs } = await startWrangler(port);
   t.diagnostic(`Wrangler local readiness (spawn to first 404): ${startupMs} ms`);
   try {
-    await assertRecognized((pathname) => fetch(`http://127.0.0.1:${port}${pathname}`));
-    const missing = await fetch(`http://127.0.0.1:${port}/wetbulb-temperature/andorra/encamp/missing`);
+    await assertRecognized((pathname) => localFetch(port, pathname));
+    const missing = await localFetch(port, "/wetbulb-temperature/andorra/encamp/missing");
     assert.equal(missing.status, 404);
-    const manifest = await fetch(`http://127.0.0.1:${port}/locations/route-manifest.json`);
-    const shard = await fetch(`http://127.0.0.1:${port}/locations/shards/andorra.json`);
-    const secondShard = await fetch(`http://127.0.0.1:${port}/locations/shards/armenia.json`);
+    const manifest = await localFetch(port, "/locations/route-manifest.json");
+    const shard = await localFetch(port, "/locations/shards/andorra.json");
+    const secondShard = await localFetch(port, "/locations/shards/armenia.json");
     assert.equal(manifest.status, 404);
     assert.equal(shard.status, 404);
     assert.equal(secondShard.status, 404);
   } finally {
-    await stopWrangler(child);
+    await stopDetached(child);
   }
 });

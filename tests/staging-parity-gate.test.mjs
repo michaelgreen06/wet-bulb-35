@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
-import { IGNORED_HEADERS, INTERNAL_HTML_CACHE_POLICY, htmlSemanticFields, request } from "../scripts/staging-parity-gate.mjs";
+import { COMPARED_HEADERS, EXPECTED_ZONE_MANAGED_DIFFERENCES, IGNORED_HEADERS, INTERNAL_HTML_CACHE_POLICY, comparableBody, compareRoute, htmlSemanticFields, request } from "../scripts/staging-parity-gate.mjs";
 
 test("parity semantic extraction preserves SEO, links, assets, JSON-LD, and widget coordinates", () => {
   const fields = htmlSemanticFields(`<!doctype html><title>Example</title>
@@ -28,4 +29,25 @@ test("parity gate documents only delivery-varying headers as ignored", () => {
 
 test("parity request helper refuses all weather API paths before networking", async () => {
   await assert.rejects(request("https://www.wetbulb35.com", "/api/weather?lat=1&lon=2"), /forbidden/);
+});
+
+test("404 comparison retains only the stable negotiated contract", () => {
+  assert.equal(COMPARED_HEADERS.includes("x-vercel-error"), false);
+  assert.deepEqual(EXPECTED_ZONE_MANAGED_DIFFERENCES, { robots: ["bodyHash"] });
+  assert.deepEqual(comparableBody("not-found", '{"error":{"message":"The page could not be found","code":"404"}}'), { error: { code: "404", message: "The page could not be found" } });
+  assert.deepEqual(comparableBody("not-found", "{not-json"), { invalidJson: true, nonEmpty: true });
+  assert.deepEqual(comparableBody("not-found", '<html><head><title>404: NOT_FOUND</title></head></html>'), { code: true, noindex: false, title: "404: NOT_FOUND", nonEmpty: true });
+  assert.deepEqual(comparableBody("not-found", "The page could not be found\n\nNOT_FOUND\n\nrequest-id\n"), { message: true, code: true, nonEmpty: true });
+  assert.deepEqual(comparableBody("not-found", ""), { message: false, code: false, nonEmpty: false });
+});
+
+test("only the exact Cloudflare managed robots prefix is expected", () => {
+  const committed = fs.readFileSync("public/robots.txt", "utf8");
+  const base = { status: 200, contentType: "text/plain", headers: {}, latencyMs: 1 };
+  const expected = compareRoute(["robots", "/robots.txt", "text"], { ...base, body: `# As a condition of accessing this website, you agree to abide by the following\n# content signals:\nmanaged\n${committed}` }, { ...base, body: committed });
+  assert.equal(expected.pass, true);
+  assert.deepEqual(expected.expectedDifferences, ["bodyHash"]);
+  const defect = compareRoute(["robots", "/robots.txt", "text"], { ...base, body: "wrong" }, { ...base, body: committed });
+  assert.equal(defect.pass, false);
+  assert.deepEqual(defect.unexpectedDifferences, ["bodyHash"]);
 });

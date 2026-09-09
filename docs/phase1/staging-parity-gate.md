@@ -12,9 +12,13 @@ The command compares Vercel production (`https://www.wetbulb35.com`) with the is
 node scripts/staging-parity-gate.mjs --production=https://www.wetbulb35.com --staging=https://wetbulb35-weather-staging.mgdevstuff.workers.dev --evidence=docs/phase1/evidence/staging-parity-gate.json
 ```
 
-It makes exactly the declared representative GET/HEAD requests for home, browse, country, state, a unique city, a collision-safe city, slashful/slashless city paths, 404, `robots.txt`, sitemap index/member, and favicon. It never requests `/api/weather` from either origin; the helper rejects that path before networking.
+It makes exactly the declared representative GET/HEAD requests for home, browse, country, state, a unique city, a collision-safe city, slashful/slashless city paths, negotiated HTML/JSON/plaintext 404s, `robots.txt`, sitemap index/member, and favicon. It never requests `/api/weather` from either origin; the helper rejects that path before networking.
 
-The evidence also records the intentional **internal** HTML Cache API contract (schema 1; 86,400-second fresh, 604,800-second stale, 691,200-second storage TTL) so it can be audited without treating it as a browser header change. Browser HTML remains `Cache-Control: public, max-age=0, must-revalidate`, and `Cache-Control` remains compared exactly. The harness does not normalize Cloudflare email-obfuscation markup or zone/Vercel header transformations: those remain visible differences, while real status, content type, SEO, canonical, JSON-LD, links, and widget-coordinate defects still fail the gate.
+The evidence also records the intentional **internal** HTML Cache API contract (schema 1; 86,400-second fresh, 604,800-second stale, 691,200-second storage TTL) so it can be audited without treating it as a browser header change. Browser HTML remains `Cache-Control: public, max-age=0, must-revalidate`, and `Cache-Control` remains compared exactly. The only classified expected difference is the known Cloudflare-managed `robots.txt` body prefix; all status, media type, stable delivery headers, SEO, canonical, JSON-LD, links, and widget-coordinate differences fail the gate.
+
+## 404 platform boundary
+
+Production's Vercel-generated HTML/plaintext 404 includes a request ID and provider branding; its HTML can also include provider analytics. The Worker preserves the stable contract instead: status `404`, cache/HSTS headers, Accept-selected HTML/JSON/plaintext media type, JSON `{ "error": { "code": "404", "message": "The page could not be found" } }`, and equivalent plaintext message/code. It deliberately omits Vercel request IDs, branding, and analytics. The parity gate compares that stable contract, not provider-specific 404 markup or Vercel-only headers.
 
 The same run validates the complete local 130,684-city source route inventory, collision-safe uniqueness, generated metadata manifest count, every locally committed sitemap-index member, the robots sitemap directive, and copied public asset inventory. It does not turn that offline check into 130,684 remote requests.
 

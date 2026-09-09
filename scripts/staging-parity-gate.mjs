@@ -25,8 +25,8 @@ export const IGNORED_HEADERS = new Set([
   "server", "server-timing", "transfer-encoding", "vary", "via", "x-powered-by",
   "x-vercel-cache", "x-vercel-id", "x-vercel-sc-headers", "x-worker-version",
 ]);
-export const COMPARED_HEADERS = ["access-control-allow-origin", "cache-control", "content-disposition", "strict-transport-security", "x-vercel-error"];
-// Recorded policy, not a browser-header normalization: HTML still compares Cache-Control exactly.
+export const COMPARED_HEADERS = ["access-control-allow-origin", "cache-control", "content-disposition", "strict-transport-security"];
+export const EXPECTED_ZONE_MANAGED_DIFFERENCES = Object.freeze({ robots: ["bodyHash"] });
 export const INTERNAL_HTML_CACHE_POLICY = Object.freeze({ schema: 1, freshSeconds: 86_400, staleSeconds: 604_800, storageTtlSeconds: 691_200, browserCacheControl: "public, max-age=0, must-revalidate" });
 
 const ROUTES = [
@@ -38,8 +38,10 @@ const ROUTES = [
   ["colliding-city", "/wetbulb-temperature/armenia/armavir/metsamor-40-0723-44-2917", "html"],
   ["slash", "/wetbulb-temperature/andorra/encamp/vila/", "html"],
   ["slashless", "/wetbulb-temperature/andorra/encamp/vila", "html"],
-  ["head", "/wetbulb-temperature/andorra/encamp/vila", "head"],
-  ["404", "/not-a-real-page-9b1e3d", "html"],
+  ["head", "/wetbulb-temperature/andorra/encamp/vila", "head", "text/html"],
+  ["404-html", "/not-a-real-page-9b1e3d", "not-found", "text/html"],
+  ["404-json", "/not-a-real-page-9b1e3d", "not-found", "application/json"],
+  ["404-plain", "/not-a-real-page-9b1e3d", "not-found", "text/plain"],
   ["robots", "/robots.txt", "text"],
   ["sitemap-index", "/sitemap.xml", "xml"],
   ["sitemap-member", "/sitemaps/sitemap-main.xml", "xml"],
@@ -89,28 +91,51 @@ export function htmlSemanticFields(html) {
     publicAssetReferences: hrefs.filter((href) => href.startsWith("/") || href.startsWith("https://www.googletagmanager.com/")).sort(),
   };
 }
-function comparableBody(kind, body) {
+export function comparableBody(kind, body) {
   if (kind === "html") return htmlSemanticFields(normalizeFooterYear(body));
+  if (kind === "not-found") {
+    const normalized = normalizeFooterYear(body);
+    if (normalized.startsWith("{")) {
+      try { return canonicalJson(JSON.parse(normalized)); }
+      catch { return { invalidJson: true, nonEmpty: normalized.length > 0 }; }
+    }
+    if (/<html\b/i.test(normalized)) return {
+      code: /NOT_FOUND/.test(normalized),
+      noindex: /<meta\b[^>]*name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(normalized),
+      title: (normalized.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || null,
+      nonEmpty: normalized.length > 0,
+    };
+    return { message: /The page could not be found/.test(normalized), code: /NOT_FOUND/.test(normalized), nonEmpty: normalized.length > 0 };
+  }
   return { sha256: sha256(normalizeFooterYear(body)), bytes: Buffer.byteLength(body) };
 }
-export async function request(base, pathname, method = "GET") {
+export async function request(base, pathname, method = "GET", accept = "text/html,application/xml,text/plain,*/*;q=0.1") {
   if (pathname.startsWith("/api/weather")) throw new Error("Weather API requests are forbidden by this gate");
   const started = performance.now();
   const response = await fetch(new URL(pathname, base), {
     method, redirect: "manual", signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { "user-agent": "wetbulb35-staging-parity-gate/1.0", accept: "text/html,application/xml,text/plain,*/*;q=0.1" },
+    headers: { "user-agent": "wetbulb35-staging-parity-gate/1.0", accept },
   });
   const body = method === "HEAD" ? "" : await response.text();
   return { status: response.status, contentType: normalizeContentType(response.headers.get("content-type")), headers: stableHeaders(response.headers), body, latencyMs: Number((performance.now() - started).toFixed(2)) };
 }
-function compareRoute(route, production, staging) {
-  const [name, pathname, kind] = route;
+function isExpectedZoneManagedDifference(name, difference, production, staging) {
+  if (name !== "robots" || difference !== "bodyHash") return false;
+  const committedRobots = fs.readFileSync(path.join(root, "public/robots.txt"), "utf8");
+  return staging.body === committedRobots
+    && production.body.startsWith("# As a condition of accessing this website, you agree to abide by the following\n# content signals:\n")
+    && production.body.endsWith(committedRobots);
+}
+export function compareRoute(route, production, staging) {
+  const [name, pathname, kind, accept] = route;
   const differences = [];
   for (const field of ["status", "contentType"]) if (production[field] !== staging[field]) differences.push(field);
   if (JSON.stringify(production.headers) !== JSON.stringify(staging.headers)) differences.push("stableHeaders");
-  if (kind !== "head" && JSON.stringify(comparableBody(kind, production.body)) !== JSON.stringify(comparableBody(kind, staging.body))) differences.push(kind === "html" ? "htmlSemanticFields" : "bodyHash");
+  if (kind !== "head" && JSON.stringify(comparableBody(kind, production.body)) !== JSON.stringify(comparableBody(kind, staging.body))) differences.push(kind === "html" ? "htmlSemanticFields" : kind === "not-found" ? "notFoundContract" : "bodyHash");
   if (kind === "head" && (production.body || staging.body)) differences.push("headBody");
-  return { name, pathname, kind, pass: differences.length === 0, differences, production: { status: production.status, contentType: production.contentType, headers: production.headers, latencyMs: production.latencyMs }, staging: { status: staging.status, contentType: staging.contentType, headers: staging.headers, latencyMs: staging.latencyMs } };
+  const expectedDifferences = differences.filter((difference) => EXPECTED_ZONE_MANAGED_DIFFERENCES[name]?.includes(difference) && isExpectedZoneManagedDifference(name, difference, production, staging));
+  const unexpectedDifferences = differences.filter((difference) => !expectedDifferences.includes(difference));
+  return { name, pathname, kind, accept: accept || null, pass: unexpectedDifferences.length === 0, differences, expectedDifferences, unexpectedDifferences, production: { status: production.status, contentType: production.contentType, headers: production.headers, latencyMs: production.latencyMs }, staging: { status: staging.status, contentType: staging.contentType, headers: staging.headers, latencyMs: staging.latencyMs } };
 }
 function listFiles(directory) {
   return fs.readdirSync(directory, { recursive: true }).filter((entry) => fs.statSync(path.join(directory, entry)).isFile()).map(String).sort();
@@ -147,9 +172,9 @@ async function latency(base, pathname) {
 export async function runGate({ production = DEFAULT_PRODUCTION, staging = DEFAULT_STAGING } = {}) {
   const records = [];
   for (const route of ROUTES) {
-    const [, pathname, kind] = route;
+    const [, pathname, kind, accept] = route;
     const method = kind === "head" ? "HEAD" : "GET";
-    const [productionResult, stagingResult] = await Promise.all([request(production, pathname, method), request(staging, pathname, method)]);
+    const [productionResult, stagingResult] = await Promise.all([request(production, pathname, method, accept), request(staging, pathname, method, accept)]);
     records.push(compareRoute(route, productionResult, stagingResult));
   }
   const result = {

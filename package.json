@@ -18,6 +18,7 @@
     "test:hono-page-renderer": "node --test tests/hono-page-renderer.test.mjs",
     "test:weather-edge": "node --test tests/weather-edge.test.mjs",
     "test:staging-parity": "node --test tests/staging-parity-gate.test.mjs",
+    "test:detached-process-registry": "node --test tests/detached-process-registry.test.mjs",
     "check:staging-parity": "node scripts/staging-parity-gate.mjs",
     "generate:hono-renderer-goldens": "node scripts/generate-hono-renderer-goldens.mjs",
     "dry-run:hono-binding-probe": "npm run build:hono-binding-assets && ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.staging.toml",

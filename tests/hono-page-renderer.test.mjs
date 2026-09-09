@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import net from "node:net";
 import fs from "node:fs";
@@ -19,6 +18,7 @@ import {
   renderStatePage,
 } from "../scripts/prototype-static-generator.mjs";
 import { createHonoPageRenderer, createLocationResolver } from "../workers/hono-page-renderer.mjs";
+import { attachDetachedCleanup, spawnDetached, stopDetached } from "./helpers/detached-process-registry.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const base = "https://renderer.test";
@@ -39,39 +39,6 @@ function reservePort() {
 }
 
 const FETCH_TIMEOUT_MS = 2_000;
-const stopPromises = new WeakMap();
-
-function waitForExit(child, timeoutMs) {
-  if (child.exitCode !== null) return Promise.resolve();
-  return new Promise((resolve) => {
-    const done = () => {
-      clearTimeout(timer);
-      child.removeListener("exit", done);
-      resolve();
-    };
-    const timer = setTimeout(done, timeoutMs);
-    timer.unref();
-    child.once("exit", done);
-  });
-}
-
-async function stopWrangler(child) {
-  if (!child) return;
-  if (stopPromises.has(child)) return stopPromises.get(child);
-  const stopping = (async () => {
-    if (child.exitCode === null) {
-      try { process.kill(-child.pid, "SIGTERM"); } catch { child.kill("SIGTERM"); }
-      await waitForExit(child, 5_000);
-    }
-    if (child.exitCode === null) {
-      try { process.kill(-child.pid, "SIGKILL"); } catch { child.kill("SIGKILL"); }
-      await waitForExit(child, 5_000);
-    }
-    if (child.exitCode === null) throw new Error("Wrangler process group did not terminate");
-  })();
-  stopPromises.set(child, stopping);
-  return stopping;
-}
 
 function localFetch(port, pathname, init) {
   return fetch(`http://127.0.0.1:${port}${pathname}`, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
@@ -88,7 +55,7 @@ function writeBrowserFixture(fixtureDir) {
 
 async function startWrangler(configPath, port, onSpawn) {
   const startedAt = performance.now();
-  const child = spawn(path.join(root, "node_modules/.bin/wrangler"), [
+  const child = spawnDetached(path.join(root, "node_modules/.bin/wrangler"), [
     "dev", "--local", "--config", configPath, "--ip", "127.0.0.1", "--port", String(port),
   ], { cwd: root, detached: true, stdio: ["ignore", "pipe", "pipe"] });
   onSpawn(child);
@@ -106,7 +73,7 @@ async function startWrangler(configPath, port, onSpawn) {
     }
     throw new Error(`Wrangler did not start: ${output}`);
   } catch (error) {
-    await stopWrangler(child);
+    await stopDetached(child);
     throw error;
   }
 }
@@ -383,6 +350,12 @@ test("HTML cache uses Worker version metadata, rejects ambiguous namespaces, and
   assert.equal(cache.puts, 1, "concurrent same-key cold GET misses render and write once");
   const cacheKey = [...cache.entries.keys()][0];
   assert.match(cacheKey, /cloudflare-version-a\/wetbulb-temperature\/andorra\/encamp\/vila$/);
+  assert.equal(first.response.headers.get("content-disposition"), 'inline; filename="vila"');
+  const cached = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env);
+  const cachedHead = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`, { method: "HEAD" }), env);
+  assert.equal(cached.headers.get("content-disposition"), 'inline; filename="vila"');
+  assert.deepEqual([...cachedHead.headers].sort(), [...cached.headers].sort(), "cache-hit HEAD preserves delivery headers");
+  assert.equal(await cachedHead.text(), "");
 
   const deadlineCache = new FakeCache();
   const malformedDeadline = await cache.entries.get(cacheKey).clone().json();
@@ -403,17 +376,82 @@ test("HTML cache uses Worker version metadata, rejects ambiguous namespaces, and
   assert.equal(injectedCache.puts, 1, "tests may explicitly inject a deterministic cache identity");
 });
 
-test("Hono renderer has production slash, HEAD, 404, and private-metadata behavior", async () => {
+test("Hono renderer preserves delivery headers, negotiated 404s, HEAD, and private metadata", async () => {
   const app = createHonoPageRenderer();
   const env = { ASSETS: fixtureBinding() };
   const slashless = await html(app, "/wetbulb-temperature/andorra/encamp/vila", env);
   assert.match(slashless.body, /https:\/\/www\.wetbulb35\.com\/wetbulb-temperature\/andorra\/encamp\/vila\//);
+  assert.equal(slashless.response.headers.get("strict-transport-security"), "max-age=63072000");
+  assert.equal(slashless.response.headers.get("access-control-allow-origin"), "*");
+  assert.equal(slashless.response.headers.get("content-disposition"), 'inline; filename="vila"');
+  const root = await html(app, "/", env);
+  assert.equal(root.response.headers.get("content-disposition"), "inline");
+
+  const assetEnv = { ASSETS: { async fetch(request) {
+    const pathname = new URL(request.url).pathname;
+    if (pathname === "/favicon.svg") return new Response("<svg/>", { headers: { "content-type": "image/svg+xml", "cache-control": "public, max-age=0, must-revalidate", etag: "asset-etag" } });
+    if (pathname === "/sitemap.xml") return new Response("<urlset/>", { headers: { "content-type": "application/xml", "cache-control": "public, max-age=14400, must-revalidate" } });
+    if (pathname === "/robots.txt") return new Response("User-agent: *", { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=0, must-revalidate" } });
+    if (pathname === "/assets/locations.json") return new Response("[]", { headers: { "content-type": "application/json", "cache-control": "public, max-age=14400, must-revalidate" } });
+    return new Response("missing", { status: 404 });
+  } } };
+  for (const [pathname, disposition] of [["/favicon.svg", 'inline; filename="favicon.svg"'], ["/sitemap.xml", 'inline; filename="sitemap.xml"'], ["/robots.txt", null], ["/assets/locations.json", 'inline; filename="locations.json"']]) {
+    const response = await app.fetch(new Request(`${base}${pathname}`), assetEnv);
+    assert.equal(response.status, 200, pathname);
+    assert.equal(response.headers.get("cache-control"), pathname === "/sitemap.xml" || pathname === "/assets/locations.json" ? "public, max-age=0, must-revalidate" : "public, max-age=14400, must-revalidate");
+    assert.equal(response.headers.get("etag"), pathname === "/favicon.svg" ? "asset-etag" : null);
+    assert.equal(response.headers.get("strict-transport-security"), "max-age=63072000");
+    assert.equal(response.headers.get("access-control-allow-origin"), "*");
+    assert.equal(response.headers.get("content-disposition"), disposition);
+  }
+
+  for (const [accept, contentType, expected] of [
+    ["text/html", "text/html; charset=UTF-8", /<title>404: NOT_FOUND<\/title>/],
+    ["application/json", "application/json", { error: { code: "404", message: "The page could not be found" } }],
+    ["text/plain", "text/plain; charset=UTF-8", "The page could not be found\n\nNOT_FOUND\n"],
+  ]) {
+    const response = await app.fetch(new Request(`${base}/not-a-real-page`, { headers: { accept } }), env);
+    assert.equal(response.status, 404, accept);
+    assert.equal(response.headers.get("content-type"), contentType, accept);
+    assert.equal(response.headers.get("cache-control"), "public, max-age=0, must-revalidate", accept);
+    assert.equal(response.headers.get("strict-transport-security"), "max-age=63072000", accept);
+    assert.equal(response.headers.get("access-control-allow-origin"), null, accept);
+    const body = await response.text();
+    if (expected instanceof RegExp) assert.match(body, expected); else if (typeof expected === "string") assert.equal(body, expected); else assert.deepEqual(JSON.parse(body), expected);
+  }
+  for (const [accept, contentType] of [
+    ["text/html,application/json;q=0.9,text/plain;q=0.8", "text/html; charset=UTF-8"],
+    ["text/html;q=0.5,application/json;q=0.9,text/plain;q=0.8", "application/json"],
+    ["application/json;q=0,text/html;q=0.8,*/*;q=0.1", "text/html; charset=UTF-8"],
+    ["text/*;q=0.7,application/json;q=0.7", "application/json"],
+    ["*/*", "text/plain; charset=UTF-8"],
+  ]) {
+    const response = await app.fetch(new Request(`${base}/not-a-real-page`, { headers: { accept } }), env);
+    assert.equal(response.headers.get("content-type"), contentType, accept);
+  }
+
+  const htmlGet = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra`), env);
   const head = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra`, { method: "HEAD" }), env);
-  assert.equal(head.status, 200);
+  assert.equal(head.status, htmlGet.status);
+  assert.deepEqual([...head.headers].sort(), [...htmlGet.headers].sort());
   assert.equal(await head.text(), "");
-  for (const pathname of ["/about", "/not-a-real-page", "/wetbulb-temperature/nope", "/locations/route-manifest.json", "/locations/shards/andorra.json"]) {
-    const response = await app.fetch(new Request(`${base}${pathname}`), env);
+  const assetGet = await app.fetch(new Request(`${base}/favicon.svg`), assetEnv);
+  const assetHead = await app.fetch(new Request(`${base}/favicon.svg`, { method: "HEAD" }), assetEnv);
+  assert.equal(assetHead.status, assetGet.status);
+  assert.deepEqual([...assetHead.headers].sort(), [...assetGet.headers].sort());
+  assert.equal(await assetHead.text(), "");
+  const notFoundGet = await app.fetch(new Request(`${base}/not-a-real-page`, { headers: { accept: "application/json" } }), env);
+  const notFoundHead = await app.fetch(new Request(`${base}/not-a-real-page`, { method: "HEAD", headers: { accept: "application/json" } }), env);
+  assert.equal(notFoundHead.status, notFoundGet.status);
+  assert.deepEqual([...notFoundHead.headers].sort(), [...notFoundGet.headers].sort());
+  assert.equal(await notFoundHead.text(), "");
+
+  const api = await app.fetch(new Request(`${base}/api/weather?lat=1&lon=2`), { ...env, OBSERVABILITY_DISABLED: "true" });
+  assert.equal(api.headers.get("access-control-allow-origin"), null, "weather remains outside the characterized CORS contract");
+  for (const pathname of ["/about", "/wetbulb-temperature/nope", "/locations/route-manifest.json", "/locations/shards/andorra.json"]) {
+    const response = await app.fetch(new Request(`${base}${pathname}`, { headers: { accept: "text/html" } }), env);
     assert.equal(response.status, 404, pathname);
+    assert.equal(response.headers.get("content-type"), "text/html; charset=UTF-8", pathname);
   }
 });
 
@@ -454,13 +492,12 @@ test("all generated city routes resolve from metadata shards without static HTML
 });
 
 test("Wrangler serves renderer pages and public assets while hiding metadata", { timeout: 30_000 }, async (t) => {
+  attachDetachedCleanup(t);
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hono-renderer-wrangler-"));
   const assetDir = path.join(tempDir, "served-assets");
   const browserFixtureDir = path.join(tempDir, "browser-public");
   const configPath = path.join(tempDir, "wrangler.toml");
   let child;
-  const abortCleanup = () => { void stopWrangler(child); };
-  t.signal.addEventListener("abort", abortCleanup, { once: true });
   try {
     writeBrowserFixture(browserFixtureDir);
     buildHonoRendererAssets({ sourceCities: fixtureCities, outDir: assetDir, publicDir: browserFixtureDir });
@@ -508,8 +545,7 @@ test("Wrangler serves renderer pages and public assets while hiding metadata", {
       assert.equal((await localFetch(port, pathname)).status, 404, pathname);
     }
   } finally {
-    t.signal.removeEventListener("abort", abortCleanup);
-    await stopWrangler(child);
+    await stopDetached(child);
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });

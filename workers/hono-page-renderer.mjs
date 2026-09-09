@@ -12,6 +12,8 @@ const HTML_CACHE_FRESH_MS = 24 * 60 * 60 * 1_000;
 const HTML_CACHE_STALE_MS = 7 * 24 * 60 * 60 * 1_000;
 const HTML_CACHE_STORAGE_TTL_SECONDS = (HTML_CACHE_FRESH_MS + HTML_CACHE_STALE_MS) / 1_000;
 const HTML_BROWSER_CACHE_CONTROL = "public, max-age=0, must-revalidate";
+const STRICT_TRANSPORT_SECURITY = "max-age=63072000";
+const NOT_FOUND_MESSAGE = "The page could not be found";
 const htmlRegenerations = new Map();
 
 function assetRequest(request, pathname) { return new Request(new URL(pathname, request.url)); }
@@ -41,8 +43,58 @@ function stateFromIndex(country, state, index) {
   return { countryName: country.country, countrySlug: country.countrySlug, stateName: state.name, stateSlug: state.slug, cities: indexedState.cities, citiesBySlug: indexedState.citiesBySlug };
 }
 function countryFromManifest(country) { return { name: country.country, slug: country.countrySlug, count: country.count, states: (country.states || []).map((state) => ({ name: state.name, slug: state.slug, count: state.count })) }; }
-function htmlResponse(html) { return new Response(html, { headers: { "content-type": "text/html; charset=UTF-8", "cache-control": HTML_BROWSER_CACHE_CONTROL } }); }
+function htmlResponse(html, routePath) { return new Response(html, { headers: htmlHeaders(routePath) }); }
+function safeFilename(pathname) {
+  const filename = pathname.split("/").filter(Boolean).at(-1);
+  return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(filename || "") ? filename : null;
+}
+function htmlHeaders(routePath = "/") {
+  const filename = routePath === "/" ? null : safeFilename(routePath);
+  return { "content-type": "text/html; charset=UTF-8", "cache-control": HTML_BROWSER_CACHE_CONTROL, "content-disposition": filename ? `inline; filename="${filename}"` : "inline", "access-control-allow-origin": "*", "strict-transport-security": STRICT_TRANSPORT_SECURITY };
+}
 function headResponse(response) { return new Response(null, { status: response.status, statusText: response.statusText, headers: response.headers }); }
+function acceptedQuality(request, mediaType) {
+  const [wantedType, wantedSubtype] = mediaType.split("/");
+  let best = null;
+  for (const [index, value] of (request.headers.get("accept") || "").split(",").entries()) {
+    const [range, ...parameters] = value.trim().toLowerCase().split(";");
+    const [type, subtype] = range.trim().split("/");
+    if (type !== wantedType || subtype !== wantedSubtype) continue;
+    const quality = Number(parameters.find((parameter) => parameter.trim().startsWith("q="))?.trim().slice(2) ?? 1);
+    if (!Number.isFinite(quality) || quality <= 0) continue;
+    const candidate = { quality, index };
+    if (!best || candidate.quality > best.quality || (candidate.quality === best.quality && candidate.index < best.index)) best = candidate;
+  }
+  return best;
+}
+function notFoundResponse(request) {
+  const headers = { "cache-control": HTML_BROWSER_CACHE_CONTROL, "strict-transport-security": STRICT_TRANSPORT_SECURITY };
+  const candidates = [["text/html", "html"], ["application/json", "json"], ["text/plain", "plain"]].map(([type, kind]) => ({ type, kind, ...acceptedQuality(request, type) })).filter((candidate) => candidate.quality !== undefined).sort((a, b) => b.quality - a.quality || a.index - b.index);
+  const selected = candidates[0]?.kind || "plain";
+  if (selected === "json") return new Response(JSON.stringify({ error: { code: "404", message: NOT_FOUND_MESSAGE } }), { status: 404, headers: { ...headers, "content-type": "application/json" } });
+  if (selected === "html") return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>404: NOT_FOUND</title></head><body><main><h1>404</h1><p>${NOT_FOUND_MESSAGE}</p><code>NOT_FOUND</code></main></body></html>`, { status: 404, headers: { ...headers, "content-type": "text/html; charset=UTF-8" } });
+  return new Response(`${NOT_FOUND_MESSAGE}\n\nNOT_FOUND\n`, { status: 404, headers: { ...headers, "content-type": "text/plain; charset=UTF-8" } });
+}
+function publicAssetFilename(pathname) {
+  if (pathname === "/robots.txt") return null;
+  return safeFilename(pathname);
+}
+function publicAssetCacheControl(pathname) {
+  if (pathname === "/assets/locations.json" || pathname === "/sitemap.xml" || pathname.startsWith("/sitemaps/")) return HTML_BROWSER_CACHE_CONTROL;
+  return "public, max-age=14400, must-revalidate";
+}
+async function publicAssetResponse(request, assets) {
+  const response = await assets.fetch(request);
+  if (!response.ok) return null;
+  const headers = new Headers(response.headers);
+  const pathname = new URL(request.url).pathname;
+  headers.set("cache-control", publicAssetCacheControl(pathname));
+  headers.set("strict-transport-security", STRICT_TRANSPORT_SECURITY);
+  headers.set("access-control-allow-origin", "*");
+  const filename = publicAssetFilename(pathname);
+  if (filename) headers.set("content-disposition", `inline; filename="${filename}"`);
+  return request.method === "HEAD" ? new Response(null, { status: response.status, statusText: response.statusText, headers }) : new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
 function cacheVersion(env, injectedFallback) {
   const id = env.CF_VERSION_METADATA?.id;
   if (typeof id === "string" && id.trim()) return id;
@@ -85,8 +137,8 @@ async function readHtmlEnvelope(cache, key, version, routePath, now) {
     return validHtmlEnvelope(envelope, version, routePath, now) ? envelope : null;
   } catch { return null; }
 }
-function browserResponse(envelope) {
-  return new Response(envelope.html, { status: envelope.status, headers: { ...envelope.headers, "content-type": "text/html; charset=UTF-8", "cache-control": HTML_BROWSER_CACHE_CONTROL } });
+function browserResponse(envelope, routePath) {
+  return new Response(envelope.html, { status: envelope.status, headers: htmlHeaders(routePath) });
 }
 async function writeHtmlEnvelope(cache, key, version, routePath, response, now) {
   if (!cache || !response?.ok) return;
@@ -169,6 +221,10 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
 
 export function createHonoPageRenderer({ cache = () => globalThis.caches?.default, now = () => Date.now(), cacheVersion: injectedCacheVersion } = {}) {
   const app = new Hono();
+  app.notFound((context) => {
+    const response = notFoundResponse(context.req.raw);
+    return context.req.raw.method === "HEAD" ? headResponse(response) : response;
+  });
   const resolve = createLocationResolver();
   app.all("/api/weather", (context) => {
     let executionContext;
@@ -182,7 +238,10 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     const pathname = url.pathname;
     if (pathname.startsWith(`${LOCATION_ROOT}/`) || pathname === LOCATION_ROOT) return context.notFound();
     const routePath = candidateHtmlPath(pathname);
-    if (!routePath) return context.env.ASSETS.fetch(request);
+    if (!routePath) {
+      const asset = await publicAssetResponse(request, context.env.ASSETS);
+      return asset || context.notFound();
+    }
     const method = request.method;
     const version = cacheVersion(context.env, injectedCacheVersion);
     const key = version ? htmlCacheKey(version, routePath) : null;
@@ -191,19 +250,19 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     const cached = key ? await readHtmlEnvelope(edgeCache, key, version, routePath, current) : null;
     if (cached && cached.freshUntil > current) {
       htmlObservability(context.env).html("hit");
-      const response = browserResponse(cached);
+      const response = browserResponse(cached, routePath);
       return method === "HEAD" ? headResponse(response) : response;
     }
     const render = async () => {
       const parts = pathname.split("/").filter(Boolean);
       const options = rendererOptions(context.env);
-      if (parts.length === 0) return htmlResponse(renderHomePage({}, options));
+      if (parts.length === 0) return htmlResponse(renderHomePage({}, options), routePath);
       const result = await resolve(request, context.env.ASSETS, parts);
       if (!result) return null;
-      if (result.kind === "browse") return htmlResponse(renderBrowsePage({ countries: result.index.countries.map(countryFromManifest) }, options));
-      if (result.kind === "country") return htmlResponse(renderCountryPage(countryFromManifest(result.country), options));
-      if (result.kind === "state") return htmlResponse(renderStatePage(result.state, options));
-      return htmlResponse(pageHtml(result.city, options));
+      if (result.kind === "browse") return htmlResponse(renderBrowsePage({ countries: result.index.countries.map(countryFromManifest) }, options), routePath);
+      if (result.kind === "country") return htmlResponse(renderCountryPage(countryFromManifest(result.country), options), routePath);
+      if (result.kind === "state") return htmlResponse(renderStatePage(result.state, options), routePath);
+      return htmlResponse(pageHtml(result.city, options), routePath);
     };
     const regenerate = async () => {
       const rendered = await render();
@@ -227,7 +286,7 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
         const inFlight = coalescedRegenerate();
         try { context.executionCtx?.waitUntil(inFlight); } catch {}
       }
-      const response = browserResponse(cached);
+      const response = browserResponse(cached, routePath);
       return method === "HEAD" ? headResponse(response) : response;
     }
     htmlObservability(context.env).html("miss");
