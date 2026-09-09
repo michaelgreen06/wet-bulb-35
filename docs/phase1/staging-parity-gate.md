@@ -26,14 +26,13 @@ Evidence is concise JSON: it excludes raw headers, response bodies, secrets, and
 
 ## Recorded gate result
 
-The recorded run completed all 14 bounded requests without `/api/weather`, and the offline inventory passed: **130,684** rows, **130,684** unique collision-safe city routes, **227** sitemap members, and **238** committed public files. Remote parity is intentionally red in the current staging state (0/14): production has provider-injected email-decoder markup that staging does not, plus remaining delivery-header differences listed below.
+The recorded run completed all 16 bounded requests without `/api/weather`, and the offline inventory passed: **130,684** rows, **130,684** unique collision-safe city routes, **227** sitemap members, and **238** committed public files. Eight checks pass and eight remain red solely because production has provider-injected email-decoder markup that `workers.dev` does not.
 
-- HTML and `HEAD`: the browser `Cache-Control: public, max-age=0, must-revalidate` now matches. Production's `Access-Control-Allow-Origin: *`, `Strict-Transport-Security: max-age=63072000`, and Vercel content-disposition remain absent in isolated staging; HTML semantic fields also remain different because production has provider-injected email-decoder markup.
-- 404: staging has no media type or comparable cache/HSTS headers; production is `text/html` with the baseline cache policy.
-- `robots.txt` and favicon: staging keeps `public, max-age=0, must-revalidate`; production uses `public, max-age=14400, must-revalidate`. Production also supplies CORS/HSTS and favicon content-disposition.
-- Sitemap index/member bodies and media types match; staging lacks production CORS/HSTS/content-disposition. Robots body differs because production includes Cloudflare-managed policy beyond the committed file.
+- All recognized HTML delivery headers now match. The eight GET HTML samples remain red because the production zone injects email-decoder markup; `HEAD` passes.
+- HTML, JSON, and plaintext 404 contracts pass without copying Vercel request IDs, branding, or analytics.
+- `robots.txt`, sitemap index/member, and favicon delivery contracts pass. The robots body prefix is recorded as an exact expected zone-managed difference rather than copied into the application.
 
-The latest bounded three-sample median was 64.97 ms for production and 30.89 ms for staging. These values are observations, not a performance commitment.
+The latest bounded three-sample median was 77.36 ms for production and 55.85 ms for staging. These values are observations, not a performance commitment.
 
 ## Cache policy / scope
 
@@ -47,4 +46,4 @@ Post-deployment checks passed: slashful/query variants returned byte-identical H
 
 ## Startup and latency interpretation
 
-The gate records three bounded end-to-end samples per origin; these are network measurements, not a Cloudflare startup metric. Final isolated weather-staging version `fe629b5a-08f8-4b28-bc4e-185f04dfe93e` reported **6 ms** Worker startup; the earlier renderer-only deployment also reported **6 ms** (documented in `hono-renderer-parity.md`). Local Wrangler readiness is explicitly not the Cloudflare one-second script-startup gate.
+The gate records three bounded end-to-end samples per origin; these are network measurements, not a Cloudflare startup metric. Current isolated weather-staging version `0f11f222-c122-4c11-801d-410fb592e553` reported **7 ms** Worker startup; the earlier renderer-only deployment reported **6 ms** (documented in `hono-renderer-parity.md`). Local Wrangler readiness is explicitly not the Cloudflare one-second script-startup gate.
