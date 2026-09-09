@@ -16,11 +16,13 @@ const STRICT_TRANSPORT_SECURITY = "max-age=63072000";
 const NOT_FOUND_MESSAGE = "The page could not be found";
 const htmlRegenerations = new Map();
 
+class InternalMetadataError extends Error {}
 function assetRequest(request, pathname) { return new Request(new URL(pathname, request.url)); }
 async function readAssetJson(request, assets, pathname) {
-  const response = await assets.fetch(assetRequest(request, pathname));
-  if (!response.ok) return null;
-  try { return await response.json(); } catch { return null; }
+  let response;
+  try { response = await assets.fetch(assetRequest(request, pathname)); } catch { throw new InternalMetadataError(); }
+  if (!response?.ok) throw new InternalMetadataError();
+  try { return await response.json(); } catch { throw new InternalMetadataError(); }
 }
 function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID || DEFAULT_GA_MEASUREMENT_ID }; }
 function indexCountryShard(country, rows) {
@@ -75,6 +77,10 @@ function notFoundResponse(request) {
   if (selected === "html") return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>404: NOT_FOUND</title></head><body><main><h1>404</h1><p>${NOT_FOUND_MESSAGE}</p><code>NOT_FOUND</code></main></body></html>`, { status: 404, headers: { ...headers, "content-type": "text/html; charset=UTF-8" } });
   return new Response(`${NOT_FOUND_MESSAGE}\n\nNOT_FOUND\n`, { status: 404, headers: { ...headers, "content-type": "text/plain; charset=UTF-8" } });
 }
+function internalErrorResponse(status = 500) {
+  const body = status === 503 ? "Service Unavailable\n" : "Internal Server Error\n";
+  return new Response(body, { status, headers: { "content-type": "text/plain; charset=UTF-8", "cache-control": "no-store", "strict-transport-security": STRICT_TRANSPORT_SECURITY } });
+}
 function publicAssetFilename(pathname) {
   if (pathname === "/robots.txt") return null;
   return safeFilename(pathname);
@@ -84,15 +90,22 @@ function publicAssetCacheControl(pathname) {
   return "public, max-age=14400, must-revalidate";
 }
 async function publicAssetResponse(request, assets) {
-  const response = await assets.fetch(request);
-  if (!response.ok) return null;
+  let response;
+  try { response = await assets.fetch(request); } catch { return request.method === "HEAD" ? headResponse(internalErrorResponse()) : internalErrorResponse(); }
+  if (response.status === 404) return null;
+  if (response.status >= 500) {
+    const failure = internalErrorResponse(response.status);
+    return request.method === "HEAD" ? headResponse(failure) : failure;
+  }
   const headers = new Headers(response.headers);
   const pathname = new URL(request.url).pathname;
-  headers.set("cache-control", publicAssetCacheControl(pathname));
   headers.set("strict-transport-security", STRICT_TRANSPORT_SECURITY);
   headers.set("access-control-allow-origin", "*");
-  const filename = publicAssetFilename(pathname);
-  if (filename) headers.set("content-disposition", `inline; filename="${filename}"`);
+  if (response.ok) {
+    headers.set("cache-control", publicAssetCacheControl(pathname));
+    const filename = publicAssetFilename(pathname);
+    if (filename) headers.set("content-disposition", `inline; filename="${filename}"`);
+  }
   return request.method === "HEAD" ? new Response(null, { status: response.status, statusText: response.statusText, headers }) : new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 function cacheVersion(env, injectedFallback) {
@@ -127,6 +140,15 @@ function validHtmlEnvelope(value, version, routePath, now) {
     && value.staleUntil === value.freshUntil + HTML_CACHE_STALE_MS
     && value.staleUntil > now && value.status === 200 && value.headers && typeof value.headers === "object"
     && Object.keys(value.headers).length === 1 && value.headers["content-type"] === "text/html; charset=UTF-8";
+}
+function validManifest(value) {
+  return value && value.v === 1 && Array.isArray(value.countries) && value.countries.every((country) => country && typeof country.country === "string"
+    && typeof country.countrySlug === "string" && typeof country.file === "string" && Array.isArray(country.states)
+    && country.states.every((state) => state && typeof state.name === "string" && typeof state.slug === "string"));
+}
+function validShard(value) {
+  return value && value.v === 1 && Array.isArray(value.r) && value.r.every((row) => Array.isArray(row)
+    && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string");
 }
 async function readHtmlEnvelope(cache, key, version, routePath, now) {
   if (!cache) return null;
@@ -169,7 +191,10 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
   }
   async function manifest(request, assets) {
     if (!manifestPromise) {
-      const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/route-manifest.json`);
+      const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/route-manifest.json`).then((value) => {
+        if (!validManifest(value)) throw new InternalMetadataError();
+        return value;
+      });
       manifestPromise = promise;
       promise.catch(() => { if (manifestPromise === promise) manifestPromise = undefined; });
     }
@@ -184,7 +209,10 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     const inFlight = inFlightShards.get(country.file);
     if (inFlight) return inFlight;
     const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${country.file}`)
-      .then((countryShard) => countryShard?.v === 1 && Array.isArray(countryShard.r) ? indexCountryShard(country, countryShard.r) : null)
+      .then((countryShard) => {
+        if (!validShard(countryShard)) throw new InternalMetadataError();
+        return indexCountryShard(country, countryShard.r);
+      })
       .then((index) => {
         if (!index) return null;
         touchParsedShard(country.file, index);
@@ -200,7 +228,7 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
   }
   const resolve = async (request, assets, parts) => {
     const index = await manifest(request, assets);
-    if (!index || index.v !== 1 || !Array.isArray(index.countries)) return null;
+    if (!validManifest(index)) throw new InternalMetadataError();
     if (parts.length === 1) return { kind: "browse", index };
     const country = index.countries.find((item) => item.countrySlug === parts[1]);
     if (!country || typeof country.file !== "string") return null;
@@ -274,7 +302,7 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
       const existing = htmlRegenerations.get(key.url);
       if (existing) return existing;
       let inFlight;
-      inFlight = regenerate().catch(() => null).finally(() => {
+      inFlight = regenerate().finally(() => {
         if (htmlRegenerations.get(key.url) === inFlight) htmlRegenerations.delete(key.url);
       });
       htmlRegenerations.set(key.url, inFlight);
@@ -283,14 +311,19 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     if (cached) {
       htmlObservability(context.env).html("stale");
       if (method === "GET") {
-        const inFlight = coalescedRegenerate();
-        try { context.executionCtx?.waitUntil(inFlight); } catch {}
+        const lifecycle = coalescedRegenerate().catch(() => {});
+        try { context.executionCtx?.waitUntil(lifecycle); } catch {}
       }
       const response = browserResponse(cached, routePath);
       return method === "HEAD" ? headResponse(response) : response;
     }
     htmlObservability(context.env).html("miss");
-    const rendered = method === "GET" && key ? await coalescedRegenerate() : await regenerate();
+    let rendered;
+    try { rendered = method === "GET" && key ? await coalescedRegenerate() : await regenerate(); }
+    catch {
+      const response = internalErrorResponse();
+      return method === "HEAD" ? headResponse(response) : response;
+    }
     if (!rendered) return context.notFound();
     if (method === "HEAD") return headResponse(rendered);
     return method === "GET" && key ? rendered.clone() : rendered;

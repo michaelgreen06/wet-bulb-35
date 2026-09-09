@@ -227,8 +227,8 @@ test("location resolver bounds parsed shard LRU, reloads evictions, and coalesce
     return Response.json({ v: 0, r: [] });
   }};
   const invalidResolver = createLocationResolver({ maxCachedShards: 8 });
-  assert.equal(await invalidResolver(request, invalidAssets, partsFor(0)), null);
-  assert.equal(await invalidResolver(request, invalidAssets, partsFor(0)), null);
+  await assert.rejects(invalidResolver(request, invalidAssets, partsFor(0)));
+  await assert.rejects(invalidResolver(request, invalidAssets, partsFor(0)));
   assert.equal(invalidLoads, 2, "invalid shard data must not be retained");
 
   let rejectedLoads = 0;
@@ -239,8 +239,8 @@ test("location resolver bounds parsed shard LRU, reloads evictions, and coalesce
     throw new Error("asset read failed");
   }};
   const rejectedResolver = createLocationResolver({ maxCachedShards: 8 });
-  await assert.rejects(rejectedResolver(request, rejectedAssets, partsFor(0)), /asset read failed/);
-  await assert.rejects(rejectedResolver(request, rejectedAssets, partsFor(0)), /asset read failed/);
+  await assert.rejects(rejectedResolver(request, rejectedAssets, partsFor(0)));
+  await assert.rejects(rejectedResolver(request, rejectedAssets, partsFor(0)));
   assert.equal(rejectedLoads, 2, "rejected shard loads must not be retained");
 });
 
@@ -362,7 +362,7 @@ test("HTML cache uses Worker version metadata, rejects ambiguous namespaces, and
   deadlineCache.entries.set(cacheKey, Response.json({ ...malformedDeadline, staleUntil: malformedDeadline.staleUntil + 1 }));
   const noServePastDeadline = createHonoPageRenderer({ cache: () => deadlineCache, now: () => 1_000 });
   const expiredByContract = await noServePastDeadline.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), { CF_VERSION_METADATA: { id: "cloudflare-version-a" }, ASSETS: { async fetch() { return new Response("missing", { status: 404 }); } } });
-  assert.equal(expiredByContract.status, 404, "an envelope with an extended stale deadline is not served");
+  assert.equal(expiredByContract.status, 500, "an envelope with an extended stale deadline is not served or converted to a 404");
 
   const noIdentityCache = new FakeCache();
   const noIdentity = createHonoPageRenderer({ cache: () => noIdentityCache, now: () => 1_000 });
@@ -374,6 +374,94 @@ test("HTML cache uses Worker version metadata, rejects ambiguous namespaces, and
   const unitOnly = createHonoPageRenderer({ cache: () => injectedCache, now: () => 1_000, cacheVersion: () => "unit-deterministic" });
   await html(unitOnly, "/wetbulb-temperature/andorra/encamp/vila", { ASSETS: fixtureBinding() });
   assert.equal(injectedCache.puts, 1, "tests may explicitly inject a deterministic cache identity");
+});
+
+test("renderer fails closed for internal metadata failures but retains negotiated public 404s", async () => {
+  const app = createHonoPageRenderer();
+  const metadataFailure = async () => new Response("upstream details must not reach clients", { status: 503 });
+  const malformedManifest = async () => Response.json({ v: 1, countries: [{ countrySlug: "andorra" }] });
+  const malformedShard = async (request) => {
+    const pathname = new URL(request.url).pathname;
+    if (pathname === "/locations/route-manifest.json") return Response.json({
+      v: 1, countries: [{ country: "Andorra", countrySlug: "andorra", file: "andorra.json", states: [{ name: "Encamp", slug: "encamp" }] }],
+    });
+    return Response.json({ v: 1, r: "not-an-array" });
+  };
+  for (const assets of [{ fetch: metadataFailure }, { fetch: malformedManifest }, { fetch: malformedShard }]) {
+    const response = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`, { headers: { accept: "application/json" } }), { ASSETS: assets });
+    assert.equal(response.status, 500);
+    const body = await response.text();
+    assert.ok(body.length > 0);
+    assert.doesNotMatch(body, /upstream details|at file:|stack trace/i);
+  }
+  const unknown = await app.fetch(new Request(`${base}/wetbulb-temperature/nope`, { headers: { accept: "application/json" } }), { ASSETS: fixtureBinding() });
+  assert.equal(unknown.status, 404);
+  assert.deepEqual(await unknown.json(), { error: { code: "404", message: "The page could not be found" } });
+});
+
+test("HTML cache never converts internal regeneration failures into 404 and releases rejected coalescing", async () => {
+  let clock = 1_000;
+  const cache = new FakeCache();
+  let fail = true;
+  const assets = { async fetch(request) {
+    if (fail) return new Response("metadata outage", { status: 503 });
+    return fixtureBinding().fetch(request);
+  }};
+  const env = { ASSETS: assets, CF_VERSION_METADATA: { id: "outage-test" }, OBSERVABILITY_DISABLED: "true" };
+  const app = createHonoPageRenderer({ cache: () => cache, now: () => clock });
+  const cold = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env);
+  assert.equal(cold.status, 500);
+  assert.ok((await cold.text()).length > 0);
+  fail = false;
+  const recovered = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env);
+  assert.equal(recovered.status, 200, "a rejected same-key regeneration cannot poison later requests");
+
+  const [key, stored] = [...cache.entries][0];
+  const envelope = await stored.clone().json();
+  clock = envelope.freshUntil + 1;
+  fail = true;
+  const waits = [];
+  const stale = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env, { waitUntil(promise) { waits.push(promise); } });
+  assert.equal(stale.status, 200);
+  assert.equal(await stale.text(), envelope.html);
+  await Promise.all(waits);
+  assert.equal((await cache.entries.get(key).clone().json()).html, envelope.html, "failed stale regeneration cannot overwrite usable stale HTML");
+
+  const expired = new FakeCache();
+  expired.entries.set(key, Response.json({ ...envelope, staleUntil: clock - 1 }));
+  const corrupt = new FakeCache();
+  corrupt.entries.set(key, Response.json({ ...envelope, schema: 0 }));
+  for (const failingCache of [expired, corrupt]) {
+    const response = await createHonoPageRenderer({ cache: () => failingCache, now: () => clock }).fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env);
+    assert.equal(response.status, 500, "expired or corrupt cache must not mask an internal failure");
+    assert.ok((await response.text()).length > 0);
+  }
+});
+
+test("public ASSETS failures remain failures and preserve GET/HEAD semantics", async () => {
+  const app = createHonoPageRenderer();
+  const assets = { async fetch() { return new Response("asset backend unavailable", { status: 503, headers: { "content-type": "text/plain" } }); } };
+  const get = await app.fetch(new Request(`${base}/favicon.svg`), { ASSETS: assets });
+  const head = await app.fetch(new Request(`${base}/favicon.svg`, { method: "HEAD" }), { ASSETS: assets });
+  assert.equal(get.status, 503);
+  assert.equal(await get.text(), "Service Unavailable\n");
+  assert.equal(get.headers.get("cache-control"), "no-store");
+  assert.equal(head.status, 503);
+  assert.equal(await head.text(), "");
+  assert.deepEqual([...head.headers].sort(), [...get.headers].sort());
+
+  const thrown = await app.fetch(new Request(`${base}/favicon.svg`), { ASSETS: { async fetch() { throw new Error("private backend detail"); } } });
+  assert.equal(thrown.status, 500);
+  assert.equal(await thrown.text(), "Internal Server Error\n");
+  assert.equal(thrown.headers.get("cache-control"), "no-store");
+
+  const forbidden = await app.fetch(new Request(`${base}/favicon.svg`), { ASSETS: { async fetch() { return new Response("forbidden", { status: 403 }); } } });
+  assert.equal(forbidden.status, 403, "non-404 public asset responses retain their status");
+  assert.equal(await forbidden.text(), "forbidden");
+
+  const notModified = await app.fetch(new Request(`${base}/favicon.svg`), { ASSETS: { async fetch() { return new Response(null, { status: 304, headers: { etag: "asset-etag" } }); } } });
+  assert.equal(notModified.status, 304, "conditional public asset responses are not converted to 404");
+  assert.equal(notModified.headers.get("etag"), "asset-etag");
 });
 
 test("Hono renderer preserves delivery headers, negotiated 404s, HEAD, and private metadata", async () => {
