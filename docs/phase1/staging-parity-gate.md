@@ -35,6 +35,12 @@ The bounded three-sample median was 81.34 ms for production and 31.95 ms for sta
 
 Michael approved **24 hours fresh** and **7 days stale**. The renderer now implements that policy as an internal schema-validated Cache API envelope with an explicit eight-day storage TTL and deployment-versioned namespace. It deliberately preserves browser HTML `Cache-Control: public, max-age=0, must-revalidate`; the policy record is evidence, not permission to ignore browser/header or email-transformation differences.
 
+## Cached-renderer staging deployment
+
+The corrected cache implementation was deployed only to `wetbulb35-weather-staging.mgdevstuff.workers.dev` as Cloudflare version `d1093b5f-bb6f-4776-8f3f-e4504828cd91`. Wrangler reported **5 ms** Worker startup and the `CF_VERSION_METADATA` binding. No custom-domain or production-zone Worker route exists.
+
+Post-deployment checks passed: slashful/query variants returned byte-identical HTML with the browser parity cache header; `HEAD` returned the same status/header with no body; private metadata returned `404`; and one bounded live-weather smoke returned the established payload and private/no-store header. The staging secret remained present. The first and repeated HTML requests completed in 228.643 ms and 85.377 ms respectively, but latency alone does not prove Cache API residency. Direct cache-outcome verification remains part of the next observability gate.
+
 ## Startup and latency interpretation
 
-The gate records three bounded end-to-end samples per origin; these are network measurements, not a Cloudflare startup metric. The only currently recorded Cloudflare script-startup evidence is Wrangler's isolated staging deployment report of **6 ms** for `wetbulb35-hono-renderer-staging` (documented in `hono-renderer-parity.md`). Local Wrangler readiness is explicitly not the Cloudflare one-second script-startup gate.
+The gate records three bounded end-to-end samples per origin; these are network measurements, not a Cloudflare startup metric. The latest isolated weather-staging deployment reported **5 ms** Worker startup; the earlier renderer-only deployment reported **6 ms** (documented in `hono-renderer-parity.md`). Local Wrangler readiness is explicitly not the Cloudflare one-second script-startup gate.
