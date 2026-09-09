@@ -24,6 +24,8 @@
     "dry-run:hono-binding-probe": "npm run build:hono-binding-assets && ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.staging.toml",
     "dry-run:hono-page-renderer": "npm run build:hono-renderer-assets && ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.renderer-staging.toml",
     "dry-run:weather-edge": "npm run build:hono-renderer-assets && ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.weather-staging.toml",
+    "dry-run:weather-production": "npm run build:hono-renderer-assets && ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.weather-production.toml",
+    "dry-run:weather-production-route": "npm run build:hono-renderer-assets && ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.weather-production-route.toml",
     "deploy:weather-staging": "./node_modules/.bin/wrangler deploy --config wrangler.weather-staging.toml",
     "tail:weather-staging-safe": "node scripts/wrangler-tail-sanitizer.mjs",
     "dry-run:rollback-cutover-rehearsal": "node scripts/rollback-cutover-rehearsal.mjs --dry-run",

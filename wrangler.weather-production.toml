@@ -1,9 +1,10 @@
-name = "wetbulb35-weather-staging"
+name = "wetbulb35-weather-production"
 main = "workers/hono-page-renderer.mjs"
 compatibility_date = "2026-09-08"
+workers_dev = false
+preview_urls = true
 
-# Isolated workers.dev staging candidate only. No production route, DNS, or custom domain.
-# The encrypted staging secret is managed outside this file; deployment is explicit.
+# Route-free production candidate. Deployment still requires explicit approval.
 [assets]
 directory = "worker-assets"
 binding = "ASSETS"
@@ -19,8 +20,6 @@ new_sqlite_classes = ["WeatherGate"]
 [version_metadata]
 binding = "CF_VERSION_METADATA"
 
-# Wrangler 4.129.1 schema supports this isolated Worker Logs configuration.
-# Request URLs retain no query strings; application events are fixed-field JSON.
 [observability]
 enabled = true
 redact_query_string = true
@@ -36,7 +35,5 @@ GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"
 WEATHER_FRESH_SECONDS = "300"
 WEATHER_STALE_SECONDS = "600"
 WEATHER_TIMEOUT_MS = "5000"
-# Approved initial global ceiling; attempts are reserved before provider fetches.
 WEATHER_DAILY_ATTEMPT_LIMIT = "100"
-# Disabled by default; enable only as a reviewed [0,1] staging fraction.
 HTML_CACHE_EVENT_SAMPLE_RATE = "0"
