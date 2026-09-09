@@ -71,7 +71,7 @@ const concurrency = boundedInteger("concurrency", DEFAULT_CONCURRENCY, 1, 16);
 const weatherRequests = boundedInteger("weather-requests", 4, 0, MAX_MEASURED_WEATHER_REQUESTS);
 const weatherTotalRequests = weatherRequests === 0 ? 0 : weatherRequests + 1;
 if (!new Set(["fake", "local", "staging"]).has(mode)) throw new Error("mode must be fake, local, or staging");
-if (mode === "staging" && option("allow-staging-weather", "false") !== "true") throw new Error("staging weather requires --allow-staging-weather=true");
+if (mode === "staging" && weatherRequests > 0 && option("allow-staging-weather", "false") !== "true") throw new Error("staging weather requires --allow-staging-weather=true");
 const suppliedOrigin = option("origin", "");
 if (mode !== "fake" && !suppliedOrigin) throw new Error(`${mode} requires --origin=https://...`);
 if (mode === "staging" && new URL(suppliedOrigin).hostname !== STAGING_HOST) throw new Error("staging origin must be the isolated staging Workers hostname");
