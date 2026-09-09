@@ -21,5 +21,5 @@ GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"
 WEATHER_FRESH_SECONDS = "300"
 WEATHER_STALE_SECONDS = "600"
 WEATHER_TIMEOUT_MS = "5000"
-# Deliberately disabled. Set only after Michael explicitly approves the daily attempt ceiling.
-WEATHER_DAILY_ATTEMPT_LIMIT = "0"
+# Approved initial global ceiling; attempts are reserved before provider fetches.
+WEATHER_DAILY_ATTEMPT_LIMIT = "100"

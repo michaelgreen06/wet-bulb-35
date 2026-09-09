@@ -106,7 +106,7 @@ The exact same parsed numbers are forwarded upstream; no provider-coordinate rou
 
 ### TTL, stale, and failure semantics
 
-**Approval required — proposed defaults:** fresh API TTL **300 seconds**; stale-on-error/while-revalidate window **600 seconds**; upstream timeout **5 seconds**. These values need provider quota and traffic review.
+**Approved initial values:** fresh API TTL **300 seconds**; stale-on-error/while-revalidate window **600 seconds**; upstream timeout **5 seconds**; global provider-attempt ceiling **100 attempts per UTC day**. The ceiling counts reserved attempts, including ambiguous timeouts, and can be lowered before production cutover if staging evidence warrants it.
 
 **Decision:**
 
