@@ -73,8 +73,8 @@ async function stopWrangler(child) {
   return stopping;
 }
 
-function localFetch(port, pathname) {
-  return fetch(`http://127.0.0.1:${port}${pathname}`, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+function localFetch(port, pathname, init) {
+  return fetch(`http://127.0.0.1:${port}${pathname}`, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
 }
 
 function writeBrowserFixture(fixtureDir) {
@@ -280,9 +280,9 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
   let clock = 1_000;
   let providerCalls = 0;
   const cache = new FakeCache();
-  const app = createHonoPageRenderer({ cache: () => cache, now: () => clock });
+  const app = createHonoPageRenderer({ cache: () => cache, now: () => clock, cacheVersion: (env) => env.HTML_CACHE_TEST_VERSION });
   const env = {
-    ASSETS: fixtureBinding(), HTML_CACHE_VERSION: "deployment-a",
+    ASSETS: fixtureBinding(), HTML_CACHE_TEST_VERSION: "deployment-a",
     WEATHER_PROVIDER: { fetch() { providerCalls += 1; throw new Error("HTML must not fetch weather"); } },
   };
   const first = await html(app, "/wetbulb-temperature/andorra/encamp/vila?utm=one", env);
@@ -346,7 +346,7 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
   assert.equal(corrupted.body, first.body);
 
   const versionBefore = cache.puts;
-  await html(app, "/wetbulb-temperature/andorra/encamp/vila", { ...env, HTML_CACHE_VERSION: "deployment-b" });
+  await html(app, "/wetbulb-temperature/andorra/encamp/vila", { ...env, HTML_CACHE_TEST_VERSION: "deployment-b" });
   assert.equal(cache.puts, versionBefore + 1, "deployment version changes the namespace");
 
   const expired = new FakeCache();
@@ -357,11 +357,49 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
   assert.notEqual(failure.status, 200, "expired cache plus metadata failure never becomes an empty success");
 
   const staleFallback = new FakeCache();
-  staleFallback.entries.set(cacheKey, Response.json({ ...envelope, freshUntil: clock - 1, staleUntil: clock + 1_000 }));
-  const fallbackApp = createHonoPageRenderer({ cache: () => staleFallback, now: () => clock });
+  staleFallback.entries.set(cacheKey, Response.json({
+    ...envelope,
+    storedAt: clock - 1 - 24 * 60 * 60 * 1_000,
+    freshUntil: clock - 1,
+    staleUntil: clock - 1 + 7 * 24 * 60 * 60 * 1_000,
+  }));
+  const fallbackApp = createHonoPageRenderer({ cache: () => staleFallback, now: () => clock, cacheVersion: (environment) => environment.HTML_CACHE_TEST_VERSION });
   const fallback = await fallbackApp.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), { ...env, ASSETS: failingAssets }, { waitUntil() {} });
   assert.equal(fallback.status, 200);
   assert.equal(await fallback.text(), first.body, "unexpired stale survives metadata/render failure");
+});
+
+test("HTML cache uses Worker version metadata, rejects ambiguous namespaces, and coalesces cold GET misses", async () => {
+  const cache = new FakeCache();
+  const env = { ASSETS: fixtureBinding(), CF_VERSION_METADATA: { id: "cloudflare-version-a" } };
+  const app = createHonoPageRenderer({ cache: () => cache, now: () => 1_000 });
+  const [first, second] = await Promise.all([
+    html(app, "/wetbulb-temperature/andorra/encamp/vila?first=1", env),
+    html(app, "/wetbulb-temperature/andorra/encamp/vila/?second=1", env),
+  ]);
+  assert.equal(first.response.status, 200);
+  assert.equal(second.response.status, 200);
+  assert.equal(cache.puts, 1, "concurrent same-key cold GET misses render and write once");
+  const cacheKey = [...cache.entries.keys()][0];
+  assert.match(cacheKey, /cloudflare-version-a\/wetbulb-temperature\/andorra\/encamp\/vila$/);
+
+  const deadlineCache = new FakeCache();
+  const malformedDeadline = await cache.entries.get(cacheKey).clone().json();
+  deadlineCache.entries.set(cacheKey, Response.json({ ...malformedDeadline, staleUntil: malformedDeadline.staleUntil + 1 }));
+  const noServePastDeadline = createHonoPageRenderer({ cache: () => deadlineCache, now: () => 1_000 });
+  const expiredByContract = await noServePastDeadline.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), { CF_VERSION_METADATA: { id: "cloudflare-version-a" }, ASSETS: { async fetch() { return new Response("missing", { status: 404 }); } } });
+  assert.equal(expiredByContract.status, 404, "an envelope with an extended stale deadline is not served");
+
+  const noIdentityCache = new FakeCache();
+  const noIdentity = createHonoPageRenderer({ cache: () => noIdentityCache, now: () => 1_000 });
+  const uncached = await html(noIdentity, "/wetbulb-temperature/andorra/encamp/vila", { ASSETS: fixtureBinding(), HTML_CACHE_VERSION: "old-shared-production-namespace" });
+  assert.equal(uncached.response.status, 200, "missing deployment identity still renders");
+  assert.equal(noIdentityCache.puts, 0, "never cache under a shared fallback production namespace");
+
+  const injectedCache = new FakeCache();
+  const unitOnly = createHonoPageRenderer({ cache: () => injectedCache, now: () => 1_000, cacheVersion: () => "unit-deterministic" });
+  await html(unitOnly, "/wetbulb-temperature/andorra/encamp/vila", { ASSETS: fixtureBinding() });
+  assert.equal(injectedCache.puts, 1, "tests may explicitly inject a deterministic cache identity");
 });
 
 test("Hono renderer has production slash, HEAD, 404, and private-metadata behavior", async () => {
@@ -433,6 +471,8 @@ test("Wrangler serves renderer pages and public assets while hiding metadata", {
       `directory = ${JSON.stringify(assetDir)}`,
       'binding = "ASSETS"',
       "run_worker_first = true",
+      "[version_metadata]",
+      'binding = "CF_VERSION_METADATA"',
       "[vars]",
       'CANONICAL_ORIGIN = "https://www.wetbulb35.com"',
       'GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"',
@@ -443,7 +483,17 @@ test("Wrangler serves renderer pages and public assets while hiding metadata", {
     t.diagnostic(`Wrangler renderer readiness (spawn to first 404): ${started.startupMs} ms`);
     const city = await localFetch(port, "/wetbulb-temperature/andorra/encamp/vila");
     assert.equal(city.status, 200);
-    assert.match(await city.text(), /<link rel="canonical" href="https:\/\/www\.wetbulb35\.com\/wetbulb-temperature\/andorra\/encamp\/vila\/">/);
+    assert.equal(city.headers.get("cache-control"), "public, max-age=0, must-revalidate");
+    const cityHtml = await city.text();
+    assert.match(cityHtml, /<link rel="canonical" href="https:\/\/www\.wetbulb35\.com\/wetbulb-temperature\/andorra\/encamp\/vila\/">/);
+    const repeated = await localFetch(port, "/wetbulb-temperature/andorra/encamp/vila/?query=ignored");
+    assert.equal(repeated.status, 200);
+    assert.equal(repeated.headers.get("cache-control"), "public, max-age=0, must-revalidate");
+    assert.equal(await repeated.text(), cityHtml, "repeated GET preserves query/slash parity browser behavior");
+    const cityHead = await localFetch(port, "/wetbulb-temperature/andorra/encamp/vila?head=1", { method: "HEAD" });
+    assert.equal(cityHead.status, 200);
+    assert.equal(cityHead.headers.get("cache-control"), "public, max-age=0, must-revalidate");
+    assert.equal(await cityHead.text(), "");
     const weather = await localFetch(port, "/api/weather?lat=1&lon=2");
     assert.equal(weather.status, 500, "local integration has no provider secret and fails closed");
     assert.deepEqual(await weather.json(), { error: "Failed to refresh weather data." });

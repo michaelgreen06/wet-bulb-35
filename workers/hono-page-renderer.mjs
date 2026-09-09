@@ -12,7 +12,6 @@ const HTML_CACHE_FRESH_MS = 24 * 60 * 60 * 1_000;
 const HTML_CACHE_STALE_MS = 7 * 24 * 60 * 60 * 1_000;
 const HTML_CACHE_STORAGE_TTL_SECONDS = (HTML_CACHE_FRESH_MS + HTML_CACHE_STALE_MS) / 1_000;
 const HTML_BROWSER_CACHE_CONTROL = "public, max-age=0, must-revalidate";
-const DEFAULT_HTML_CACHE_VERSION = "phase1-html-v1";
 const htmlRegenerations = new Map();
 
 function assetRequest(request, pathname) { return new Request(new URL(pathname, request.url)); }
@@ -44,7 +43,12 @@ function stateFromIndex(country, state, index) {
 function countryFromManifest(country) { return { name: country.country, slug: country.countrySlug, count: country.count, states: (country.states || []).map((state) => ({ name: state.name, slug: state.slug, count: state.count })) }; }
 function htmlResponse(html) { return new Response(html, { headers: { "content-type": "text/html; charset=UTF-8", "cache-control": HTML_BROWSER_CACHE_CONTROL } }); }
 function headResponse(response) { return new Response(null, { status: response.status, statusText: response.statusText, headers: response.headers }); }
-function cacheVersion(env) { return env.HTML_CACHE_VERSION || DEFAULT_HTML_CACHE_VERSION; }
+function cacheVersion(env, injectedFallback) {
+  const id = env.CF_VERSION_METADATA?.id;
+  if (typeof id === "string" && id.trim()) return id;
+  const fallback = injectedFallback?.(env);
+  return typeof fallback === "string" && fallback.trim() ? fallback : null;
+}
 function candidateHtmlPath(pathname) {
   const parts = pathname.split("/").filter(Boolean);
   if (parts.length === 0) return "/";
@@ -52,13 +56,14 @@ function candidateHtmlPath(pathname) {
   // Rendering uses resolved route data, not the request spelling, so these variants are parity-identical.
   return `/${parts.join("/")}`;
 }
-function htmlCacheKey(request, version, routePath) {
+function htmlCacheKey(version, routePath) {
   return new Request(`https://html-cache.internal/${encodeURIComponent(version)}${routePath}`, { method: "GET" });
 }
 function validHtmlEnvelope(value, version, routePath, now) {
   return value && value.schema === HTML_CACHE_SCHEMA && value.cacheVersion === version && value.routePath === routePath
     && typeof value.html === "string" && Number.isFinite(value.storedAt) && Number.isFinite(value.freshUntil)
-    && Number.isFinite(value.staleUntil) && value.freshUntil >= value.storedAt && value.staleUntil >= value.freshUntil
+    && Number.isFinite(value.staleUntil) && value.freshUntil === value.storedAt + HTML_CACHE_FRESH_MS
+    && value.staleUntil === value.freshUntil + HTML_CACHE_STALE_MS
     && value.staleUntil > now && value.status === 200 && value.headers && typeof value.headers === "object"
     && Object.keys(value.headers).length === 1 && value.headers["content-type"] === "text/html; charset=UTF-8";
 }
@@ -66,7 +71,7 @@ async function readHtmlEnvelope(cache, key, version, routePath, now) {
   if (!cache) return null;
   try {
     const response = await cache.match(key);
-    if (!response) return null;
+    if (!response?.ok) return null;
     const envelope = await response.json();
     return validHtmlEnvelope(envelope, version, routePath, now) ? envelope : null;
   } catch { return null; }
@@ -153,7 +158,7 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
   return resolve;
 }
 
-export function createHonoPageRenderer({ cache = () => globalThis.caches?.default, now = () => Date.now() } = {}) {
+export function createHonoPageRenderer({ cache = () => globalThis.caches?.default, now = () => Date.now(), cacheVersion: injectedCacheVersion } = {}) {
   const app = new Hono();
   const resolve = createLocationResolver();
   app.all("/api/weather", (context) => {
@@ -170,11 +175,11 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     const routePath = candidateHtmlPath(pathname);
     if (!routePath) return context.env.ASSETS.fetch(request);
     const method = request.method;
-    const version = cacheVersion(context.env);
-    const key = htmlCacheKey(request, version, routePath);
-    const edgeCache = cache();
+    const version = cacheVersion(context.env, injectedCacheVersion);
+    const key = version ? htmlCacheKey(version, routePath) : null;
+    const edgeCache = key ? cache() : null;
     const current = now();
-    const cached = await readHtmlEnvelope(edgeCache, key, version, routePath, current);
+    const cached = key ? await readHtmlEnvelope(edgeCache, key, version, routePath, current) : null;
     if (cached && cached.freshUntil > current) {
       const response = browserResponse(cached);
       return method === "HEAD" ? headResponse(response) : response;
@@ -193,21 +198,31 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     const regenerate = async () => {
       const rendered = await render();
       if (!rendered) return null;
-      if (method === "GET") await writeHtmlEnvelope(edgeCache, key, version, routePath, rendered.clone(), now());
+      if (method === "GET" && key) await writeHtmlEnvelope(edgeCache, key, version, routePath, rendered.clone(), now());
       return rendered;
+    };
+    const coalescedRegenerate = () => {
+      const existing = htmlRegenerations.get(key.url);
+      if (existing) return existing;
+      let inFlight;
+      inFlight = regenerate().catch(() => null).finally(() => {
+        if (htmlRegenerations.get(key.url) === inFlight) htmlRegenerations.delete(key.url);
+      });
+      htmlRegenerations.set(key.url, inFlight);
+      return inFlight;
     };
     if (cached) {
       if (method === "GET") {
-        const inFlight = htmlRegenerations.get(key.url) || regenerate().catch(() => null).finally(() => htmlRegenerations.delete(key.url));
-        htmlRegenerations.set(key.url, inFlight);
+        const inFlight = coalescedRegenerate();
         try { context.executionCtx?.waitUntil(inFlight); } catch {}
       }
       const response = browserResponse(cached);
       return method === "HEAD" ? headResponse(response) : response;
     }
-    const rendered = await regenerate();
+    const rendered = method === "GET" && key ? await coalescedRegenerate() : await regenerate();
     if (!rendered) return context.notFound();
-    return method === "HEAD" ? headResponse(rendered) : rendered;
+    if (method === "HEAD") return headResponse(rendered);
+    return method === "GET" && key ? rendered.clone() : rendered;
   });
   return app;
 }
