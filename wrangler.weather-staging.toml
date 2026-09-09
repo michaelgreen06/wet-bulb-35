@@ -18,6 +18,7 @@ new_sqlite_classes = ["WeatherGate"]
 [vars]
 CANONICAL_ORIGIN = "https://www.wetbulb35.com"
 GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"
+HTML_CACHE_VERSION = "phase1-html-v1"
 WEATHER_FRESH_SECONDS = "300"
 WEATHER_STALE_SECONDS = "600"
 WEATHER_TIMEOUT_MS = "5000"

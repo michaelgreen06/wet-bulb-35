@@ -14,7 +14,7 @@ node scripts/staging-parity-gate.mjs --production=https://www.wetbulb35.com --st
 
 It makes exactly the declared representative GET/HEAD requests for home, browse, country, state, a unique city, a collision-safe city, slashful/slashless city paths, 404, `robots.txt`, sitemap index/member, and favicon. It never requests `/api/weather` from either origin; the helper rejects that path before networking.
 
-For HTML it compares title, description, robots, canonical, Open Graph values, JSON-LD, links, widget coordinate attributes, and public asset references. Text/XML/assets compare a SHA-256 and byte count. It compares status, media type, and stable headers. Only POP/provider/request-varying delivery headers listed in the evidence are ignored; `Cache-Control` and content type remain comparable. The only body normalization is the documented footer-year token.
+The evidence also records the intentional **internal** HTML Cache API contract (schema 1; 86,400-second fresh, 604,800-second stale, 691,200-second storage TTL) so it can be audited without treating it as a browser header change. Browser HTML remains `Cache-Control: public, max-age=0, must-revalidate`, and `Cache-Control` remains compared exactly. The harness does not normalize Cloudflare email-obfuscation markup or zone/Vercel header transformations: those remain visible differences, while real status, content type, SEO, canonical, JSON-LD, links, and widget-coordinate defects still fail the gate.
 
 The same run validates the complete local 130,684-city source route inventory, collision-safe uniqueness, generated metadata manifest count, every locally committed sitemap-index member, the robots sitemap directive, and copied public asset inventory. It does not turn that offline check into 130,684 remote requests.
 
@@ -33,7 +33,7 @@ The bounded three-sample median was 81.34 ms for production and 31.95 ms for sta
 
 ## Cache policy / scope
 
-Michael approved **24 hours fresh** and **7 days stale** for future HTML caching; caching is no longer approval-blocked and is the next serial task. This gate reports current header differences but does **not** implement cache behavior or select `Cache-Control` values. Any cache implementation remains a separately reviewed runtime change.
+Michael approved **24 hours fresh** and **7 days stale**. The renderer now implements that policy as an internal schema-validated Cache API envelope with an explicit eight-day storage TTL and deployment-versioned namespace. It deliberately preserves browser HTML `Cache-Control: public, max-age=0, must-revalidate`; the policy record is evidence, not permission to ignore browser/header or email-transformation differences.
 
 ## Startup and latency interpretation
 

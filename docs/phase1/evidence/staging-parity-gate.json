@@ -536,5 +536,12 @@
     "total": 14,
     "passed": 0,
     "failed": 14
+  },
+  "internalHtmlCachePolicy": {
+    "schema": 1,
+    "freshSeconds": 86400,
+    "staleSeconds": 604800,
+    "storageTtlSeconds": 691200,
+    "browserCacheControl": "public, max-age=0, must-revalidate"
   }
 }

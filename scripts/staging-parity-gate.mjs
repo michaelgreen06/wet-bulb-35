@@ -26,6 +26,8 @@ export const IGNORED_HEADERS = new Set([
   "x-vercel-cache", "x-vercel-id", "x-vercel-sc-headers", "x-worker-version",
 ]);
 export const COMPARED_HEADERS = ["access-control-allow-origin", "cache-control", "content-disposition", "strict-transport-security", "x-vercel-error"];
+// Recorded policy, not a browser-header normalization: HTML still compares Cache-Control exactly.
+export const INTERNAL_HTML_CACHE_POLICY = Object.freeze({ schema: 1, freshSeconds: 86_400, staleSeconds: 604_800, storageTtlSeconds: 691_200, browserCacheControl: "public, max-age=0, must-revalidate" });
 
 const ROUTES = [
   ["home", "/", "html"],
@@ -153,6 +155,7 @@ export async function runGate({ production = DEFAULT_PRODUCTION, staging = DEFAU
   const result = {
     schema: 1, production, staging, weatherApiRequested: false,
     documentedHeaderNormalization: [...IGNORED_HEADERS].sort(), footerYearNormalized: true,
+    internalHtmlCachePolicy: INTERNAL_HTML_CACHE_POLICY,
     routes: records, offlineInventory: offlineInventory(),
     latency: { pathname: "/wetbulb-temperature/andorra/encamp/vila", production: await latency(production, "/wetbulb-temperature/andorra/encamp/vila"), staging: await latency(staging, "/wetbulb-temperature/andorra/encamp/vila") },
   };

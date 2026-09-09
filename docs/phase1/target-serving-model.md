@@ -79,10 +79,10 @@ This is a packaging measurement, not a Cloudflare benchmark. Before implementati
 
 **Decision:** cache only successful `GET` HTML responses by resolved HTML route. `HEAD` mirrors headers/status and does not create an independent object. Cache key excludes query strings; the response body remains parity HTML, including the existing browser-side weather widget.
 
-- **Approved HTML cache policy:** **24 hours fresh** and **7 days stale**, served while a best-effort background regeneration may run.
-- This approval records policy only. No HTML cache implementation, response header, deployment, or cutover is authorized by this document alone.
-- If render/metadata lookup fails and a stale object exists, serve stale HTML. If no object exists, return `500`; never substitute a weather-provider response or an empty success page.
-- Cache headers must state the approved browser/edge policy. Cache invalidation is deployment-versioned (a new Worker/cache namespace or equivalent), not a broad runtime purge assumption.
+- **Implemented HTML cache policy:** only successful recognized `GET` HTML routes are stored as a schema-validated, deployment-versioned internal Cache API envelope. It has 24 hours fresh plus 7 days stale, with explicit 8-day Cache API storage TTL. The browser response is rebuilt from that envelope with the captured parity header `Cache-Control: public, max-age=0, must-revalidate`; browser and internal cache policies are deliberately separate.
+- Query strings are excluded. Slashful/slashless spellings share an identity only after the renderer's route-data-only behavior makes their parity HTML identical. `HEAD` uses that GET identity and mirrors headers/status without a body or a new entry.
+- On an unexpired stale GET hit, return stale immediately and use `waitUntil` to run same-key coalesced regeneration. Metadata/render failure leaves stale usable; without usable stale the established failure path is retained, never an empty `200`. Failed Cache API reads/writes cannot turn a successful render into failure.
+- `HTML_CACHE_VERSION` prefixes the internal namespace and must be bumped for intentional deployment/content invalidation; no broad purge is assumed.
 
 Freshness, stale serving, revalidation, eviction behavior, and same-key collapse are best-effort within an isolate/colo only; Cache API contents do not replicate outside their originating data center and `cache.put` is not tiered. They are not a global guarantee. The cache implementation must be selected only after confirming account/runtime behavior for the static-assets binding and Worker Cache API.
 

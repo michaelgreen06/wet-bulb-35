@@ -11,3 +11,5 @@ run_worker_first = true
 [vars]
 CANONICAL_ORIGIN = "https://www.wetbulb35.com"
 GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"
+# Bump for an intentional deployment/content invalidation; it prefixes only internal Cache API keys.
+HTML_CACHE_VERSION = "phase1-html-v1"

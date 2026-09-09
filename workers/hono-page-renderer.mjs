@@ -7,6 +7,13 @@ const LOCATION_ROOT = "/locations";
 const DEFAULT_CANONICAL_ORIGIN = "https://www.wetbulb35.com";
 const DEFAULT_GA_MEASUREMENT_ID = "G-LNPWV0JL7S";
 const DEFAULT_MAX_CACHED_SHARDS = 8;
+const HTML_CACHE_SCHEMA = 1;
+const HTML_CACHE_FRESH_MS = 24 * 60 * 60 * 1_000;
+const HTML_CACHE_STALE_MS = 7 * 24 * 60 * 60 * 1_000;
+const HTML_CACHE_STORAGE_TTL_SECONDS = (HTML_CACHE_FRESH_MS + HTML_CACHE_STALE_MS) / 1_000;
+const HTML_BROWSER_CACHE_CONTROL = "public, max-age=0, must-revalidate";
+const DEFAULT_HTML_CACHE_VERSION = "phase1-html-v1";
+const htmlRegenerations = new Map();
 
 function assetRequest(request, pathname) { return new Request(new URL(pathname, request.url)); }
 async function readAssetJson(request, assets, pathname) {
@@ -35,7 +42,49 @@ function stateFromIndex(country, state, index) {
   return { countryName: country.country, countrySlug: country.countrySlug, stateName: state.name, stateSlug: state.slug, cities: indexedState.cities, citiesBySlug: indexedState.citiesBySlug };
 }
 function countryFromManifest(country) { return { name: country.country, slug: country.countrySlug, count: country.count, states: (country.states || []).map((state) => ({ name: state.name, slug: state.slug, count: state.count })) }; }
-function htmlResponse(html) { return new Response(html, { headers: { "content-type": "text/html; charset=UTF-8" } }); }
+function htmlResponse(html) { return new Response(html, { headers: { "content-type": "text/html; charset=UTF-8", "cache-control": HTML_BROWSER_CACHE_CONTROL } }); }
+function headResponse(response) { return new Response(null, { status: response.status, statusText: response.statusText, headers: response.headers }); }
+function cacheVersion(env) { return env.HTML_CACHE_VERSION || DEFAULT_HTML_CACHE_VERSION; }
+function candidateHtmlPath(pathname) {
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length === 0) return "/";
+  if (parts[0] !== "wetbulb-temperature" || parts.length > 4) return null;
+  // Rendering uses resolved route data, not the request spelling, so these variants are parity-identical.
+  return `/${parts.join("/")}`;
+}
+function htmlCacheKey(request, version, routePath) {
+  return new Request(`https://html-cache.internal/${encodeURIComponent(version)}${routePath}`, { method: "GET" });
+}
+function validHtmlEnvelope(value, version, routePath, now) {
+  return value && value.schema === HTML_CACHE_SCHEMA && value.cacheVersion === version && value.routePath === routePath
+    && typeof value.html === "string" && Number.isFinite(value.storedAt) && Number.isFinite(value.freshUntil)
+    && Number.isFinite(value.staleUntil) && value.freshUntil >= value.storedAt && value.staleUntil >= value.freshUntil
+    && value.staleUntil > now && value.status === 200 && value.headers && typeof value.headers === "object"
+    && Object.keys(value.headers).length === 1 && value.headers["content-type"] === "text/html; charset=UTF-8";
+}
+async function readHtmlEnvelope(cache, key, version, routePath, now) {
+  if (!cache) return null;
+  try {
+    const response = await cache.match(key);
+    if (!response) return null;
+    const envelope = await response.json();
+    return validHtmlEnvelope(envelope, version, routePath, now) ? envelope : null;
+  } catch { return null; }
+}
+function browserResponse(envelope) {
+  return new Response(envelope.html, { status: envelope.status, headers: { ...envelope.headers, "content-type": "text/html; charset=UTF-8", "cache-control": HTML_BROWSER_CACHE_CONTROL } });
+}
+async function writeHtmlEnvelope(cache, key, version, routePath, response, now) {
+  if (!cache || !response?.ok) return;
+  const html = await response.text();
+  const envelope = {
+    schema: HTML_CACHE_SCHEMA, cacheVersion: version, routePath, status: response.status,
+    headers: { "content-type": "text/html; charset=UTF-8" }, html, storedAt: now,
+    freshUntil: now + HTML_CACHE_FRESH_MS, staleUntil: now + HTML_CACHE_FRESH_MS + HTML_CACHE_STALE_MS,
+  };
+  const internal = new Response(JSON.stringify(envelope), { headers: { "content-type": "application/json", "cache-control": `public, max-age=${HTML_CACHE_STORAGE_TTL_SECONDS}` } });
+  try { await cache.put(key, internal); } catch {}
+}
 
 /** Resolves static metadata only; it deliberately never consults a weather/provider binding. */
 export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SHARDS } = {}) {
@@ -104,7 +153,7 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
   return resolve;
 }
 
-export function createHonoPageRenderer() {
+export function createHonoPageRenderer({ cache = () => globalThis.caches?.default, now = () => Date.now() } = {}) {
   const app = new Hono();
   const resolve = createLocationResolver();
   app.all("/api/weather", (context) => {
@@ -115,18 +164,50 @@ export function createHonoPageRenderer() {
   app.all("/api/weather/", (context) => context.notFound());
   app.get("*", async (context) => {
     const request = context.req.raw;
-    const pathname = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const pathname = url.pathname;
     if (pathname.startsWith(`${LOCATION_ROOT}/`) || pathname === LOCATION_ROOT) return context.notFound();
-    const parts = pathname.split("/").filter(Boolean);
-    const options = rendererOptions(context.env);
-    if (parts.length === 0) return htmlResponse(renderHomePage({}, options));
-    if (parts[0] !== "wetbulb-temperature" || parts.length > 4) return context.env.ASSETS.fetch(request);
-    const result = await resolve(request, context.env.ASSETS, parts);
-    if (!result) return context.notFound();
-    if (result.kind === "browse") return htmlResponse(renderBrowsePage({ countries: result.index.countries.map(countryFromManifest) }, options));
-    if (result.kind === "country") return htmlResponse(renderCountryPage(countryFromManifest(result.country), options));
-    if (result.kind === "state") return htmlResponse(renderStatePage(result.state, options));
-    return htmlResponse(pageHtml(result.city, options));
+    const routePath = candidateHtmlPath(pathname);
+    if (!routePath) return context.env.ASSETS.fetch(request);
+    const method = request.method;
+    const version = cacheVersion(context.env);
+    const key = htmlCacheKey(request, version, routePath);
+    const edgeCache = cache();
+    const current = now();
+    const cached = await readHtmlEnvelope(edgeCache, key, version, routePath, current);
+    if (cached && cached.freshUntil > current) {
+      const response = browserResponse(cached);
+      return method === "HEAD" ? headResponse(response) : response;
+    }
+    const render = async () => {
+      const parts = pathname.split("/").filter(Boolean);
+      const options = rendererOptions(context.env);
+      if (parts.length === 0) return htmlResponse(renderHomePage({}, options));
+      const result = await resolve(request, context.env.ASSETS, parts);
+      if (!result) return null;
+      if (result.kind === "browse") return htmlResponse(renderBrowsePage({ countries: result.index.countries.map(countryFromManifest) }, options));
+      if (result.kind === "country") return htmlResponse(renderCountryPage(countryFromManifest(result.country), options));
+      if (result.kind === "state") return htmlResponse(renderStatePage(result.state, options));
+      return htmlResponse(pageHtml(result.city, options));
+    };
+    const regenerate = async () => {
+      const rendered = await render();
+      if (!rendered) return null;
+      if (method === "GET") await writeHtmlEnvelope(edgeCache, key, version, routePath, rendered.clone(), now());
+      return rendered;
+    };
+    if (cached) {
+      if (method === "GET") {
+        const inFlight = htmlRegenerations.get(key.url) || regenerate().catch(() => null).finally(() => htmlRegenerations.delete(key.url));
+        htmlRegenerations.set(key.url, inFlight);
+        try { context.executionCtx?.waitUntil(inFlight); } catch {}
+      }
+      const response = browserResponse(cached);
+      return method === "HEAD" ? headResponse(response) : response;
+    }
+    const rendered = await regenerate();
+    if (!rendered) return context.notFound();
+    return method === "HEAD" ? headResponse(rendered) : rendered;
   });
   return app;
 }

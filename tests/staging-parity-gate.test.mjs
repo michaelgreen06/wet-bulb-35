@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { IGNORED_HEADERS, htmlSemanticFields, request } from "../scripts/staging-parity-gate.mjs";
+import { IGNORED_HEADERS, INTERNAL_HTML_CACHE_POLICY, htmlSemanticFields, request } from "../scripts/staging-parity-gate.mjs";
 
 test("parity semantic extraction preserves SEO, links, assets, JSON-LD, and widget coordinates", () => {
   const fields = htmlSemanticFields(`<!doctype html><title>Example</title>
@@ -23,6 +23,7 @@ test("parity gate documents only delivery-varying headers as ignored", () => {
   for (const header of ["date", "server", "cf-ray", "x-vercel-id", "x-vercel-cache"]) assert.ok(IGNORED_HEADERS.has(header), header);
   assert.equal(IGNORED_HEADERS.has("cache-control"), false);
   assert.ok(IGNORED_HEADERS.has("content-type"), "media type is compared separately from parameters");
+  assert.deepEqual(INTERNAL_HTML_CACHE_POLICY, { schema: 1, freshSeconds: 86_400, staleSeconds: 604_800, storageTtlSeconds: 691_200, browserCacheControl: "public, max-age=0, must-revalidate" });
 });
 
 test("parity request helper refuses all weather API paths before networking", async () => {

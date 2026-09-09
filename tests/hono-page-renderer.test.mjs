@@ -111,6 +111,21 @@ async function startWrangler(configPath, port, onSpawn) {
   }
 }
 
+class FakeCache {
+  constructor() { this.entries = new Map(); this.matches = 0; this.puts = 0; this.failMatch = false; this.failPut = false; }
+  async match(request) {
+    this.matches += 1;
+    if (this.failMatch) throw new Error("cache read failed");
+    const response = this.entries.get(request.url);
+    return response?.clone();
+  }
+  async put(request, response) {
+    this.puts += 1;
+    if (this.failPut) throw new Error("cache write failed");
+    this.entries.set(request.url, response.clone());
+  }
+}
+
 function fixtureBinding(requested = []) {
   return {
     async fetch(request) {
@@ -259,6 +274,94 @@ test("location resolver bounds parsed shard LRU, reloads evictions, and coalesce
   await assert.rejects(rejectedResolver(request, rejectedAssets, partsFor(0)), /asset read failed/);
   await assert.rejects(rejectedResolver(request, rejectedAssets, partsFor(0)), /asset read failed/);
   assert.equal(rejectedLoads, 2, "rejected shard loads must not be retained");
+});
+
+test("HTML Cache API envelope has bounded fresh/stale behavior and never changes browser caching", async () => {
+  let clock = 1_000;
+  let providerCalls = 0;
+  const cache = new FakeCache();
+  const app = createHonoPageRenderer({ cache: () => cache, now: () => clock });
+  const env = {
+    ASSETS: fixtureBinding(), HTML_CACHE_VERSION: "deployment-a",
+    WEATHER_PROVIDER: { fetch() { providerCalls += 1; throw new Error("HTML must not fetch weather"); } },
+  };
+  const first = await html(app, "/wetbulb-temperature/andorra/encamp/vila?utm=one", env);
+  assert.equal(first.response.status, 200);
+  assert.equal(first.response.headers.get("cache-control"), "public, max-age=0, must-revalidate");
+  assert.equal(cache.puts, 1);
+  const [cacheKey, internal] = [...cache.entries][0];
+  assert.match(cacheKey, /deployment-a\/wetbulb-temperature\/andorra\/encamp\/vila$/);
+  assert.equal(internal.headers.get("cache-control"), "public, max-age=691200");
+  const envelope = await internal.clone().json();
+  assert.deepEqual(Object.keys(envelope).sort(), ["cacheVersion", "freshUntil", "headers", "html", "routePath", "schema", "staleUntil", "status", "storedAt"]);
+  assert.equal(envelope.headers["cache-control"], undefined, "browser response is not stored as the internal object");
+  const slash = await html(app, "/wetbulb-temperature/andorra/encamp/vila/?utm=two", env);
+  assert.equal(slash.body, first.body);
+  assert.equal(cache.puts, 1, "query and parity-equivalent slash spelling share one GET entry");
+  const head = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila?head=1`, { method: "HEAD" }), env);
+  assert.equal(head.status, 200);
+  assert.equal(head.headers.get("cache-control"), "public, max-age=0, must-revalidate");
+  assert.equal(await head.text(), "");
+  assert.equal(cache.puts, 1, "HEAD fresh hit never creates an entry");
+
+  clock = 1_000 + 24 * 60 * 60 * 1_000 + 1;
+  const waits = [];
+  const staleContext = { waitUntil(promise) { waits.push(promise); } };
+  const staleResponses = await Promise.all([
+    app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env, staleContext),
+    app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila?again=1`), env, staleContext),
+  ]);
+  assert.equal(await staleResponses[0].text(), first.body, "stale response is immediate parity HTML");
+  assert.equal(await staleResponses[1].text(), first.body);
+  await Promise.all(waits);
+  assert.equal(cache.puts, 2, "same-key stale regeneration is coalesced");
+
+  const headOnlyCache = new FakeCache();
+  const headOnly = createHonoPageRenderer({ cache: () => headOnlyCache, now: () => clock });
+  const headMiss = await headOnly.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`, { method: "HEAD" }), env);
+  assert.equal(headMiss.status, 200);
+  assert.equal(await headMiss.text(), "");
+  assert.equal(headOnlyCache.puts, 0, "HEAD-only miss does not populate Cache API");
+
+  const writeFailureCache = new FakeCache();
+  writeFailureCache.failPut = true;
+  const writeFailureApp = createHonoPageRenderer({ cache: () => writeFailureCache, now: () => clock });
+  assert.equal((await html(writeFailureApp, "/wetbulb-temperature/andorra/encamp/vila", env)).response.status, 200, "cache write failure cannot break rendering");
+  const readFailureCache = new FakeCache();
+  readFailureCache.failMatch = true;
+  const readFailureApp = createHonoPageRenderer({ cache: () => readFailureCache, now: () => clock });
+  assert.equal((await html(readFailureApp, "/wetbulb-temperature/andorra/encamp/vila", env)).response.status, 200, "cache read failure cannot break rendering");
+
+  const noCacheBefore = cache.puts;
+  for (const pathname of ["/api/weather?lat=1&lon=2", "/not-a-real-page", "/assets/app.css", "/locations/route-manifest.json"]) {
+    await app.fetch(new Request(`${base}${pathname}`), env);
+  }
+  assert.equal(cache.puts, noCacheBefore, "API, 404, static, and metadata routes are never cached");
+  assert.equal(providerCalls, 0);
+
+  const bad = { ...await cache.entries.get(cacheKey).clone().json(), schema: 0 };
+  cache.entries.set(cacheKey, Response.json(bad));
+  const corrupted = await html(app, "/wetbulb-temperature/andorra/encamp/vila", env);
+  assert.equal(corrupted.response.status, 200, "corrupt internal envelope is not served and rendering continues");
+  assert.equal(corrupted.body, first.body);
+
+  const versionBefore = cache.puts;
+  await html(app, "/wetbulb-temperature/andorra/encamp/vila", { ...env, HTML_CACHE_VERSION: "deployment-b" });
+  assert.equal(cache.puts, versionBefore + 1, "deployment version changes the namespace");
+
+  const expired = new FakeCache();
+  expired.entries.set(cacheKey, Response.json({ ...envelope, staleUntil: clock - 1 }));
+  const failingAssets = { async fetch() { return new Response("metadata unavailable", { status: 500 }); } };
+  const failedApp = createHonoPageRenderer({ cache: () => expired, now: () => clock });
+  const failure = await failedApp.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), { ...env, ASSETS: failingAssets });
+  assert.notEqual(failure.status, 200, "expired cache plus metadata failure never becomes an empty success");
+
+  const staleFallback = new FakeCache();
+  staleFallback.entries.set(cacheKey, Response.json({ ...envelope, freshUntil: clock - 1, staleUntil: clock + 1_000 }));
+  const fallbackApp = createHonoPageRenderer({ cache: () => staleFallback, now: () => clock });
+  const fallback = await fallbackApp.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), { ...env, ASSETS: failingAssets }, { waitUntil() {} });
+  assert.equal(fallback.status, 200);
+  assert.equal(await fallback.text(), first.body, "unexpired stale survives metadata/render failure");
 });
 
 test("Hono renderer has production slash, HEAD, 404, and private-metadata behavior", async () => {
