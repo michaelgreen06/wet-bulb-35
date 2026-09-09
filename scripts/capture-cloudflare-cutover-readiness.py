@@ -136,20 +136,36 @@ def main() -> None:
     custom_domains_status, custom_domains_payload = api_get(token, f"/accounts/{account_id}/workers/domains")
     custom_domains = result(custom_domains_payload)
 
+    # `deployments list` is a retained-history inventory; it does not identify
+    # the active traffic allocation. Read that separately from status, and copy
+    # only the deployment ID plus version IDs and percentages from its payload.
+    staging_status_access, staging_status = run_wrangler(["deployments", "status", "--config", str(CONFIG), "--json"])
     staging_deploy_status, staging_deploy = run_wrangler(["deployments", "list", "--config", str(CONFIG), "--json"])
     staging_secrets_status, staging_secrets = run_wrangler(["secret", "list", "--config", str(CONFIG), "--format", "json"])
-    deployment_versions: list[str] = []
+    active_deployment_id: str | None = None
+    active_versions: list[dict[str, str | int | float]] = []
+    if isinstance(staging_status, dict):
+        deployment_id = staging_status.get("id")
+        if isinstance(deployment_id, str):
+            active_deployment_id = deployment_id
+        for version_item in staging_status.get("versions", []):
+            if not isinstance(version_item, dict):
+                continue
+            version_id, percentage = version_item.get("version_id"), version_item.get("percentage")
+            if isinstance(version_id, str) and isinstance(percentage, (int, float)) and not isinstance(percentage, bool):
+                active_versions.append({"version_id": version_id, "percentage": percentage})
+    retained_version_ids: set[str] = set()
     if isinstance(staging_deploy, list):
         for deployment in staging_deploy:
             if not isinstance(deployment, dict):
                 continue
             for version_item in deployment.get("versions", []):
                 if isinstance(version_item, dict) and isinstance(version_item.get("version_id"), str):
-                    deployment_versions.append(version_item["version_id"])
+                    retained_version_ids.add(version_item["version_id"])
     secret_names = sorted(x.get("name") for x in staging_secrets if isinstance(x, dict) and isinstance(x.get("name"), str)) if isinstance(staging_secrets, list) else []
 
     capture = {
-        "schema": 1,
+        "schema": 2,
         "captured_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "read_only": True,
         "token_name": TOKEN_NAME,
@@ -162,7 +178,16 @@ def main() -> None:
         "workers_observability_query_list": {"access": state(telemetry_status)},
         "durable_objects": {"namespace_list_access": state(namespaces_status), "namespace_count": len(namespaces) if isinstance(namespaces, list) else None},
         "custom_domains": {"list_access": state(custom_domains_status), "count": len(custom_domains) if isinstance(custom_domains, list) else None},
-        "staging_worker": {"name": script_name, "deployments_access": staging_deploy_status, "version_ids": deployment_versions, "secret_list_access": staging_secrets_status, "secret_names": secret_names},
+        "staging_worker": {
+            "name": script_name,
+            "deployment_status_access": staging_status_access,
+            "active_deployment_id": active_deployment_id,
+            "active_versions": active_versions,
+            "retained_deployments_access": staging_deploy_status,
+            "retained_version_ids": sorted(retained_version_ids),
+            "secret_list_access": staging_secrets_status,
+            "secret_names": secret_names,
+        },
         "notes": ["No Cloudflare configuration was created, edited, deployed, or deleted.", "No live tail, weather API, production page, Logpush, telemetry query, alert, DNS, route, or custom-domain request was made beyond fixed control-plane GET inventory calls.", "HTTP error bodies and all provider payload fields outside explicit allowlists are discarded."],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

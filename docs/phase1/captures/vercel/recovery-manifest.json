@@ -1,5 +1,5 @@
 {
-  "captured_at_utc": "2026-09-08T15-00-01Z",
+  "captured_at_utc": "2026-09-09T12-30-09Z",
   "current_production": {
     "id": "dpl_98CXao2fnVfTWFmn8AxFeuNSnUXe",
     "source_sha": "f6acf975b57d3352cfaaa45db3164e5389ea2c3a",
@@ -21,9 +21,9 @@
     "complete": false,
     "gap": "Vercel CLI does not reveal existing sensitive values; recover those from their original secret source.",
     "mode": "0o600",
-    "path": "/home/laclaw/.hermes/backups/wetbulb35/vercel/production-env-2026-09-08T15-00-01Z.env",
+    "path": "/home/laclaw/.hermes/backups/wetbulb35/vercel/production-env-2026-09-09T12-30-09Z.env",
     "sensitive_placeholder_count": 1,
-    "sha256": "a44db931c14d25b75e7c0cf56176ffe5dcc6a69eca2591e5a60b8338d8d0dacc",
+    "sha256": "1743bbdc10f9471bd004c6b4f90ebd76d1a7fb9f1f4156eab6c535a658018427",
     "values_committed": false
   },
   "project": "wetbulb2",

@@ -1,6 +1,6 @@
 # Vercel recovery baseline
 
-Captured **2026-09-08T15:00:01Z** by `scripts/capture-vercel-recovery-baseline.sh` with Vercel CLI `59.11.7`. The script uses authenticated Vercel CLI reads and a production HEAD request only; it does not deploy, promote, rollback, edit Vercel settings, domains, or environment variables.
+Captured **2026-09-09T12:30:09Z** by `scripts/capture-vercel-recovery-baseline.sh` with the installed, authenticated native Vercel CLI `59.11.7`. The script uses authenticated Vercel CLI reads and a production HEAD request only; it does not deploy, promote, rollback, edit Vercel settings, domains, or environment variables.
 
 ## Recovery identity
 
@@ -12,7 +12,7 @@ Captured **2026-09-08T15:00:01Z** by `scripts/capture-vercel-recovery-baseline.s
 
 ## Rollback evidence
 
-`captures/vercel/deployment-inventory.json` contains all **36** deployments returned by the CLI at capture time, with URLs, state/target/timestamps, source ref/SHA, aliases, and deployment IDs where the CLI could inspect them. The three ERROR deployments could not be inspected for IDs, but their rollback-relevant list metadata is retained. This is an inventory of presently listed deployments, not a retention guarantee. The retained production deployment above is the current rollback candidate; routing/DNS control remains in Cloudflare and is out of scope.
+`captures/vercel/deployment-inventory.json` contains all **42** deployments returned by the CLI at capture time, with URLs, state/target/timestamps, source ref/SHA, aliases, and deployment IDs where the CLI could inspect them. The three ERROR deployments could not be inspected for IDs, but their rollback-relevant list metadata is retained. This is an inventory of presently listed deployments, not a retention guarantee. The retained production deployment above is the current rollback candidate; routing/DNS control remains in Cloudflare and is out of scope.
 
 ## Build/runtime baseline
 
