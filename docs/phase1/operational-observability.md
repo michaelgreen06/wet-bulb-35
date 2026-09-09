@@ -32,14 +32,20 @@ The logger and hash are best effort: disabled, throwing, or rejected sinks are s
 
 The pinned local Wrangler is `4.129.1`. Its local `config-schema.json` accepts `[observability] enabled`, `redact_query_string`, and `[observability.logs] enabled`, `invocation_logs`, and `persist`. `wrangler.weather-staging.toml` enables persisted Worker Logs for the isolated candidate, disables invocation logs, and enables query-string redaction. `npm run dry-run:weather-edge` validates the configuration without uploading.
 
-This proves local syntax only. It does **not** prove that the Cloudflare account has Worker Logs query access, retention, permissions, billing eligibility, alert policies, Logpush destinations, or notification ownership. No alert is configured here. Before any staging deployment, an account owner must confirm those capabilities and create/assign alerts for provider failures and abnormal cache misses; production cutover remains blocked by those account decisions.
+This proves local syntax only. It does **not** prove that the Cloudflare account has Worker Logs query access, retention, permissions, billing eligibility, alert policies, Logpush destinations, or notification ownership. Persisted Workers Logs retention and Cloudflare-side redaction remain **unverified**. No alert is configured here. Before any staging deployment, an account owner must confirm those capabilities and create/assign alerts for provider failures and abnormal cache misses; production cutover remains blocked by those account decisions.
+
+## Safe tail wrapper
+
+Do **not** run `wrangler tail` directly and do not redirect its stdout or stderr to a terminal, file, or ticket: raw invocation envelopes can include request URLs, query strings, client IPs, and Cloudflare/TLS metadata.
+
+Use only `npm run tail:weather-staging-safe`. It invokes the repository-installed pinned Wrangler for the fixed isolated Worker, privately consumes both streams, incrementally parses concatenated or multiline JSON envelopes, and writes only application `logs[].message` values that exactly match the fixed schemas above. It drops malformed, non-application, and schema-mismatched messages; it never prints raw envelopes or Wrangler stderr.
 
 ## Proposed staging procedure (not executed)
 
 1. Michael explicitly authorized the existing public production OpenWeather key for this isolated staging Worker. It is already installed encrypted; never display, copy, or rotate it in this procedure. Confirm isolated staging logging, daily budget ownership, retention, and alerting. Do not use production DNS or routes.
 2. Build and dry-run locally: `timeout 180s npm run dry-run:weather-edge`.
 3. Deploy only after separate authorization: `npm run deploy:weather-staging`.
-4. Tail only that Worker: `./node_modules/.bin/wrangler tail wetbulb35-weather-staging --format=json`.
+4. Tail only through `npm run tail:weather-staging-safe`; direct raw `wrangler tail` is prohibited.
 5. Send one bot request, one invalid-coordinate request, one same-key weather warm request and one same-key repeat. Inspect only fixed JSON fields for `weather_bot_skip`, `weather_validation_failure`, `weather_cache_miss`, `weather_cache_hit`, and exactly one terminal provider event for the actual provider attempt. Do not paste request URLs, secrets, bodies, or provider errors into evidence.
 6. Record the redacted event counts, terminal outcome, cache state, latency, and reserved budget used/limit. Stop well below 100 provider attempts.
 
