@@ -58,7 +58,7 @@ class ProductionCutoverRunbookTests(unittest.TestCase):
         self.assertNotIn("route", route_free)
         self.assertNotIn("custom_domain", route_free)
         self.assertFalse(route_free["workers_dev"])
-        self.assertTrue(route_free["preview_urls"])
+        self.assertFalse(route_free["preview_urls"])
         self.assertEqual(route_free["name"], "wetbulb35-weather-production")
         self.assertEqual(route_bearing.pop("routes"), [{"pattern": "www.wetbulb35.com/*", "zone_name": "wetbulb35.com"}])
         self.assertEqual(route_bearing, route_free)
