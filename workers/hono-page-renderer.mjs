@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { pageHtml, renderBrowsePage, renderCountryPage, renderHomePage, renderStatePage } from "../lib/page-renderer.mjs";
+import { weatherResponse } from "./weather-edge.mjs";
+export { WeatherGate } from "./weather-edge.mjs";
 
 const LOCATION_ROOT = "/locations";
 const DEFAULT_CANONICAL_ORIGIN = "https://www.wetbulb35.com";
@@ -105,16 +107,16 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
 export function createHonoPageRenderer() {
   const app = new Hono();
   const resolve = createLocationResolver();
+  app.all("/api/weather", (context) => {
+    let executionContext;
+    try { executionContext = context.executionCtx; } catch {}
+    return weatherResponse(context.req.raw, context.env, executionContext);
+  });
+  app.all("/api/weather/", (context) => context.notFound());
   app.get("*", async (context) => {
     const request = context.req.raw;
     const pathname = new URL(request.url).pathname;
     if (pathname.startsWith(`${LOCATION_ROOT}/`) || pathname === LOCATION_ROOT) return context.notFound();
-    if (pathname === "/api/weather") {
-      return new Response(JSON.stringify({ error: "Live weather is not available in the static staging renderer." }), {
-        status: 501,
-        headers: { "content-type": "application/json; charset=UTF-8" },
-      });
-    }
     const parts = pathname.split("/").filter(Boolean);
     const options = rendererOptions(context.env);
     if (parts.length === 0) return htmlResponse(renderHomePage({}, options));
