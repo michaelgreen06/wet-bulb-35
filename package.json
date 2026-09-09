@@ -25,6 +25,7 @@
     "dry-run:weather-edge": "npm run build:hono-renderer-assets && ./node_modules/.bin/wrangler deploy --dry-run --config wrangler.weather-staging.toml",
     "deploy:weather-staging": "./node_modules/.bin/wrangler deploy --config wrangler.weather-staging.toml",
     "tail:weather-staging-safe": "node scripts/wrangler-tail-sanitizer.mjs",
+    "dry-run:rollback-cutover-rehearsal": "node scripts/rollback-cutover-rehearsal.mjs --dry-run",
     "load:staging-safe": "node scripts/staging-load-harness.mjs --mode=fake",
     "vercel-build": "npm run test:static-prototype && npm run build:vercel-output",
     "test:static-prototype": "node --test tests/static-generator.test.mjs tests/vercel-ignore-build.test.mjs",
