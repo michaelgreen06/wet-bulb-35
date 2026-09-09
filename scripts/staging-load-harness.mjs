@@ -6,15 +6,16 @@ import { performance } from "node:perf_hooks";
 const STAGING_HOST = "wetbulb35-weather-staging.mgdevstuff.workers.dev";
 const DEFAULT_HTML_REQUESTS = 24;
 const DEFAULT_CONCURRENCY = 4;
-const MAX_STAGING_WEATHER_REQUESTS = 20; // Deliberately far below the daily ceiling of 100.
+const MAX_STAGING_WEATHER_REQUESTS = 20; // Includes the warm request; deliberately below the daily ceiling of 100.
+const MAX_MEASURED_WEATHER_REQUESTS = MAX_STAGING_WEATHER_REQUESTS - 1;
 
 function option(name, fallback) {
   const value = process.argv.find((argument) => argument.startsWith(`--${name}=`))?.slice(name.length + 3);
   return value === undefined ? fallback : value;
 }
-function positiveInteger(name, fallback, maximum) {
+function boundedInteger(name, fallback, minimum, maximum) {
   const value = Number(option(name, fallback));
-  if (!Number.isSafeInteger(value) || value < 1 || value > maximum) throw new Error(`${name} must be an integer from 1 to ${maximum}`);
+  if (!Number.isSafeInteger(value) || value < minimum || value > maximum) throw new Error(`${name} must be an integer from ${minimum} to ${maximum}`);
   return value;
 }
 function percentile(values, fraction) {
@@ -24,6 +25,7 @@ function percentile(values, fraction) {
 function summarize(records) {
   const latencies = records.map((record) => record.latency_ms);
   const statuses = Object.fromEntries([...records.reduce((counts, record) => counts.set(record.status, (counts.get(record.status) || 0) + 1), new Map())].sort(([a], [b]) => a - b));
+  if (records.length === 0) return { count: 0, statuses: {}, latency_ms: { p50: null, p95: null, max: null } };
   return { count: records.length, statuses, latency_ms: { p50: percentile(latencies, .50), p95: percentile(latencies, .95), max: Math.max(...latencies) } };
 }
 async function fakeServer() {
@@ -63,9 +65,11 @@ async function pooled(count, concurrency, operation) {
 }
 
 const mode = option("mode", "fake");
-const htmlRequests = positiveInteger("html-requests", DEFAULT_HTML_REQUESTS, 200);
-const concurrency = positiveInteger("concurrency", DEFAULT_CONCURRENCY, 16);
-const weatherRequests = positiveInteger("weather-requests", 4, MAX_STAGING_WEATHER_REQUESTS);
+const htmlRequests = boundedInteger("html-requests", DEFAULT_HTML_REQUESTS, 1, 200);
+const concurrency = boundedInteger("concurrency", DEFAULT_CONCURRENCY, 1, 16);
+// --weather-requests counts measured requests only; a nonzero run adds one warm request.
+const weatherRequests = boundedInteger("weather-requests", 4, 0, MAX_MEASURED_WEATHER_REQUESTS);
+const weatherTotalRequests = weatherRequests === 0 ? 0 : weatherRequests + 1;
 if (!new Set(["fake", "local", "staging"]).has(mode)) throw new Error("mode must be fake, local, or staging");
 if (mode === "staging" && option("allow-staging-weather", "false") !== "true") throw new Error("staging weather requires --allow-staging-weather=true");
 const suppliedOrigin = option("origin", "");
@@ -76,11 +80,11 @@ if (mode !== "staging" && /wetbulb35\.com$/i.test(new URL(suppliedOrigin || "htt
 const fake = mode === "fake" ? await fakeServer() : null;
 const origin = fake?.origin || suppliedOrigin;
 try {
-  // Warm exactly one canonical weather key before measuring same-key requests.
-  const warm = await request(origin, "/api/weather?lat=1&lon=2");
+  // Warm exactly one canonical weather key only when weather is measured.
+  const warm = weatherRequests === 0 ? null : await request(origin, "/api/weather?lat=1&lon=2");
   const html = await pooled(htmlRequests, concurrency, () => request(origin, "/wetbulb-temperature/andorra/encamp/vila"));
-  const weather = await pooled(weatherRequests, Math.min(concurrency, weatherRequests), () => request(origin, "/api/weather?lat=1&lon=2"));
-  console.log(JSON.stringify({ mode, origin: new URL(origin).origin, bounds: { html_requests: htmlRequests, concurrency, weather_requests: weatherRequests, staging_weather_max: MAX_STAGING_WEATHER_REQUESTS }, warm_status: warm.status, html: summarize(html), weather: summarize(weather) }));
+  const weather = await pooled(weatherRequests, Math.min(concurrency, weatherRequests || 1), () => request(origin, "/api/weather?lat=1&lon=2"));
+  console.log(JSON.stringify({ mode, origin: new URL(origin).origin, bounds: { html_requests: htmlRequests, concurrency, weather_measured_requests: weatherRequests, weather_total_requests: weatherTotalRequests, staging_weather_max: MAX_STAGING_WEATHER_REQUESTS }, warm_status: warm?.status ?? null, html: summarize(html), weather: summarize(weather) }));
 } finally {
   await fake?.close();
 }

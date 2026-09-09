@@ -22,26 +22,62 @@ async function canonicalKeyHash(key) {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-/**
- * Emits only fixed, allowlisted fields. Logging is deliberately best-effort:
- * no caller awaits it and sink/hash failures are swallowed.
- */
-export function createObservability({ deploymentVersion: version = OBSERVABILITY_UNKNOWN_VERSION, logger = (event) => console.log(JSON.stringify(event)), htmlSampleRate = 0 } = {}) {
+/** Emits only fixed, allowlisted fields. Logging is deliberately best-effort. */
+export function createObservability({
+  deploymentVersion: version = OBSERVABILITY_UNKNOWN_VERSION,
+  logger = (event) => console.log(JSON.stringify(event)),
+  htmlSampleRate = 0,
+  hashCanonicalKey = canonicalKeyHash,
+} = {}) {
+  const deployment_version = typeof version === "string" && version.trim() ? version : OBSERVABILITY_UNKNOWN_VERSION;
   const emit = (event) => {
     try {
       const result = logger?.(event);
       if (result?.catch) result.catch(() => {});
     } catch {}
   };
-  const keyed = (event, key) => canonicalKeyHash(key)
-    .then((canonical_key_hash) => emit({ ...event, canonical_key_hash }))
-    .catch(() => {});
+  const integer = (value) => Number.isSafeInteger(value) && value >= 0 ? value : null;
+  const providerOutcome = new Set(["success", "timeout", "upstream_http", "invalid_payload", "exception"]);
+
+  const weatherEvent = (input) => {
+    switch (input?.event) {
+      case "weather_cache_hit": return { event: "weather_cache_hit", deployment_version, cache_state: "fresh" };
+      case "weather_cache_stale": return { event: "weather_cache_stale", deployment_version, cache_state: "stale" };
+      case "weather_cache_miss": return { event: "weather_cache_miss", deployment_version, cache_state: "miss" };
+      case "weather_bot_skip": return { event: "weather_bot_skip", deployment_version, cache_state: "none" };
+      case "weather_validation_failure": return { event: "weather_validation_failure", deployment_version, cache_state: "none" };
+      case "weather_budget_exhausted": return {
+        event: "weather_budget_exhausted", deployment_version,
+        cache_state: input.cache_state === "stale_refresh" ? "stale_refresh" : "miss",
+        reserved_budget_used: integer(input.reserved_budget_used), reserved_budget_limit: integer(input.reserved_budget_limit),
+      };
+      case "weather_provider_call": return {
+        event: "weather_provider_call", deployment_version,
+        outcome: providerOutcome.has(input.outcome) ? input.outcome : "exception",
+        upstream_status: Number.isSafeInteger(input.upstream_status) && input.upstream_status >= 100 && input.upstream_status <= 599 ? input.upstream_status : null,
+        latency_ms: integer(input.latency_ms),
+        cache_state: input.cache_state === "stale_refresh" ? "stale_refresh" : "miss",
+        reserved_budget_used: integer(input.reserved_budget_used), reserved_budget_limit: integer(input.reserved_budget_limit),
+      };
+      default: return null;
+    }
+  };
+  const keyed = (input, key, executionContext) => {
+    const event = weatherEvent(input);
+    if (!event) return Promise.resolve();
+    const pending = Promise.resolve()
+      .then(() => hashCanonicalKey(key))
+      .catch(() => null)
+      .then((canonical_key_hash) => emit({ ...event, canonical_key_hash: typeof canonical_key_hash === "string" && /^[a-f0-9]{64}$/.test(canonical_key_hash) ? canonical_key_hash : null }));
+    try { executionContext?.waitUntil?.(pending); } catch {}
+    return pending;
+  };
   return {
-    weather(event, key) { return keyed({ deployment_version: version, ...event }, key); },
-    weatherUnkeyed(event) { emit({ deployment_version: version, ...event }); },
+    weather(event, key, executionContext) { return keyed(event, key, executionContext); },
+    weatherUnkeyed(event) { const safe = weatherEvent(event); if (safe) emit(safe); },
     html(outcome) {
-      if (Math.random() >= htmlSampleRate) return;
-      emit({ event: "html_cache_outcome", deployment_version: version, outcome, cache_state: outcome, route_class: "html" });
+      if (Math.random() >= htmlSampleRate || !new Set(["hit", "miss", "stale"]).has(outcome)) return;
+      emit({ event: "html_cache_outcome", deployment_version, outcome, cache_state: outcome, route_class: "html" });
     },
   };
 }
@@ -49,7 +85,12 @@ export function createObservability({ deploymentVersion: version = OBSERVABILITY
 function observabilityFor(env) {
   return env?.OBSERVABILITY && typeof env.OBSERVABILITY.weather === "function"
     ? env.OBSERVABILITY
-    : createObservability({ deploymentVersion: deploymentVersion(env), htmlSampleRate: safeSampleRate(env?.HTML_CACHE_EVENT_SAMPLE_RATE) });
+    : createObservability({
+      deploymentVersion: deploymentVersion(env),
+      htmlSampleRate: safeSampleRate(env?.HTML_CACHE_EVENT_SAMPLE_RATE),
+      // Test/local harnesses may opt out explicitly; staging never sets this binding.
+      logger: env?.OBSERVABILITY_DISABLED === "true" ? () => {} : undefined,
+    });
 }
 
 export function isBlockedBot(userAgent) { return Boolean(userAgent && BOT_PATTERN.test(userAgent)); }
@@ -197,11 +238,11 @@ export async function weatherResponse(request, env, executionContext) {
   const cache = globalThis.caches?.default;
   const cached = await readEnvelope(cache, request, key);
   if (cached && now < cached.freshUntil) {
-    observability.weather({ event: "weather_cache_hit", cache_state: "fresh" }, key);
+    observability.weather({ event: "weather_cache_hit", cache_state: "fresh" }, key, executionContext);
     return browser(cached.payload);
   }
   if (cached && now < cached.staleUntil) {
-    observability.weather({ event: "weather_cache_stale", cache_state: "stale" }, key);
+    observability.weather({ event: "weather_cache_stale", cache_state: "stale" }, key, executionContext);
     const refresh = callGate(env, key, coords, "stale")
       .then((envelope) => writeEnvelope(cache, request, key, envelope))
       .catch(() => {});
@@ -209,7 +250,7 @@ export async function weatherResponse(request, env, executionContext) {
     return browser(cached.payload);
   }
 
-  observability.weather({ event: "weather_cache_miss", cache_state: "miss" }, key);
+  observability.weather({ event: "weather_cache_miss", cache_state: "miss" }, key, executionContext);
   try {
     const envelope = await callGate(env, key, coords, "miss");
     await writeEnvelope(cache, request, key, envelope);

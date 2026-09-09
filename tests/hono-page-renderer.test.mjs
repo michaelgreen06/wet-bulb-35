@@ -213,6 +213,7 @@ test("weather API fails closed without a WeatherGate binding and never calls a p
   const app = createHonoPageRenderer();
   const response = await app.fetch(new Request(`${base}/api/weather?lat=1&lon=2`), {
     ASSETS: fixtureBinding(),
+    OBSERVABILITY_DISABLED: "true",
     WEATHER_PROVIDER: { fetch() { providerCalls += 1; return new Response("unexpected"); } },
   });
   assert.equal(response.status, 500);
@@ -282,7 +283,7 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
   const cache = new FakeCache();
   const app = createHonoPageRenderer({ cache: () => cache, now: () => clock, cacheVersion: (env) => env.HTML_CACHE_TEST_VERSION });
   const env = {
-    ASSETS: fixtureBinding(), HTML_CACHE_TEST_VERSION: "deployment-a",
+    ASSETS: fixtureBinding(), HTML_CACHE_TEST_VERSION: "deployment-a", OBSERVABILITY_DISABLED: "true",
     WEATHER_PROVIDER: { fetch() { providerCalls += 1; throw new Error("HTML must not fetch weather"); } },
   };
   const first = await html(app, "/wetbulb-temperature/andorra/encamp/vila?utm=one", env);
@@ -473,9 +474,10 @@ test("Wrangler serves renderer pages and public assets while hiding metadata", {
       "run_worker_first = true",
       "[version_metadata]",
       'binding = "CF_VERSION_METADATA"',
-      "[vars]",
+      '[vars]',
       'CANONICAL_ORIGIN = "https://www.wetbulb35.com"',
       'GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"',
+      'OBSERVABILITY_DISABLED = "true"',
       "",
     ].join("\n"));
     const port = await reservePort();

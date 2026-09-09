@@ -36,10 +36,10 @@ This proves local syntax only. It does **not** prove that the Cloudflare account
 
 ## Proposed staging procedure (not executed)
 
-1. Confirm the account owner has approved isolated staging logging, a non-production weather credential, daily budget ownership, retention, and alerting. Do not use production DNS, routes, secrets, or provider credentials.
+1. Michael explicitly authorized the existing public production OpenWeather key for this isolated staging Worker. It is already installed encrypted; never display, copy, or rotate it in this procedure. Confirm isolated staging logging, daily budget ownership, retention, and alerting. Do not use production DNS or routes.
 2. Build and dry-run locally: `timeout 180s npm run dry-run:weather-edge`.
-3. Deploy only after separate authorization: `npx wrangler deploy --config wrangler.weather-staging.toml`.
-4. Tail only that Worker: `npx wrangler tail wetbulb35-weather-staging --format=json`.
+3. Deploy only after separate authorization: `./node_modules/.bin/wrangler deploy --config wrangler.weather-staging.toml`.
+4. Tail only that Worker: `./node_modules/.bin/wrangler tail wetbulb35-weather-staging --format=json`.
 5. Send one bot request, one invalid-coordinate request, one same-key weather warm request and one same-key repeat. Inspect only fixed JSON fields for `weather_bot_skip`, `weather_validation_failure`, `weather_cache_miss`, `weather_cache_hit`, and exactly one terminal provider event for the actual provider attempt. Do not paste request URLs, secrets, bodies, or provider errors into evidence.
 6. Record the redacted event counts, terminal outcome, cache state, latency, and reserved budget used/limit. Stop well below 100 provider attempts.
 
@@ -47,7 +47,7 @@ This proves local syntax only. It does **not** prove that the Cloudflare account
 
 `npm run load:staging-safe` runs `scripts/staging-load-harness.mjs --mode=fake`: a local fake server, 24 HTML requests at concurrency 4, and a warm plus four same-key weather requests. It never contacts a provider and prints only JSON latency percentiles/status counts—never bodies or secrets.
 
-`--mode=local` requires an explicit non-production origin and refuses `wetbulb35.com` hosts. `--mode=staging` requires both the exact isolated workers.dev hostname and `--allow-staging-weather=true`; staging weather requests are hard-capped at 20, far below the 100-attempt ceiling. Example (only after authorization):
+`--mode=local` requires an explicit non-production origin and refuses `wetbulb35.com` hosts. `--mode=staging` requires both the exact isolated workers.dev hostname and `--allow-staging-weather=true`. `--weather-requests` counts measured weather requests; a nonzero value adds one warm request, so it is capped at 19 and total weather requests are capped at 20. `--weather-requests=0` is HTML-only mode and makes zero weather requests. Example (only after authorization):
 
 ```sh
 node scripts/staging-load-harness.mjs --mode=staging \
