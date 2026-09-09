@@ -2,7 +2,7 @@
 
 ## Safety boundary
 
-No deployment is performed by this change. The only configured Worker is the isolated `wetbulb35-weather-staging` workers.dev candidate; it has no route, DNS, custom-domain, or production-secret configuration in this repository.
+Deployment and verification are limited to the isolated `wetbulb35-weather-staging` workers.dev candidate. It has no route, DNS, custom-domain, or production-secret configuration in this repository; production remains untouched.
 
 Application logs are fixed-field JSON emitted through `console.log`. They do not contain request URLs, paths, query strings, coordinates, IPs, provider URLs, API keys, request/error objects, or untrusted error text. Canonical weather keys are represented only by a SHA-256 hash.
 
@@ -38,16 +38,25 @@ This proves local syntax only. It does **not** prove that the Cloudflare account
 
 Do **not** run `wrangler tail` directly and do not redirect its stdout or stderr to a terminal, file, or ticket: raw invocation envelopes can include request URLs, query strings, client IPs, and Cloudflare/TLS metadata.
 
-Use only `npm run tail:weather-staging-safe`. It invokes the repository-installed pinned Wrangler for the fixed isolated Worker, privately consumes both streams, incrementally parses concatenated or multiline JSON envelopes, and writes only application `logs[].message` values that exactly match the fixed schemas above. It drops malformed, non-application, and schema-mismatched messages; it never prints raw envelopes or Wrangler stderr.
+Use only `npm run --silent tail:weather-staging-safe` (equivalently, `node scripts/wrangler-tail-sanitizer.mjs`). The `--silent` flag is mandatory so npm itself cannot add non-event banner lines. The wrapper invokes the repository-installed pinned Wrangler for the fixed isolated Worker, privately consumes both streams, incrementally parses concatenated or multiline JSON envelopes, and writes only application `logs[].message` values that exactly match the fixed schemas above. It drops malformed, non-application, and schema-mismatched messages; it never prints raw envelopes or Wrangler stderr.
 
-## Proposed staging procedure (not executed)
+## Staging procedure
 
 1. Michael explicitly authorized the existing public production OpenWeather key for this isolated staging Worker. It is already installed encrypted; never display, copy, or rotate it in this procedure. Confirm isolated staging logging, daily budget ownership, retention, and alerting. Do not use production DNS or routes.
 2. Build and dry-run locally: `timeout 180s npm run dry-run:weather-edge`.
-3. Deploy only after separate authorization: `npm run deploy:weather-staging`.
-4. Tail only through `npm run tail:weather-staging-safe`; direct raw `wrangler tail` is prohibited.
+3. Deploy only after separate authorization: npm run deploy:weather-staging.
+4. Tail only through `npm run --silent tail:weather-staging-safe`; direct raw `wrangler tail` is prohibited.
 5. Send one bot request, one invalid-coordinate request, one same-key weather warm request and one same-key repeat. Inspect only fixed JSON fields for `weather_bot_skip`, `weather_validation_failure`, `weather_cache_miss`, `weather_cache_hit`, and exactly one terminal provider event for the actual provider attempt. Do not paste request URLs, secrets, bodies, or provider errors into evidence.
 6. Record the redacted event counts, terminal outcome, cache state, latency, and reserved budget used/limit. Stop well below 100 provider attempts.
+
+## Executed isolated verification
+
+Recorded at `2026-09-09T06:43:52Z`. The existing encrypted `OPENWEATHER_API_KEY` was preserved by name, and the production-zone Worker route count remained zero.
+
+- A bounded temporary deployment set `HTML_CACHE_EVENT_SAMPLE_RATE=1`; two same-route requests with distinct query strings produced sanitized Cache API counts of exactly `miss=1` and `hit=1`. The final deployment restored the rate to `0` at version `fe629b5a-08f8-4b28-bc4e-185f04dfe93e`; Wrangler reported 6 ms startup.
+- Sanitized weather validation produced one bot skip, one validation failure, one cache miss, one cache hit, and exactly one terminal provider event. The sole attempt succeeded with upstream status 200 in 188 ms; the event reported reserved budget `4/100`. No retry occurred.
+- Every retained tail event passed the fixed schema validator. Raw invocation envelopes and Wrangler stderr were neither displayed nor retained; the temporary sanitized files were removed. Persisted Workers Logs retention and Cloudflare-side redaction remain unverified.
+- Live contracts passed: HTML GET/HEAD `200`, exact HTML cache-control, empty HEAD body; invalid weather `400` with the established error; weather `200` with the expected payload shape and exact private/no-store cache-control.
 
 ## Bounded load harness
 
@@ -60,3 +69,8 @@ node scripts/staging-load-harness.mjs --mode=staging \
   --origin=https://wetbulb35-weather-staging.mgdevstuff.workers.dev \
   --allow-staging-weather=true --weather-requests=4
 ```
+
+Executed against final version `fe629b5a-08f8-4b28-bc4e-185f04dfe93e` without retaining bodies:
+
+- HTML-only: 24/24 status 200; latency p50 31.028 ms, p95 102.374 ms, max 113.660 ms.
+- Same-key warm weather: warm status 200 and 4/4 measured status 200; measured latency p50 72.881 ms, p95/max 80.098 ms. The companion single HTML request returned 200 in 76.126 ms.

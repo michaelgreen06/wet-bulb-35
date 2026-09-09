@@ -53,3 +53,6 @@ geonames_cities.json
 allCountries.txt
 admin1CodesASCII.txt
 paste.md
+.worktrees/
+.wrangler/
+__pycache__/

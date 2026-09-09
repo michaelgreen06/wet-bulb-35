@@ -29,6 +29,13 @@
     "x-worker-version"
   ],
   "footerYearNormalized": true,
+  "internalHtmlCachePolicy": {
+    "schema": 1,
+    "freshSeconds": 86400,
+    "staleSeconds": 604800,
+    "storageTtlSeconds": 691200,
+    "browserCacheControl": "public, max-age=0, must-revalidate"
+  },
   "routes": [
     {
       "name": "home",
@@ -49,19 +56,19 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 156.07
+        "latencyMs": 287.14
       },
       "staging": {
         "status": 200,
         "contentType": "text/html",
         "headers": {
           "access-control-allow-origin": null,
-          "cache-control": null,
+          "cache-control": "public, max-age=0, must-revalidate",
           "content-disposition": null,
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 122.1
+        "latencyMs": 134.92
       }
     },
     {
@@ -83,19 +90,19 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 78.66
+        "latencyMs": 206.42
       },
       "staging": {
         "status": 200,
         "contentType": "text/html",
         "headers": {
           "access-control-allow-origin": null,
-          "cache-control": null,
+          "cache-control": "public, max-age=0, must-revalidate",
           "content-disposition": null,
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 39.96
+        "latencyMs": 47.89
       }
     },
     {
@@ -117,19 +124,19 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 63.91
+        "latencyMs": 65.13
       },
       "staging": {
         "status": 200,
         "contentType": "text/html",
         "headers": {
           "access-control-allow-origin": null,
-          "cache-control": null,
+          "cache-control": "public, max-age=0, must-revalidate",
           "content-disposition": null,
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 38.88
+        "latencyMs": 34.4
       }
     },
     {
@@ -151,19 +158,19 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 409.1
+        "latencyMs": 95.01
       },
       "staging": {
         "status": 200,
         "contentType": "text/html",
         "headers": {
           "access-control-allow-origin": null,
-          "cache-control": null,
+          "cache-control": "public, max-age=0, must-revalidate",
           "content-disposition": null,
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 31.86
+        "latencyMs": 48.8
       }
     },
     {
@@ -185,19 +192,19 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 86.85
+        "latencyMs": 66.3
       },
       "staging": {
         "status": 200,
         "contentType": "text/html",
         "headers": {
           "access-control-allow-origin": null,
-          "cache-control": null,
+          "cache-control": "public, max-age=0, must-revalidate",
           "content-disposition": null,
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 44.21
+        "latencyMs": 38.46
       }
     },
     {
@@ -219,19 +226,19 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 54.44
+        "latencyMs": 63.88
       },
       "staging": {
         "status": 200,
         "contentType": "text/html",
         "headers": {
           "access-control-allow-origin": null,
-          "cache-control": null,
+          "cache-control": "public, max-age=0, must-revalidate",
           "content-disposition": null,
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 37.1
+        "latencyMs": 47.52
       }
     },
     {
@@ -253,19 +260,19 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 54.25
+        "latencyMs": 63.33
       },
       "staging": {
         "status": 200,
         "contentType": "text/html",
         "headers": {
           "access-control-allow-origin": null,
-          "cache-control": null,
+          "cache-control": "public, max-age=0, must-revalidate",
           "content-disposition": null,
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 32.97
+        "latencyMs": 26.42
       }
     },
     {
@@ -287,19 +294,19 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 98.49
+        "latencyMs": 53.67
       },
       "staging": {
         "status": 200,
         "contentType": "text/html",
         "headers": {
           "access-control-allow-origin": null,
-          "cache-control": null,
+          "cache-control": "public, max-age=0, must-revalidate",
           "content-disposition": null,
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 31.85
+        "latencyMs": 25.94
       }
     },
     {
@@ -320,19 +327,19 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 64.55
+        "latencyMs": 59.71
       },
       "staging": {
         "status": 200,
         "contentType": "text/html",
         "headers": {
           "access-control-allow-origin": null,
-          "cache-control": null,
+          "cache-control": "public, max-age=0, must-revalidate",
           "content-disposition": null,
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 33.88
+        "latencyMs": 31.91
       }
     },
     {
@@ -355,7 +362,7 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": "NOT_FOUND"
         },
-        "latencyMs": 118.19
+        "latencyMs": 375.8
       },
       "staging": {
         "status": 404,
@@ -367,7 +374,7 @@
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 79.19
+        "latencyMs": 73.92
       }
     },
     {
@@ -389,7 +396,7 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 124.44
+        "latencyMs": 274.33
       },
       "staging": {
         "status": 200,
@@ -401,7 +408,7 @@
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 49.04
+        "latencyMs": 29.81
       }
     },
     {
@@ -422,7 +429,7 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 57.02
+        "latencyMs": 199
       },
       "staging": {
         "status": 200,
@@ -434,7 +441,7 @@
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 36.89
+        "latencyMs": 29.32
       }
     },
     {
@@ -455,7 +462,7 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 71.95
+        "latencyMs": 150.36
       },
       "staging": {
         "status": 200,
@@ -467,7 +474,7 @@
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 33.8
+        "latencyMs": 30.17
       }
     },
     {
@@ -488,7 +495,7 @@
           "strict-transport-security": "max-age=63072000",
           "x-vercel-error": null
         },
-        "latencyMs": 63.4
+        "latencyMs": 147.88
       },
       "staging": {
         "status": 200,
@@ -500,7 +507,7 @@
           "strict-transport-security": null,
           "x-vercel-error": null
         },
-        "latencyMs": 38.93
+        "latencyMs": 29.03
       }
     }
   ],
@@ -517,31 +524,24 @@
     "pathname": "/wetbulb-temperature/andorra/encamp/vila",
     "production": {
       "samples": [
-        144.45,
-        81.34,
-        67.8
+        139.34,
+        64.27,
+        64.97
       ],
-      "medianMs": 81.34
+      "medianMs": 64.97
     },
     "staging": {
       "samples": [
-        81.98,
-        31.95,
-        28.58
+        75.18,
+        30.89,
+        26.48
       ],
-      "medianMs": 31.95
+      "medianMs": 30.89
     }
   },
   "summary": {
     "total": 14,
     "passed": 0,
     "failed": 14
-  },
-  "internalHtmlCachePolicy": {
-    "schema": 1,
-    "freshSeconds": 86400,
-    "staleSeconds": 604800,
-    "storageTtlSeconds": 691200,
-    "browserCacheControl": "public, max-age=0, must-revalidate"
   }
 }
