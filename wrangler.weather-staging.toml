@@ -18,6 +18,17 @@ new_sqlite_classes = ["WeatherGate"]
 [version_metadata]
 binding = "CF_VERSION_METADATA"
 
+# Wrangler 4.129.1 schema supports this isolated Worker Logs configuration.
+# Request URLs retain no query strings; application events are fixed-field JSON.
+[observability]
+enabled = true
+redact_query_string = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+persist = true
+
 [vars]
 CANONICAL_ORIGIN = "https://www.wetbulb35.com"
 GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"
@@ -26,3 +37,5 @@ WEATHER_STALE_SECONDS = "600"
 WEATHER_TIMEOUT_MS = "5000"
 # Approved initial global ceiling; attempts are reserved before provider fetches.
 WEATHER_DAILY_ATTEMPT_LIMIT = "100"
+# Disabled by default; enable only as a reviewed [0,1] staging fraction.
+HTML_CACHE_EVENT_SAMPLE_RATE = "0"

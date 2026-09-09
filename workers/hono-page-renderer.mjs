@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { pageHtml, renderBrowsePage, renderCountryPage, renderHomePage, renderStatePage } from "../lib/page-renderer.mjs";
-import { weatherResponse } from "./weather-edge.mjs";
+import { createObservability, weatherResponse } from "./weather-edge.mjs";
 export { WeatherGate } from "./weather-edge.mjs";
 
 const LOCATION_ROOT = "/locations";
@@ -48,6 +48,15 @@ function cacheVersion(env, injectedFallback) {
   if (typeof id === "string" && id.trim()) return id;
   const fallback = injectedFallback?.(env);
   return typeof fallback === "string" && fallback.trim() ? fallback : null;
+}
+function htmlObservability(env) {
+  if (env?.OBSERVABILITY && typeof env.OBSERVABILITY.html === "function") return env.OBSERVABILITY;
+  const id = env?.CF_VERSION_METADATA?.id;
+  return createObservability({
+    deploymentVersion: typeof id === "string" && id.trim() ? id : "unknown",
+    // Explicitly disabled unless staging sets a fraction in [0, 1].
+    htmlSampleRate: Number(env?.HTML_CACHE_EVENT_SAMPLE_RATE) || 0,
+  });
 }
 function candidateHtmlPath(pathname) {
   const parts = pathname.split("/").filter(Boolean);
@@ -181,6 +190,7 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     const current = now();
     const cached = key ? await readHtmlEnvelope(edgeCache, key, version, routePath, current) : null;
     if (cached && cached.freshUntil > current) {
+      htmlObservability(context.env).html("hit");
       const response = browserResponse(cached);
       return method === "HEAD" ? headResponse(response) : response;
     }
@@ -212,6 +222,7 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
       return inFlight;
     };
     if (cached) {
+      htmlObservability(context.env).html("stale");
       if (method === "GET") {
         const inFlight = coalescedRegenerate();
         try { context.executionCtx?.waitUntil(inFlight); } catch {}
@@ -219,6 +230,7 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
       const response = browserResponse(cached);
       return method === "HEAD" ? headResponse(response) : response;
     }
+    htmlObservability(context.env).html("miss");
     const rendered = method === "GET" && key ? await coalescedRegenerate() : await regenerate();
     if (!rendered) return context.notFound();
     if (method === "HEAD") return headResponse(rendered);

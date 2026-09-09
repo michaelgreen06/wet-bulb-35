@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   BROWSER_CACHE_CONTROL,
   WeatherGate,
+  createObservability,
   canonicalNumber,
   parseWeatherCoordinates,
   transformOpenWeather,
@@ -294,4 +295,31 @@ test("HTML rendering performs zero weather provider calls", async () => {
   });
   assert.equal(response.status, 200);
   assert.equal(gateCalls, 0);
+});
+
+test("observability emits allowlisted terminal provider outcomes once without sensitive inputs", async () => {
+  const events = [];
+  const observability = createObservability({ deploymentVersion: "unit-v1", logger: (event) => events.push(event) });
+  const { storage } = storageWith();
+  const gate = new WeatherGate({ storage }, gateEnv({ OBSERVABILITY: observability }));
+  await withGlobals({ fetch: async () => new Response("no", { status: 503 }) }, async () => {
+    const body = { key: weatherKey({ lat: 12.34, lon: -56.78 }), lat: 12.34, lon: -56.78, state: "miss" };
+    assert.equal((await gate.fetch(gateRequest(body))).status, 500);
+  });
+  const provider = events.filter((event) => event.event === "weather_provider_call");
+  assert.equal(provider.length, 1);
+  assert.deepEqual(Object.keys(provider[0]).sort(), ["cache_state", "canonical_key_hash", "deployment_version", "event", "latency_ms", "outcome", "reserved_budget_limit", "reserved_budget_used", "upstream_status"]);
+  assert.equal(provider[0].outcome, "upstream_http");
+  assert.equal(provider[0].upstream_status, 503);
+  const serialized = JSON.stringify(events).toLowerCase();
+  for (const forbidden of ["12.34", "-56.78", "test-secret", "openweathermap", "apikey", "query", "error"]) assert.equal(serialized.includes(forbidden), false, forbidden);
+
+  const htmlEvents = [];
+  createObservability({ deploymentVersion: "unit-v1", logger: (event) => htmlEvents.push(event), htmlSampleRate: 1 }).html("hit");
+  assert.deepEqual(htmlEvents, [{ event: "html_cache_outcome", deployment_version: "unit-v1", outcome: "hit", cache_state: "hit", route_class: "html" }]);
+
+  const safeGate = new WeatherGate({ storage: storageWith().storage }, gateEnv({ OBSERVABILITY: createObservability({ logger: () => { throw new Error("sink failure"); } }) }));
+  await withGlobals({ fetch: async () => Response.json(upstreamPayload) }, async () => {
+    assert.equal((await safeGate.fetch(gateRequest({ key: weatherKey({ lat: 1, lon: 2 }), lat: 1, lon: 2, state: "miss" }))).status, 200);
+  });
 });

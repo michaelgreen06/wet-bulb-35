@@ -4,6 +4,54 @@ const CACHE_ENVELOPE_VERSION = 1;
 const ERROR_INVALID = { error: "Valid lat and lon are required." };
 const ERROR_REFRESH = { error: "Failed to refresh weather data." };
 
+const OBSERVABILITY_UNKNOWN_VERSION = "unknown";
+
+function deploymentVersion(env) {
+  const id = env?.CF_VERSION_METADATA?.id;
+  return typeof id === "string" && id.trim() ? id : OBSERVABILITY_UNKNOWN_VERSION;
+}
+
+function safeSampleRate(value) {
+  const rate = Number(value);
+  return Number.isFinite(rate) && rate >= 0 && rate <= 1 ? rate : 0;
+}
+
+async function canonicalKeyHash(key) {
+  const bytes = new TextEncoder().encode(key);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Emits only fixed, allowlisted fields. Logging is deliberately best-effort:
+ * no caller awaits it and sink/hash failures are swallowed.
+ */
+export function createObservability({ deploymentVersion: version = OBSERVABILITY_UNKNOWN_VERSION, logger = (event) => console.log(JSON.stringify(event)), htmlSampleRate = 0 } = {}) {
+  const emit = (event) => {
+    try {
+      const result = logger?.(event);
+      if (result?.catch) result.catch(() => {});
+    } catch {}
+  };
+  const keyed = (event, key) => canonicalKeyHash(key)
+    .then((canonical_key_hash) => emit({ ...event, canonical_key_hash }))
+    .catch(() => {});
+  return {
+    weather(event, key) { return keyed({ deployment_version: version, ...event }, key); },
+    weatherUnkeyed(event) { emit({ deployment_version: version, ...event }); },
+    html(outcome) {
+      if (Math.random() >= htmlSampleRate) return;
+      emit({ event: "html_cache_outcome", deployment_version: version, outcome, cache_state: outcome, route_class: "html" });
+    },
+  };
+}
+
+function observabilityFor(env) {
+  return env?.OBSERVABILITY && typeof env.OBSERVABILITY.weather === "function"
+    ? env.OBSERVABILITY
+    : createObservability({ deploymentVersion: deploymentVersion(env), htmlSampleRate: safeSampleRate(env?.HTML_CACHE_EVENT_SAMPLE_RATE) });
+}
+
 export function isBlockedBot(userAgent) { return Boolean(userAgent && BOT_PATTERN.test(userAgent)); }
 
 export function parseWeatherCoordinates(searchParams) {
@@ -132,17 +180,28 @@ async function callGate(env, key, coords, state) {
 }
 
 export async function weatherResponse(request, env, executionContext) {
+  const observability = observabilityFor(env);
   if (request.method !== "GET") return json({ error: "Method not allowed." }, 405, { allow: "GET" });
-  if (isBlockedBot(request.headers.get("user-agent"))) return new Response(null, { status: 204 });
+  if (isBlockedBot(request.headers.get("user-agent"))) {
+    observability.weatherUnkeyed({ event: "weather_bot_skip", cache_state: "none" });
+    return new Response(null, { status: 204 });
+  }
   const coords = parseWeatherCoordinates(new URL(request.url).searchParams);
-  if (!coords) return json(ERROR_INVALID, 400);
+  if (!coords) {
+    observability.weatherUnkeyed({ event: "weather_validation_failure", cache_state: "none" });
+    return json(ERROR_INVALID, 400);
+  }
 
   const key = weatherKey(coords);
   const now = Date.now();
   const cache = globalThis.caches?.default;
   const cached = await readEnvelope(cache, request, key);
-  if (cached && now < cached.freshUntil) return browser(cached.payload);
+  if (cached && now < cached.freshUntil) {
+    observability.weather({ event: "weather_cache_hit", cache_state: "fresh" }, key);
+    return browser(cached.payload);
+  }
   if (cached && now < cached.staleUntil) {
+    observability.weather({ event: "weather_cache_stale", cache_state: "stale" }, key);
     const refresh = callGate(env, key, coords, "stale")
       .then((envelope) => writeEnvelope(cache, request, key, envelope))
       .catch(() => {});
@@ -150,6 +209,7 @@ export async function weatherResponse(request, env, executionContext) {
     return browser(cached.payload);
   }
 
+  observability.weather({ event: "weather_cache_miss", cache_state: "miss" }, key);
   try {
     const envelope = await callGate(env, key, coords, "miss");
     await writeEnvelope(cache, request, key, envelope);
@@ -201,18 +261,18 @@ export class WeatherGate {
 
   async reserveAttempt() {
     const limit = weatherTunables(this.env).dailyAttempts;
-    if (!Number.isSafeInteger(limit) || limit <= 0) return false;
+    if (!Number.isSafeInteger(limit) || limit <= 0) return { reserved: false, used: 0, limit: 0 };
     const day = new Date().toISOString().slice(0, 10);
     const key = `attempts:${day}`;
     return this.state.storage.transaction(async (storage) => {
       const current = (await storage.get(key)) ?? 0;
-      if (!Number.isSafeInteger(current) || current < 0 || current >= limit) return false;
+      if (!Number.isSafeInteger(current) || current < 0 || current >= limit) return { reserved: false, used: Number.isSafeInteger(current) && current >= 0 ? current : 0, limit };
       await storage.put(key, current + 1);
-      return true;
+      return { reserved: true, used: current + 1, limit };
     });
   }
 
-  async refresh({ key, lat, lon }) {
+  async refresh({ key, lat, lon, state }) {
     const now = Date.now();
     const stored = await this.state.storage.get(`weather:${key}`);
     const storedIsValid = validEnvelope(stored, key);
@@ -223,7 +283,9 @@ export class WeatherGate {
       if (stale) return stale;
       throw new Error("OpenWeather API key is not configured. Please check your environment variables.");
     }
-    if (!(await this.reserveAttempt())) {
+    const reservation = await this.reserveAttempt();
+    if (!reservation.reserved) {
+      observabilityFor(this.env).weather({ event: "weather_budget_exhausted", cache_state: state === "stale" ? "stale_refresh" : "miss", reserved_budget_used: reservation.used, reserved_budget_limit: reservation.limit }, key);
       if (stale) return stale;
       throw new Error(ERROR_REFRESH.error);
     }
@@ -231,14 +293,26 @@ export class WeatherGate {
     const { timeoutMs, freshSeconds, staleSeconds } = weatherTunables(this.env);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const startedAt = Date.now();
+    let outcome = "exception";
+    let upstreamStatus = null;
     try {
       const url = new URL("https://api.openweathermap.org/data/2.5/weather");
       url.searchParams.set("lat", canonicalNumber(lat));
       url.searchParams.set("lon", canonicalNumber(lon));
       url.searchParams.set("appid", this.env.OPENWEATHER_API_KEY);
       const response = await fetch(url.toString(), { signal: controller.signal }); // one attempt; deliberately no retry
-      if (!response.ok) throw providerError(response);
-      const payload = transformOpenWeather(await response.json());
+      upstreamStatus = Number.isSafeInteger(response.status) && response.status >= 100 && response.status <= 599 ? response.status : null;
+      if (!response.ok) {
+        outcome = "upstream_http";
+        throw providerError(response);
+      }
+      let payload;
+      try { payload = transformOpenWeather(await response.json()); }
+      catch {
+        outcome = "invalid_payload";
+        throw new Error(ERROR_REFRESH.error);
+      }
       const storedAt = Date.now();
       const envelope = {
         v: CACHE_ENVELOPE_VERSION,
@@ -250,8 +324,10 @@ export class WeatherGate {
         staleUntil: storedAt + staleSeconds * 1000,
       };
       await this.state.storage.put(`weather:${key}`, envelope);
+      outcome = "success";
       return envelope;
     } catch (error) {
+      if (controller.signal.aborted) outcome = "timeout";
       if (stale) return stale;
       if (error instanceof DOMException && error.name === "AbortError") {
         throw new Error("Failed to fetch weather data. Please check your internet connection and try again.");
@@ -259,6 +335,15 @@ export class WeatherGate {
       throw error instanceof Error ? error : new Error("Failed to fetch weather data. Please check your internet connection and try again.");
     } finally {
       clearTimeout(timer);
+      await observabilityFor(this.env).weather({
+        event: "weather_provider_call",
+        outcome,
+        upstream_status: upstreamStatus,
+        latency_ms: Math.max(0, Date.now() - startedAt),
+        cache_state: state === "stale" ? "stale_refresh" : "miss",
+        reserved_budget_used: reservation.used,
+        reserved_budget_limit: reservation.limit,
+      }, key);
     }
   }
 }
