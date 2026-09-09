@@ -79,8 +79,8 @@ This is a packaging measurement, not a Cloudflare benchmark. Before implementati
 
 **Decision:** cache only successful `GET` HTML responses by resolved HTML route. `HEAD` mirrors headers/status and does not create an independent object. Cache key excludes query strings; the response body remains parity HTML, including the existing browser-side weather widget.
 
-- Fresh HTML lifetime: **approval required — propose 24 hours**.
-- Stale window: **approval required — propose 7 days**, served while a best-effort background regeneration may run.
+- **Approved HTML cache policy:** **24 hours fresh** and **7 days stale**, served while a best-effort background regeneration may run.
+- This approval records policy only. No HTML cache implementation, response header, deployment, or cutover is authorized by this document alone.
 - If render/metadata lookup fails and a stale object exists, serve stale HTML. If no object exists, return `500`; never substitute a weather-provider response or an empty success page.
 - Cache headers must state the approved browser/edge policy. Cache invalidation is deployment-versioned (a new Worker/cache namespace or equivalent), not a broad runtime purge assumption.
 
@@ -157,7 +157,7 @@ Fingerprinting or changing immutable-cache headers for static assets is deferred
 
 | ID | Decision | Rationale | State |
 | --- | --- | --- | --- |
-| D-01 | Dynamic Worker rendering plus edge HTML cache; no static HTML-per-city assets | 134,676 projected files exceed the 100,000 cap | Decided |
+| D-01 | Dynamic Worker rendering plus edge HTML cache (24 h fresh / 7 d stale approved); no static HTML-per-city assets | 134,676 projected files exceed the 100,000 cap | Decided; implementation remains a separate gate |
 | D-02 | Preferred build-time static-asset metadata shards plus small Worker manifest; no R2 | Avoids bundling the corpus; packaging/binding probe and minimal integration remain gates | Pending probe |
 | D-03 | Slashful HTML URLs are canonical; recognized slashless routes return `200` | Preserves current duplicate-`200` behavior while retaining generated canonical route form; any change requires later explicit approval | Decided |
 | D-04 | HTML never calls weather; browser calls `/api/weather` | Required Phase 1 separation | Decided |
@@ -183,7 +183,7 @@ Run a **non-deploying packaging feasibility probe only**: generate preferred sta
 
 ## Questions requiring architect/user decision
 
-1. Does Michael approve the proposed API fresh/stale TTLs (300 s / 600 s), 5 s timeout, and HTML TTLs (24 h / 7 d), or provide alternatives?
+1. HTML cache lifetimes are approved at 24 h fresh / 7 d stale. The separate implementation must specify and verify exact browser/edge headers, cache namespace/versioning, and failure behavior before cutover.
 2. Does Michael approve the recommended combined abuse protection—presence/non-empty validation plus geographic-range rejection—before cutover, or explicitly approve retaining current `Number()` coercion (missing/empty-as-zero) and finite out-of-range forwarding?
 3. Which Cloudflare account capabilities are available for static assets, Worker Cache API behavior, WAF/rate limiting, logs/metrics/alerts, preview domains, custom-domain cutover, and rollback/version retention?
 4. What global provider-call ceiling and owner are required before production cutover, or what quantified residual risk will Michael explicitly accept?

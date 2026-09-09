@@ -1,0 +1,540 @@
+{
+  "schema": 1,
+  "production": "https://www.wetbulb35.com",
+  "staging": "https://wetbulb35-weather-staging.mgdevstuff.workers.dev",
+  "weatherApiRequested": false,
+  "documentedHeaderNormalization": [
+    "age",
+    "alt-svc",
+    "cf-cache-status",
+    "cf-ray",
+    "connection",
+    "content-encoding",
+    "content-length",
+    "content-type",
+    "date",
+    "etag",
+    "last-modified",
+    "nel",
+    "report-to",
+    "server",
+    "server-timing",
+    "transfer-encoding",
+    "vary",
+    "via",
+    "x-powered-by",
+    "x-vercel-cache",
+    "x-vercel-id",
+    "x-vercel-sc-headers",
+    "x-worker-version"
+  ],
+  "footerYearNormalized": true,
+  "routes": [
+    {
+      "name": "home",
+      "pathname": "/",
+      "kind": "html",
+      "pass": false,
+      "differences": [
+        "stableHeaders",
+        "htmlSemanticFields"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 156.07
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 122.1
+      }
+    },
+    {
+      "name": "browse",
+      "pathname": "/wetbulb-temperature",
+      "kind": "html",
+      "pass": false,
+      "differences": [
+        "stableHeaders",
+        "htmlSemanticFields"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"wetbulb-temperature\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 78.66
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 39.96
+      }
+    },
+    {
+      "name": "country",
+      "pathname": "/wetbulb-temperature/andorra",
+      "kind": "html",
+      "pass": false,
+      "differences": [
+        "stableHeaders",
+        "htmlSemanticFields"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"andorra\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 63.91
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 38.88
+      }
+    },
+    {
+      "name": "state",
+      "pathname": "/wetbulb-temperature/andorra/encamp",
+      "kind": "html",
+      "pass": false,
+      "differences": [
+        "stableHeaders",
+        "htmlSemanticFields"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"encamp\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 409.1
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 31.86
+      }
+    },
+    {
+      "name": "unique-city",
+      "pathname": "/wetbulb-temperature/andorra/encamp/vila",
+      "kind": "html",
+      "pass": false,
+      "differences": [
+        "stableHeaders",
+        "htmlSemanticFields"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"vila\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 86.85
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 44.21
+      }
+    },
+    {
+      "name": "colliding-city",
+      "pathname": "/wetbulb-temperature/armenia/armavir/metsamor-40-0723-44-2917",
+      "kind": "html",
+      "pass": false,
+      "differences": [
+        "stableHeaders",
+        "htmlSemanticFields"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"metsamor-40-0723-44-2917\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 54.44
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 37.1
+      }
+    },
+    {
+      "name": "slash",
+      "pathname": "/wetbulb-temperature/andorra/encamp/vila/",
+      "kind": "html",
+      "pass": false,
+      "differences": [
+        "stableHeaders",
+        "htmlSemanticFields"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"vila\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 54.25
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 32.97
+      }
+    },
+    {
+      "name": "slashless",
+      "pathname": "/wetbulb-temperature/andorra/encamp/vila",
+      "kind": "html",
+      "pass": false,
+      "differences": [
+        "stableHeaders",
+        "htmlSemanticFields"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"vila\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 98.49
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 31.85
+      }
+    },
+    {
+      "name": "head",
+      "pathname": "/wetbulb-temperature/andorra/encamp/vila",
+      "kind": "head",
+      "pass": false,
+      "differences": [
+        "stableHeaders"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"vila\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 64.55
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 33.88
+      }
+    },
+    {
+      "name": "404",
+      "pathname": "/not-a-real-page-9b1e3d",
+      "kind": "html",
+      "pass": false,
+      "differences": [
+        "contentType",
+        "stableHeaders",
+        "htmlSemanticFields"
+      ],
+      "production": {
+        "status": 404,
+        "contentType": "text/html",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": null,
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": "NOT_FOUND"
+        },
+        "latencyMs": 118.19
+      },
+      "staging": {
+        "status": 404,
+        "contentType": "",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": null,
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 79.19
+      }
+    },
+    {
+      "name": "robots",
+      "pathname": "/robots.txt",
+      "kind": "text",
+      "pass": false,
+      "differences": [
+        "stableHeaders",
+        "bodyHash"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "text/plain",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=14400, must-revalidate",
+          "content-disposition": null,
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 124.44
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/plain",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 49.04
+      }
+    },
+    {
+      "name": "sitemap-index",
+      "pathname": "/sitemap.xml",
+      "kind": "xml",
+      "pass": false,
+      "differences": [
+        "stableHeaders"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "application/xml",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"sitemap.xml\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 57.02
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "application/xml",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 36.89
+      }
+    },
+    {
+      "name": "sitemap-member",
+      "pathname": "/sitemaps/sitemap-main.xml",
+      "kind": "xml",
+      "pass": false,
+      "differences": [
+        "stableHeaders"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "application/xml",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"sitemap-main.xml\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 71.95
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "application/xml",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 33.8
+      }
+    },
+    {
+      "name": "public-asset",
+      "pathname": "/favicon.svg",
+      "kind": "asset",
+      "pass": false,
+      "differences": [
+        "stableHeaders"
+      ],
+      "production": {
+        "status": 200,
+        "contentType": "image/svg+xml",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=14400, must-revalidate",
+          "content-disposition": "inline; filename=\"favicon.svg\"",
+          "strict-transport-security": "max-age=63072000",
+          "x-vercel-error": null
+        },
+        "latencyMs": 63.4
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "image/svg+xml",
+        "headers": {
+          "access-control-allow-origin": null,
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": null,
+          "strict-transport-security": null,
+          "x-vercel-error": null
+        },
+        "latencyMs": 38.93
+      }
+    }
+  ],
+  "offlineInventory": {
+    "cityRows": 130684,
+    "uniqueCityRoutes": 130684,
+    "routeManifestCities": 130684,
+    "publicFiles": 238,
+    "builtPublicFiles": 241,
+    "sitemapMembers": 227,
+    "robotsSitemap": true
+  },
+  "latency": {
+    "pathname": "/wetbulb-temperature/andorra/encamp/vila",
+    "production": {
+      "samples": [
+        144.45,
+        81.34,
+        67.8
+      ],
+      "medianMs": 81.34
+    },
+    "staging": {
+      "samples": [
+        81.98,
+        31.95,
+        28.58
+      ],
+      "medianMs": 31.95
+    }
+  },
+  "summary": {
+    "total": 14,
+    "passed": 0,
+    "failed": 14
+  }
+}
