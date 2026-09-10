@@ -43,6 +43,7 @@ test("ignores Vercel builds when changed files do not affect output", () => {
 });
 
 test("runs Vercel builds when deployment inputs change", () => {
+  assert.equal(evaluateIgnoreBuild({ changedFiles: ["lib/page-renderer.mjs"], env: {} }).ignore, false);
   assert.deepEqual(
     evaluateIgnoreBuild({
       changedFiles: ["README.md", "scripts/build-vercel-output.mjs"],

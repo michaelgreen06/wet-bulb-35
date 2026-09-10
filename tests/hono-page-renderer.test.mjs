@@ -376,6 +376,18 @@ test("HTML cache uses Worker version metadata, rejects ambiguous namespaces, and
   assert.equal(injectedCache.puts, 1, "tests may explicitly inject a deterministic cache identity");
 });
 
+test("manifest failures are retried by the same renderer instance", async () => {
+  for (const failedResponse of [() => new Response("unavailable", { status: 503 }), () => new Response("not JSON"), () => Response.json({ v: 0 })]) {
+    let reads = 0;
+    const fixtures = fixtureBinding();
+    const env = { ASSETS: { async fetch(request) { return ++reads === 1 ? failedResponse() : fixtures.fetch(request); } } };
+    const app = createHonoPageRenderer();
+    assert.equal((await app.fetch(new Request(`${base}/wetbulb-temperature/andorra`), env)).status, 500);
+    assert.equal((await app.fetch(new Request(`${base}/wetbulb-temperature/andorra`), env)).status, 200);
+    assert.equal(reads, 2);
+  }
+});
+
 test("renderer fails closed for internal metadata failures but retains negotiated public 404s", async () => {
   const app = createHonoPageRenderer();
   const metadataFailure = async () => new Response("upstream details must not reach clients", { status: 503 });

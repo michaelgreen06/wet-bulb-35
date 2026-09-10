@@ -330,6 +330,9 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
   const generatedCss = fs.readFileSync(path.join(result.outDir, "assets/app.css"), "utf8");
   assert.match(generatedCss, /\.bg-gray-50/);
   assert.match(generatedCss, /\.max-w-4xl/);
+  assert.match(generatedCss, /\.sr-only\{position:absolute/);
+  assert.match(generatedCss, /\.gap-2\{gap:(?:0)?\.5rem/);
+  assert.match(generatedCss, /\.whitespace-nowrap\{white-space:nowrap/);
   assert.match(generatedCss, /-webkit-text-fill-color:#000/);
   assert.match(generatedCss, /color-scheme:light/);
   assert.doesNotMatch(generatedCss, /radial-gradient/);

@@ -14,6 +14,8 @@ node scripts/staging-parity-gate.mjs --production=https://www.wetbulb35.com --st
 
 It makes exactly the declared representative GET/HEAD requests for home, browse, country, state, a unique city, a collision-safe city, slashful/slashless city paths, negotiated HTML/JSON/plaintext 404s, `robots.txt`, sitemap index/member, and favicon. It never requests `/api/weather` from either origin; the helper rejects that path before networking.
 
+The review follow-up expands the matrix to 19 checks: it also fetches `/assets/app.css`, `/assets/app.js`, and `/assets/locations.json`, comparing their complete content hashes and lengths. HTML comparison includes external script references, so dropping the browser runtime is a failure even when SEO fields match. Browser assets receive no footer-year normalization. Each origin also receives the existing three latency samples. The 8/16 result below is historical evidence from the earlier matrix, not a result for the expanded gate; re-run after deploying the reviewed candidate.
+
 The evidence also records the intentional **internal** HTML Cache API contract (schema 1; 86,400-second fresh, 604,800-second stale, 691,200-second storage TTL) so it can be audited without treating it as a browser header change. Browser HTML remains `Cache-Control: public, max-age=0, must-revalidate`, and `Cache-Control` remains compared exactly. The only classified expected difference is the known Cloudflare-managed `robots.txt` body prefix; all status, media type, stable delivery headers, SEO, canonical, JSON-LD, links, and widget-coordinate differences fail the gate.
 
 ## 404 platform boundary

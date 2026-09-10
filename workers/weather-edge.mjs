@@ -124,7 +124,9 @@ export function weatherTunables(env) {
 }
 
 export function calculateWetBulb(temperature, humidity) {
-  if (temperature < -20 || temperature > 50 || humidity < 5 || humidity > 99) throw new Error("Temperature or humidity out of valid range for Stull formula");
+  // Match Vercel: clamp formula inputs, not the readings returned to the browser.
+  temperature = Math.min(Math.max(temperature, -20), 50);
+  humidity = Math.min(Math.max(humidity, 5), 99);
   const value = temperature * Math.atan(.151977 * Math.sqrt(humidity + 8.313659)) + Math.atan(temperature + humidity) - Math.atan(humidity - 1.676331) + .00391838 * Math.pow(humidity, 1.5) * Math.atan(.023101 * humidity) - 4.686035;
   return Math.round(value * 100) / 100;
 }

@@ -37,16 +37,16 @@ run list "$PROJECT" --limit 100 --json >"$TMP/deployments-list.json"
 run env list production --project "$PROJECT" --json >"$TMP/env-list.json"
 run domains list --limit 100 --json >"$TMP/domains.json"
 
-# Determine the currently assigned production deployment from the structured list.
-PROD_URL="$(python3 - "$TMP/deployments-list.json" <<'PY'
+# Resolve the serving alias: newer production-target builds can be failed,
+# unpromoted, or superseded by a rollback to an older deployment.
+run inspect "https://www.wetbulb35.com" --json >"$TMP/current-production.json"
+python3 - "$TMP/current-production.json" <<'PY'
 import json, sys
-items=json.load(open(sys.argv[1]))['deployments']
-prod=[d for d in items if d.get('target') == 'production']
-if not prod: raise SystemExit('no production deployment found')
-print(max(prod, key=lambda d:d.get('createdAt', 0))['url'])
+deployment=json.load(open(sys.argv[1]))
+if (deployment.get('readyState') != 'READY' or deployment.get('target') != 'production'
+    or 'www.wetbulb35.com' not in deployment.get('aliases', []) or not deployment.get('id')):
+    raise SystemExit('production alias did not resolve to a ready production deployment')
 PY
-)"
-run inspect "$PROD_URL" --json >"$TMP/current-production.json"
 
 # Capture every listed deployment through inspect so retained rollback IDs/configs survive.
 mkdir -p "$TMP/inspects"
@@ -64,7 +64,11 @@ done <"$TMP/deployment-urls.txt"
 BACKUP_FILE="$BACKUP_DIR/production-env-$STAMP.env"
 run env pull "$BACKUP_FILE" --environment production --project "$PROJECT" --yes >/dev/null
 chmod 600 "$BACKUP_FILE"
-[[ "$(stat -c '%a' "$BACKUP_FILE")" == "600" ]] || fail 'environment backup permissions are not 0600'
+python3 - "$BACKUP_FILE" <<'PY'
+import os, stat, sys
+if stat.S_IMODE(os.stat(sys.argv[1]).st_mode) != 0o600:
+    raise SystemExit('environment backup permissions are not 0600')
+PY
 
 # A harmless HEAD request proves the current production alias is reachable.
 HTTP_HEADERS="$TMP/production-headers.txt"

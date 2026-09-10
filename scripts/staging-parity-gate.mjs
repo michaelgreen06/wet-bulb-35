@@ -46,6 +46,9 @@ const ROUTES = [
   ["sitemap-index", "/sitemap.xml", "xml"],
   ["sitemap-member", "/sitemaps/sitemap-main.xml", "xml"],
   ["public-asset", "/favicon.svg", "asset"],
+  ["browser-css", "/assets/app.css", "asset"],
+  ["browser-js", "/assets/app.js", "asset"],
+  ["browser-search-index", "/assets/locations.json", "asset"],
 ];
 
 function arg(name, fallback) {
@@ -80,6 +83,7 @@ export function htmlSemanticFields(html) {
     .map((tag) => tag.replace(/^.*?>|<\/script>$/g, ""))
     .map((source) => canonicalJson(JSON.parse(source)));
   const hrefs = links.map((tag) => attribute(tag, "href")).filter(Boolean).sort();
+  const scriptSources = scripts.map((tag) => attribute(tag, "src")).filter(Boolean);
   const anchors = tags(html, /<a\b[^>]*>/gi).map((tag) => attribute(tag, "href")).filter(Boolean).sort();
   const coordinates = [...html.matchAll(/\b(?:data-(?:lat|latitude)|lat)=(?:"([^"]*)"|'([^']*)'|([^\s>]+))|\b(?:data-(?:lon|lng|longitude)|lon|lng)=(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi)]
     .map((match) => match.slice(1).find((value) => value !== undefined)).filter(Boolean).sort();
@@ -88,10 +92,11 @@ export function htmlSemanticFields(html) {
     description: named("description"), canonical: attribute(links.find((tag) => attribute(tag, "rel")?.toLowerCase() === "canonical"), "href"),
     robots: named("robots"), og: Object.fromEntries(["og:title", "og:description", "og:type", "og:url", "og:image", "og:site_name"].map((name) => [name, property(name)])),
     jsonLd, links: anchors, widgetCoordinates: coordinates,
-    publicAssetReferences: hrefs.filter((href) => href.startsWith("/") || href.startsWith("https://www.googletagmanager.com/")).sort(),
+    publicAssetReferences: [...hrefs.filter((href) => href.startsWith("/")), ...scriptSources].sort(),
   };
 }
 export function comparableBody(kind, body) {
+  if (kind === "asset") return { sha256: sha256(body), bytes: Buffer.byteLength(body) };
   if (kind === "html") return htmlSemanticFields(normalizeFooterYear(body));
   if (kind === "not-found") {
     const normalized = normalizeFooterYear(body);

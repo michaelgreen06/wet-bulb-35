@@ -6,6 +6,7 @@ export default {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./scripts/**/*.{js,mjs,ts}",
+    "./lib/page-renderer.mjs",
     "./scripts/static-tailwind.css",
   ],
   theme: {
