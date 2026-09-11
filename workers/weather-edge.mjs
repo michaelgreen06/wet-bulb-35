@@ -124,6 +124,8 @@ export function weatherTunables(env) {
 }
 
 export function calculateWetBulb(temperature, humidity) {
+  // Saturated air: wet bulb equals dry bulb by definition; Stull's 99% clamp would understate it.
+  if (humidity >= 100) return Math.round(temperature * 100) / 100;
   // Match Vercel: clamp formula inputs, not the readings returned to the browser.
   temperature = Math.min(Math.max(temperature, -20), 50);
   humidity = Math.min(Math.max(humidity, 5), 99);

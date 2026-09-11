@@ -270,7 +270,7 @@ test("provider transformation matches source and forwards exact parsed Number co
 });
 
 test("valid extreme readings return weather and reuse the cached provider result", async () => {
-  for (const [temperature, humidity, expectedWetBulb] of [[25, 100, 24.91], [-25, 60, -20.94], [30, 3, 10.77], [55, 50, 39.49]]) {
+  for (const [temperature, humidity, expectedWetBulb] of [[25, 100, 25], [38, 99, 37.98], [-25, 60, -20.94], [30, 3, 10.77], [55, 50, 39.49]]) {
     const { storage } = storageWith();
     const gate = new WeatherGate({ storage }, gateEnv());
     const env = edgeEnv((url, init) => gate.fetch(new Request(url, init)));
