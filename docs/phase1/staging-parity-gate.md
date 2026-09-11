@@ -16,7 +16,7 @@ It makes exactly the declared representative GET/HEAD requests for home, browse,
 
 The review follow-up expands the matrix to 19 checks: it also fetches `/assets/app.css`, `/assets/app.js`, and `/assets/locations.json`, comparing their complete content hashes and lengths. HTML comparison includes external script references, so dropping the browser runtime is a failure even when SEO fields match. Browser assets receive no footer-year normalization. Each origin also receives the existing three latency samples. The 8/16 result below is historical evidence from the earlier matrix, not a result for the expanded gate; re-run after deploying the reviewed candidate.
 
-The evidence also records the intentional **internal** HTML Cache API contract (schema 1; 86,400-second fresh, 604,800-second stale, 691,200-second storage TTL) so it can be audited without treating it as a browser header change. Browser HTML remains `Cache-Control: public, max-age=0, must-revalidate`, and `Cache-Control` remains compared exactly. The only classified expected difference is the known Cloudflare-managed `robots.txt` body prefix; all status, media type, stable delivery headers, SEO, canonical, JSON-LD, links, and widget-coordinate differences fail the gate.
+The evidence also records the intentional **internal** HTML Cache API contract (schema 1; 86,400-second fresh, 604,800-second stale, 691,200-second storage TTL) so it can be audited without treating it as a browser header change. Browser HTML remains `Cache-Control: public, max-age=0, must-revalidate`, and `Cache-Control` remains compared exactly. Classified expected differences: the known Cloudflare-managed `robots.txt` body prefix; zone-injected markup that `workers.dev` bypasses (email obfuscation under `/cdn-cgi/` and the Web Analytics beacon from `static.cloudflareinsights.com`), which is dropped from link and asset comparison; `application/javascript` and `text/javascript` are treated as the same media type; and, until Vercel rebuilds with the Tailwind scanning fix, a production `app.css` that differs only by lacking `.relative{position:relative}` (remove this exception after that deploy). All other status, media type, stable delivery headers, SEO, canonical, JSON-LD, links, and widget-coordinate differences fail the gate.
 
 ## 404 platform boundary
 
@@ -27,6 +27,10 @@ The same run validates the complete local 130,684-city source route inventory, c
 Evidence is concise JSON: it excludes raw headers, response bodies, secrets, and weather data. Failure is intentional when a parity difference exists: inspect the named fields rather than treating a nonzero exit as a harness error.
 
 ## Recorded gate result
+
+**2026-09-10 (expanded 19-check gate):** 19/19 pass against staging version `63b6ffba` (built with the public Places key). Expected differences recorded: `robots` body prefix and the pending `.relative` CSS rule. Three-sample medians: production 147.93 ms, staging 43.6 ms.
+
+### Earlier 16-check record
 
 The recorded run completed all 16 bounded requests without `/api/weather`, and the offline inventory passed: **130,684** rows, **130,684** unique collision-safe city routes, **227** sitemap members, and **238** committed public files. Eight checks pass and eight remain red solely because production has provider-injected email-decoder markup that `workers.dev` does not.
 

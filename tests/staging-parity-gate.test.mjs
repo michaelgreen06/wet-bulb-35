@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import http from "node:http";
 import test from "node:test";
-import { COMPARED_HEADERS, EXPECTED_ZONE_MANAGED_DIFFERENCES, IGNORED_HEADERS, INTERNAL_HTML_CACHE_POLICY, comparableBody, compareRoute, htmlSemanticFields, request, runGate } from "../scripts/staging-parity-gate.mjs";
+import { COMPARED_HEADERS, EXPECTED_ZONE_MANAGED_DIFFERENCES, IGNORED_HEADERS, INTERNAL_HTML_CACHE_POLICY, comparableBody, compareRoute, htmlSemanticFields, normalizeContentType, request, runGate } from "../scripts/staging-parity-gate.mjs";
 
 test("parity semantic extraction preserves SEO, links, assets, JSON-LD, and widget coordinates", () => {
   const fields = htmlSemanticFields(`<!doctype html><title>Example</title>
@@ -72,7 +72,7 @@ test("parity request helper refuses all weather API paths before networking", as
 
 test("404 comparison retains only the stable negotiated contract", () => {
   assert.equal(COMPARED_HEADERS.includes("x-vercel-error"), false);
-  assert.deepEqual(EXPECTED_ZONE_MANAGED_DIFFERENCES, { robots: ["bodyHash"] });
+  assert.deepEqual(EXPECTED_ZONE_MANAGED_DIFFERENCES, { robots: ["bodyHash"], "browser-css": ["bodyHash"] });
   assert.deepEqual(comparableBody("not-found", '{"error":{"message":"The page could not be found","code":"404"}}'), { error: { code: "404", message: "The page could not be found" } });
   assert.deepEqual(comparableBody("not-found", "{not-json"), { invalidJson: true, nonEmpty: true });
   assert.deepEqual(comparableBody("not-found", '<html><head><title>404: NOT_FOUND</title></head></html>'), { code: true, noindex: false, title: "404: NOT_FOUND", nonEmpty: true });
@@ -89,4 +89,24 @@ test("only the exact Cloudflare managed robots prefix is expected", () => {
   const defect = compareRoute(["robots", "/robots.txt", "text"], { ...base, body: "wrong" }, { ...base, body: committed });
   assert.equal(defect.pass, false);
   assert.deepEqual(defect.unexpectedDifferences, ["bodyHash"]);
+});
+
+test("zone-injected markup and JavaScript media type spelling are not parity differences", () => {
+  const fields = htmlSemanticFields(`<a href="/cdn-cgi/l/email-protection">mail</a><a href="/">home</a>
+    <script src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v1" data-cf-beacon='{}'></script>
+    <script src="/assets/app.js" defer></script>`);
+  assert.deepEqual(fields.links, ["/"]);
+  assert.deepEqual(fields.publicAssetReferences, ["/assets/app.js"]);
+  assert.equal(normalizeContentType("application/javascript; charset=utf-8"), "text/javascript");
+  assert.equal(normalizeContentType("text/css"), "text/css");
+});
+
+test("only the pending .relative Tailwind rule is an expected CSS difference", () => {
+  const base = { status: 200, contentType: "text/css", headers: {}, latencyMs: 1 };
+  const production = ".sr-only{position:absolute}.static{position:static}.mx-auto{margin-left:auto}";
+  const staging = ".sr-only{position:absolute}.static{position:static}.relative{position:relative}.mx-auto{margin-left:auto}";
+  assert.equal(compareRoute(["browser-css", "/assets/app.css", "asset"], { ...base, body: production }, { ...base, body: staging }).pass, true);
+  assert.equal(compareRoute(["browser-css", "/assets/app.css", "asset"], { ...base, body: production }, { ...base, body: `${staging}.extra{color:red}` }).pass, false);
+  assert.equal(compareRoute(["browser-css", "/assets/app.css", "asset"], { ...base, body: staging }, { ...base, body: `${staging}.relative{position:relative}` }).pass, false);
 });
