@@ -2,6 +2,8 @@
 
 **Status:** the route-free production Worker and encrypted secret are provisioned; no public target, route, DNS, custom domain, traffic, merge, retarget, Vercel change, weather request, alert, or log action occurred. Route attachment remains unauthorized.
 
+**Update 2026-09-12:** see `cutover-handoff.md` for current state. PR #12 (`fix/phase1-review-findings`) is stacked on #11 and must merge last. The expanded 19-check parity gate passes 19/19 against staging version `63b6ffba` (built with the public Places key; autocomplete verified by hand). The daily provider ceiling is now **2,000 attempts per UTC day**, matching the OpenWeather subscription cap. A route attach/detach rehearsal on a throwaway hostname is planned before the `www` attachment (section 7).
+
 ## Recommendation and evidence
 
 Use one Cloudflare **route**: `www.wetbulb35.com/*`; do **not** use a custom domain for this cutover. Read-only evidence at `docs/phase1/evidence/cloudflare-cutover-readiness.json` recorded zero production-zone routes and zero account custom domains. Vercel remains the current external origin: the retained deployment is `dpl_98CXao2fnVfTWFmn8AxFeuNSnUXe`, and 42 deployments were listed.
@@ -22,7 +24,8 @@ The repository permits merge commits, squash merges, and rebase merges. Use **me
 2. Retarget #9 from `phase1/review-bundle` to `main`, wait for recalculated diff/checks, then merge #9 with a merge commit.
 3. Retarget #10 from `phase1/hono-renderer` to `main`, wait for recalculated diff/checks, then merge #10 with a merge commit.
 4. Retarget #11 from `phase1/weather-edge` to `main`, wait for recalculated diff/checks, then merge #11 with a merge commit.
-5. After each merge/retarget, re-read exact base/head, mergeability, changed files, and required checks. Stop on conflicts, an unexpected diff, or pending/failing checks.
+5. Retarget #12 from `phase1/staging-parity` to `main`, wait for recalculated diff/checks, then merge #12 with a merge commit.
+6. After each merge/retarget, re-read exact base/head, mergeability, changed files, and required checks. Stop on conflicts, an unexpected diff, or pending/failing checks.
 
 Read-only check commands:
 
@@ -35,6 +38,8 @@ gh pr view 10 --json number,headRefName,headRefOid,baseRefName,mergeable,mergeSt
 gh pr checks 10
 gh pr view 11 --json number,headRefName,headRefOid,baseRefName,mergeable,mergeStateStatus,statusCheckRollup
 gh pr checks 11
+gh pr view 12 --json number,headRefName,headRefOid,baseRefName,mergeable,mergeStateStatus,statusCheckRollup
+gh pr checks 12
 ```
 
 Merging and retargeting are remote mutations and require Michael's explicit approval at the time. They are intentionally not scripted here.
@@ -49,6 +54,8 @@ gh pr edit 10 --base main # NOT AUTHORIZED
 gh pr merge 10 --merge # NOT AUTHORIZED after recalculated checks pass
 gh pr edit 11 --base main # NOT AUTHORIZED
 gh pr merge 11 --merge # NOT AUTHORIZED after recalculated checks pass
+gh pr edit 12 --base main # NOT AUTHORIZED
+gh pr merge 12 --merge # NOT AUTHORIZED after recalculated checks pass
 ```
 
 Run each line separately only after the preceding merge is visible on `main` and the retargeted PR's recalculated diff/checks pass.
@@ -88,11 +95,11 @@ vercel ls wetbulb2 --scope michaels-projects-899a0e11
 
 ## 4. Dry/live canary
 
-Dry canary gate: route-free and route-bearing production configs pass their non-deploying dry runs, local tests, and the isolated staging parity gate. The committed configs differ only by the single reviewed `www.wetbulb35.com/*` route. Staging evidence is 8/16: deterministic headers, `HEAD`, negotiated 404s, robots, sitemaps, favicon, and the full 130,684 inventory pass. The eight red GET HTML samples are preserved as production-zone email-obfuscation differences; do not normalize them away.
+Dry canary gate: route-free and route-bearing production configs pass their non-deploying dry runs, local tests, and the isolated staging parity gate. The committed configs differ only by the single reviewed `www.wetbulb35.com/*` route. Staging evidence (2026-09-10) is 19/19 on the expanded gate: HTML, `HEAD`, negotiated 404s, robots, sitemaps, favicon, browser CSS/JS/search index, and the full 130,684 inventory. Production-zone injections (email obfuscation, Web Analytics beacon) are classified expected differences and are dropped from comparison rather than copied into the Worker; see `staging-parity-gate.md`.
 
 The route-free production Worker is verified through the control plane only: exact version, bindings, secret name, and zero routes/custom domains. Cloudflare does not generate Preview URLs for Workers that implement Durable Objects, so this Worker deliberately sets `workers_dev=false` and `preview_urls=false`; do not claim an HTTP canary for it before attachment. Functional live testing remains on the separate `wetbulb35-weather-staging.mgdevstuff.workers.dev` service. Source: [Preview URL limitations](https://developers.cloudflare.com/workers/configuration/previews/#limitations).
 
-Live cutover gate: approve a short named window, operator, observer, budget owner, alert recipient, and an explicit maximum request count. The global ceiling is already set to the approved initial **100 attempts per UTC day**; changing it requires separate approval. Routes have no documented weighted canary in this evidence; treat attachment as all `www` traffic. The only permitted initial probe set is the approved bounded route matrix, excluding `/api/weather`; weather requires a separate one-request budget approval and redacted outcome evidence. Never generate a production load test.
+Live cutover gate: approve a short named window, operator, observer, budget owner, alert recipient, and an explicit maximum request count. The global ceiling is **2,000 attempts per UTC day**, matching the OpenWeather subscription cap so the Worker degrades to stale data before the provider starts rejecting calls. Routes have no documented weighted canary in this evidence; treat attachment as all `www` traffic. The only permitted initial probe set is the approved bounded route matrix, excluding `/api/weather`; weather requires a separate one-request budget approval and redacted outcome evidence. Never generate a production load test.
 
 ## 5. Attach exactly one route
 
@@ -114,13 +121,15 @@ For weather, first prove HTML requests make zero provider calls. Then use at mos
 
 ## 7. Rollback: delete the exact route
 
+**Rehearsal (before touching `www`):** add a proxied DNS record for a throwaway hostname such as `cutover-test.wetbulb35.com` pointing at the same Vercel target as `www`; deploy the staging Worker with a temporary config whose only route is `cutover-test.wetbulb35.com/*`; confirm the Worker answers; delete that route in the dashboard (Workers & Pages, Worker, Settings, Domains & Routes) and confirm the hostname falls back to the origin; remove the DNS record. This proves the exact detach path and its timing without any production traffic. Re-adding a route later is one `wrangler deploy` with the route-bearing config.
+
 Abort immediately for: route scope other than `www.wetbulb35.com/*`; any unexpected 5xx in the bounded matrix; wrong/missing canonical, robots, content type, cache/HSTS, asset, 404, email, or robots transform; budget/timeout/error alert; missing telemetry evidence; or changed apex behavior.
 
 The authorized Cloudflare owner must delete **only** the recorded route whose pattern is `www.wetbulb35.com/*` and whose route ID was recorded at attachment. Do not delete the Worker, DNS record, custom domain, Vercel alias, secret, or apex configuration. Route deletion is the rollback because it returns `www` to the retained Vercel origin path. Then verify the retained Vercel deployment/alias serves `www`, repeat the bounded non-weather checks, and separately verify the apex redirect. If Vercel fallback does not pass, keep the incident open; do not claim recovery from the incomplete exact-config backup.
 
 ## 8. Owner and window approvals
 
-Michael must explicitly decide: (1) approve merge-commit-based serial merge/retarget; (2) approve route—not custom-domain—cutover for `www` only; (3) approve route-free production Worker/secret provisioning; (4) name the production-window owner, Cloudflare route/rollback owner, Vercel observer, and incident abort owner; (5) name the alert recipient and approve telemetry/retention evidence plus a one-request live-weather canary budget; and (6) grant Search Console access for `sc-domain:wetbulb35.com` or explicitly waive that baseline. The 100-attempt daily ceiling is already approved and unchanged.
+Michael must explicitly decide: (1) approve merge-commit-based serial merge/retarget; (2) approve route—not custom-domain—cutover for `www` only; (3) approve route-free production Worker/secret provisioning; (4) name the production-window owner, Cloudflare route/rollback owner, Vercel observer, and incident abort owner; (5) name the alert recipient and approve telemetry/retention evidence plus a one-request live-weather canary budget; and (6) grant Search Console access for `sc-domain:wetbulb35.com` or explicitly waive that baseline. The 2,000-attempt daily ceiling was approved on 2026-09-12.
 
 ## Integration snapshot (read-only, 2026-09-09)
 
@@ -130,6 +139,7 @@ Michael must explicitly decide: (1) approve merge-commit-based serial merge/reta
 | #9 | `phase1/review-bundle` → `phase1/hono-renderer` (`a1c3eac3cff14a1b0d8c96f8e7213d9836f01ca4`) | `MERGEABLE`, `CLEAN`; both checks succeeded | 15; overlaps #10: 4, #11: 6 | retarget to `main`, recalc, merge |
 | #10 | `phase1/hono-renderer` → `phase1/weather-edge` (`86648afbfaddff164b2999f430058b59f2196b56`) | `MERGEABLE`, `CLEAN`; both checks succeeded | 8; overlaps #11: 8 | retarget to `main`, recalc, merge |
 | #11 | `phase1/weather-edge` → `phase1/staging-parity`; pre-runbook inspected head `3781bea23c08a410b053f52be0061346546eae54` | `MERGEABLE`; the pre-runbook Vercel check was pending and must be read live | inherited stack overlap noted above | read the current self-referential head/checks; retarget to `main`, recalc, merge |
+| #12 | `phase1/staging-parity` → `fix/phase1-review-findings` (2026-09-12: `MERGEABLE`, `CLEAN`) | read live | review fixes, parity gate, cap | retarget to `main` after #11, recalc, merge last |
 
 Changed-file overlap is expected from the stacked implementation (`package.json`, renderer, tests, docs, and staging config); serial merge then retarget prevents inherited stale diffs from being reviewed as new changes.
 

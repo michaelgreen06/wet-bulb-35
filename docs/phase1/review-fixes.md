@@ -1,6 +1,6 @@
 # Follow-up to PRs #8–#11
 
-This change is stacked on `phase1/staging-parity` (PR #11). It repairs the review findings without changing the approved provider-attempt ceiling or activating a Cloudflare route.
+This change is stacked on `phase1/staging-parity` (PR #11). It repairs the review findings without activating a Cloudflare route. The provider-attempt ceiling was later raised to 2,000/day (2026-09-12) to match the OpenWeather subscription cap.
 
 - The asset builder refuses repository/home roots and ancestors, including symlink aliases. Nonempty output directories must carry this builder's ownership marker in `locations/route-manifest.json`. Existing output from older revisions has no marker: choose a fresh directory, or move the old generated directory aside before rebuilding at the default `worker-assets` path. No new publicly served marker file is added.
 - Vercel recovery capture inspects the serving `www.wetbulb35.com` alias and requires a ready production deployment. It does not infer serving state from deployment creation order. Python checks backup permissions portably on macOS and Linux. Historical captures are unchanged; the capture tests use fake CLIs and fake environment values.
