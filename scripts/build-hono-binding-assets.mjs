@@ -48,7 +48,13 @@ export function buildHonoBindingAssets({ sourceCities, outDir }) {
       country,
       countrySlug,
       file,
-      states: [...states].sort(([a], [b]) => a.localeCompare(b)).map(([slug, name]) => ({ slug, name })),
+      count: countries.get(countrySlug).rows.length,
+      // Rendered country cards are ordered by display name, not route slug.
+      states: [...states].sort(([, a], [, b]) => a.localeCompare(b)).map(([slug, name]) => ({
+        slug,
+        name,
+        count: countries.get(countrySlug).rows.filter((row) => row[1] === name).length,
+      })),
     }));
   fs.writeFileSync(path.join(locations, "route-manifest.json"), JSON.stringify({ v: 1, countries: manifest }));
   for (const country of countries.values()) {

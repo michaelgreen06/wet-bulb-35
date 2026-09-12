@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "generatorCommit": "ea7d0da",
+    "generatorPath": "scripts/prototype-static-generator.mjs",
+    "sourceCitiesPath": "scripts/resolved_cities.json",
+    "normalization": "Only the dynamic footer year is replaced with <YEAR> before SHA-256.",
+    "generatedBy": "scripts/generate-hono-renderer-goldens.mjs"
+  },
+  "pages": [
+    {
+      "type": "home",
+      "route": "/",
+      "sha256": "155164867c4456a324b45fa58930b32232e040980cb479f676cd912de4fb04a4"
+    },
+    {
+      "type": "browse",
+      "route": "/wetbulb-temperature/",
+      "sha256": "9fc8cb2d81b21cc57d3d997084b0ebca7e9bf2898d556b3a1125330a4d4bc987"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/algeria/",
+      "sha256": "4b1251f253bc02390566cee709a238bf6e52a00089bccb038effc8521f729464"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/azerbaijan/",
+      "sha256": "8761b2796fedf5bc7c13c52be1687fa29eeb91ea322fbcf7098c6426e7a535d1"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/cambodia/",
+      "sha256": "a883d0a7a2048d17b1ed0f8f322624a6420790f9d356ae50f422896c23ed9363"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/malta/",
+      "sha256": "f00d6cad856edb30e907e1dab5ddad32dac2c63e2239f88c6ec38134d73c06a6"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/mayotte/",
+      "sha256": "adf29ebe266ead95a920e58d26d9671fee0d84a44f83a7580d18692223838a18"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/mongolia/",
+      "sha256": "9ae6101a975ba7fd4745de13dac0f9a6862acb363a67cbff1fc33677e9baaff9"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/qatar/",
+      "sha256": "20e149f5b6ac284b62d5c918116ebd8dda148991994cdb99a88a0dc80a8e644b"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/saudi-arabia/",
+      "sha256": "b91f261ef6fa3360092d6564eed63133a033b3ec2864af2a1475c00f6a4b8846"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/tonga/",
+      "sha256": "3bc99e315714fab26e03ba3ea51fd892192df67e70287a81287e07619bcdc8f8"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/turkey/",
+      "sha256": "a7d5fcf0e20a86cb21430d1d4e72c3491d81349fe317d6d96ecee6ecbdef2fe6"
+    },
+    {
+      "type": "country-ordering-sensitive",
+      "route": "/wetbulb-temperature/yemen/",
+      "sha256": "2a22b8a461d59b45a9134977a104548b6a72e479afb66f71090719d1e4cae19d"
+    },
+    {
+      "type": "state",
+      "route": "/wetbulb-temperature/afghanistan/badakhshan/",
+      "sha256": "7bf6eb19b8c4619c60e338f1fee8c7bab77b1e872b1e29c14e0682c1829c7ac9"
+    },
+    {
+      "type": "city",
+      "route": "/wetbulb-temperature/afghanistan/badakhshan/ashkasham/",
+      "sha256": "ba4e91f6b2231a66b8e95b38974476c85da425e32f124394fc282be93e0f8173"
+    }
+  ]
+}
