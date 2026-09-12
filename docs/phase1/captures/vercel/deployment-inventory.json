@@ -1,6 +1,260 @@
 {
-  "count": 42,
+  "count": 54,
   "deployments": [
+    {
+      "aliases": [
+        "www.wetbulb35.com",
+        "wetbulb2.vercel.app",
+        "wetbulb35.com",
+        "wetbulb2-michaels-projects-899a0e11.vercel.app",
+        "wetbulb2-git-main-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-12T13:20:49.588000Z",
+      "id": "dpl_6c4hXNEAmfp3X2AkjzfJRmTEMUa5",
+      "inspect_error": false,
+      "readyAt": "2026-09-12T13:30:05.485000Z",
+      "source": {
+        "pr": null,
+        "ref": "main",
+        "repository": "wet-bulb-35",
+        "sha": "a497d737f13f24fbcc52495c26c66440ef628cb6"
+      },
+      "state": "READY",
+      "target": "production",
+      "url": "wetbulb2-aub35tte5-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [],
+      "createdAt": "2026-09-12T13:20:33.049000Z",
+      "id": null,
+      "inspect_error": true,
+      "readyAt": "2026-09-12T13:30:05.548000Z",
+      "source": {
+        "pr": null,
+        "ref": "main",
+        "repository": "wet-bulb-35",
+        "sha": "8d6814ea12293b4f207a05efb9c07391e016f679"
+      },
+      "state": "CANCELED",
+      "target": "production",
+      "url": "wetbulb2-no0f6m75o-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [],
+      "createdAt": "2026-09-12T13:20:17.654000Z",
+      "id": null,
+      "inspect_error": true,
+      "readyAt": "2026-09-12T13:30:05.548000Z",
+      "source": {
+        "pr": null,
+        "ref": "main",
+        "repository": "wet-bulb-35",
+        "sha": "e71ae59ce5217f472c5afcc71e847ae40c03cbd4"
+      },
+      "state": "CANCELED",
+      "target": "production",
+      "url": "wetbulb2-fsdmounbs-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [],
+      "createdAt": "2026-09-12T13:20:00.743000Z",
+      "id": null,
+      "inspect_error": true,
+      "readyAt": "2026-09-12T13:30:05.548000Z",
+      "source": {
+        "pr": null,
+        "ref": "main",
+        "repository": "wet-bulb-35",
+        "sha": "b026ce6dc47d222b81256103ed3e0134c2a27f85"
+      },
+      "state": "CANCELED",
+      "target": "production",
+      "url": "wetbulb2-kzdl3af3v-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "www.wetbulb35.com",
+        "wetbulb2.vercel.app",
+        "wetbulb35.com",
+        "wetbulb2-michaels-projects-899a0e11.vercel.app",
+        "wetbulb2-git-main-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-12T13:19:46.059000Z",
+      "id": "dpl_APibvUpCHovmyvi7gj1CWHfmukY9",
+      "inspect_error": false,
+      "readyAt": "2026-09-12T13:25:03.662000Z",
+      "source": {
+        "pr": null,
+        "ref": "main",
+        "repository": "wet-bulb-35",
+        "sha": "7b63d36e8d6838fa2ebc62743715e9cdf1f90287"
+      },
+      "state": "READY",
+      "target": "production",
+      "url": "wetbulb2-nprm4whx7-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "wetbulb2-git-fix-phase1-revie-5aa936-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-12T13:08:17.299000Z",
+      "id": "dpl_AT2DubhwU6hoP3u6eCNaEbgU8JsC",
+      "inspect_error": false,
+      "readyAt": "2026-09-12T13:15:31.197000Z",
+      "source": {
+        "pr": "12",
+        "ref": "fix/phase1-review-findings",
+        "repository": "wet-bulb-35",
+        "sha": "107ac45f77f0b174978cb336a377d78c2a66d7cc"
+      },
+      "state": "READY",
+      "target": null,
+      "url": "wetbulb2-i3juz1wkt-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "wetbulb2-git-fix-phase1-revie-5aa936-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-11T01:15:26.711000Z",
+      "id": "dpl_8HTv3nsexXA4bsEWRBtNm2eUDBdG",
+      "inspect_error": false,
+      "readyAt": "2026-09-11T01:20:36.837000Z",
+      "source": {
+        "pr": "12",
+        "ref": "fix/phase1-review-findings",
+        "repository": "wet-bulb-35",
+        "sha": "d4a163c676e1025a18c96e0957654bc224e9a0a7"
+      },
+      "state": "READY",
+      "target": null,
+      "url": "wetbulb2-7x9jqpswe-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "wetbulb2-git-fix-phase1-revie-5aa936-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-11T00:36:34.892000Z",
+      "id": "dpl_8cMBbPPEQnQQXH6tKTjY5QRq6ay3",
+      "inspect_error": false,
+      "readyAt": "2026-09-11T00:41:36.284000Z",
+      "source": {
+        "pr": "12",
+        "ref": "fix/phase1-review-findings",
+        "repository": "wet-bulb-35",
+        "sha": "16e29ca810202cb2a67314cb77bcb7050b316534"
+      },
+      "state": "READY",
+      "target": null,
+      "url": "wetbulb2-3yb6xatpp-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "wetbulb2-git-fix-phase1-revie-5aa936-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-10T02:03:24.477000Z",
+      "id": "dpl_FYHZq589uxSfJr47FMWnX2RwWszq",
+      "inspect_error": false,
+      "readyAt": "2026-09-10T02:16:47.958000Z",
+      "source": {
+        "pr": "12",
+        "ref": "fix/phase1-review-findings",
+        "repository": "wet-bulb-35",
+        "sha": "b5a7d49b7c5bdbe6cbc6ce4d8a4a4e30e5c6182b"
+      },
+      "state": "READY",
+      "target": null,
+      "url": "wetbulb2-123onedb6-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "wetbulb2-git-phase1-staging-parity-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-09T18:44:00.513000Z",
+      "id": "dpl_41Qq3YDKFtXAURniQ1nkQ3xKHaT2",
+      "inspect_error": false,
+      "readyAt": "2026-09-09T18:57:27.022000Z",
+      "source": {
+        "pr": "11",
+        "ref": "phase1/staging-parity",
+        "repository": "wet-bulb-35",
+        "sha": "f84c6ed871a20300acc4ecdcc5c39f12fa31f431"
+      },
+      "state": "READY",
+      "target": null,
+      "url": "wetbulb2-p6qc9jjqh-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "wetbulb2-git-phase1-staging-parity-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-09T17:53:47.301000Z",
+      "id": "dpl_AbU1dKJqqbAUywmy3QGppJVVE5pf",
+      "inspect_error": false,
+      "readyAt": "2026-09-09T18:07:09.798000Z",
+      "source": {
+        "pr": "11",
+        "ref": "phase1/staging-parity",
+        "repository": "wet-bulb-35",
+        "sha": "762489eb2eee8f644d39e5d3e7f6a75c9c25fb87"
+      },
+      "state": "READY",
+      "target": null,
+      "url": "wetbulb2-quhmuau9y-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "wetbulb2-git-phase1-staging-parity-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-09T17:34:03.320000Z",
+      "id": "dpl_568Qwhq6aAZNp3MARvGE1HvWsRmy",
+      "inspect_error": false,
+      "readyAt": "2026-09-09T17:49:34.968000Z",
+      "source": {
+        "pr": "11",
+        "ref": "phase1/staging-parity",
+        "repository": "wet-bulb-35",
+        "sha": "4a665bd3c06bf74a4d8723bc31a6df9b1f418b94"
+      },
+      "state": "READY",
+      "target": null,
+      "url": "wetbulb2-qqv7xkdnd-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "wetbulb2-git-phase1-staging-parity-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-09T17:22:29.656000Z",
+      "id": "dpl_7diT46GbUZpDExqBjciX4u7XV7yB",
+      "inspect_error": false,
+      "readyAt": "2026-09-09T17:35:53.916000Z",
+      "source": {
+        "pr": "11",
+        "ref": "phase1/staging-parity",
+        "repository": "wet-bulb-35",
+        "sha": "3781bea23c08a410b053f52be0061346546eae54"
+      },
+      "state": "READY",
+      "target": null,
+      "url": "wetbulb2-l4aei5aw1-michaels-projects-899a0e11.vercel.app"
+    },
+    {
+      "aliases": [
+        "wetbulb2-git-phase1-staging-parity-michaels-projects-899a0e11.vercel.app"
+      ],
+      "createdAt": "2026-09-09T12:39:21.646000Z",
+      "id": "dpl_4pUePHKWUSant6EXhHuCmWgGfLwi",
+      "inspect_error": false,
+      "readyAt": "2026-09-09T12:52:38.962000Z",
+      "source": {
+        "pr": "11",
+        "ref": "phase1/staging-parity",
+        "repository": "wet-bulb-35",
+        "sha": "8b97823b3a3b7270cd7a95ede01e0cf6404fc0e3"
+      },
+      "state": "READY",
+      "target": null,
+      "url": "wetbulb2-k8uo0qmgw-michaels-projects-899a0e11.vercel.app"
+    },
     {
       "aliases": [
         "wetbulb2-git-phase1-staging-parity-michaels-projects-899a0e11.vercel.app"
@@ -194,22 +448,6 @@
       "state": "ERROR",
       "target": null,
       "url": "wetbulb2-a4cp06b0g-michaels-projects-899a0e11.vercel.app"
-    },
-    {
-      "aliases": [],
-      "createdAt": "2026-08-01T21:24:48.515000Z",
-      "id": null,
-      "inspect_error": true,
-      "readyAt": "2026-08-01T21:25:11.167000Z",
-      "source": {
-        "pr": null,
-        "ref": "wb-predict",
-        "repository": "wet-bulb-35",
-        "sha": "77520fa39531265ef44e9e3ade85355b769aa3c2"
-      },
-      "state": "ERROR",
-      "target": null,
-      "url": "wetbulb2-7n24kfopp-michaels-projects-899a0e11.vercel.app"
     },
     {
       "aliases": [
@@ -618,24 +856,6 @@
       "state": "READY",
       "target": "production",
       "url": "wetbulb2-3xr0qm8md-michaels-projects-899a0e11.vercel.app"
-    },
-    {
-      "aliases": [
-        "wetbulb2-git-update-contact-email-michaels-projects-899a0e11.vercel.app"
-      ],
-      "createdAt": "2026-04-11T01:08:51.690000Z",
-      "id": "dpl_CAYFBWTBKfmbDWmp9LJ1uZt9Hw2u",
-      "inspect_error": false,
-      "readyAt": "2026-04-11T01:10:44.206000Z",
-      "source": {
-        "pr": "3",
-        "ref": "update-contact-email",
-        "repository": "wetbulb2",
-        "sha": "b2f1b4509be8a12e04a407fbfc7a4ef10e8cff53"
-      },
-      "state": "READY",
-      "target": null,
-      "url": "wetbulb2-8zlrizaea-michaels-projects-899a0e11.vercel.app"
     },
     {
       "aliases": [

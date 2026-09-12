@@ -1,9 +1,9 @@
 {
-  "captured_at_utc": "2026-09-09T12-30-09Z",
+  "captured_at_utc": "2026-09-12T14-35-13Z",
   "current_production": {
-    "id": "dpl_98CXao2fnVfTWFmn8AxFeuNSnUXe",
-    "source_sha": "f6acf975b57d3352cfaaa45db3164e5389ea2c3a",
-    "url": "wetbulb2-nc0ku4gtp-michaels-projects-899a0e11.vercel.app"
+    "id": "dpl_6c4hXNEAmfp3X2AkjzfJRmTEMUa5",
+    "source_sha": "a497d737f13f24fbcc52495c26c66440ef628cb6",
+    "url": "wetbulb2-aub35tte5-michaels-projects-899a0e11.vercel.app"
   },
   "detected_cli_version": "59.11.7",
   "files": [
@@ -21,9 +21,9 @@
     "complete": false,
     "gap": "Vercel CLI does not reveal existing sensitive values; recover those from their original secret source.",
     "mode": "0o600",
-    "path": "/home/laclaw/.hermes/backups/wetbulb35/vercel/production-env-2026-09-09T12-30-09Z.env",
+    "path": "/home/laclaw/.hermes/backups/wetbulb35/vercel/production-env-2026-09-12T14-35-13Z.env",
     "sensitive_placeholder_count": 1,
-    "sha256": "1743bbdc10f9471bd004c6b4f90ebd76d1a7fb9f1f4156eab6c535a658018427",
+    "sha256": "f26bb522f80a8bbb3c22f76f7d432321498ceef3e57e48d057e6eeb0b56176ca",
     "values_committed": false
   },
   "project": "wetbulb2",

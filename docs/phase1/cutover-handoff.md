@@ -20,13 +20,22 @@ Read this first in a fresh session. It records the current state and the remaini
 - Reviewer feedback rejected: rounding-order "parity bug" (Vercel rounds first too), symlink/TOCTOU hardening of local scripts. Accepted but deferred: hash `arrayBuffer()` bytes, derive asset list from HTML.
 - The parity gate's `.relative` CSS exception exists only until Vercel rebuilds with #12; after cutover the gate against Vercel is moot.
 
+## Completed 2026-09-12
+
+- Step 1: #8 through #12 merged bottom-up with merge commits; `main` at `a497d73`.
+- Step 2: route rehearsal done on `cutover-test.wetbulb35.com`. Attach: `wrangler deploy` with route config, hostname served by the Worker 9s after deploy (homepage, country page, city page, `/api/weather` all 200, no `x-vercel-id`). Detach: Michael deleted the route in the dashboard (Workers & Pages, Worker, Settings, Domains & Routes); hostname fell back to Vercel (525, Vercel has no cert for that hostname). Detach latency not measured (poller started after the click). DNS record deleted, staging redeployed with original config (workers.dev restored, version `5da33c0a`).
+- Correction: the Worker sets no `x-worker-version` header (version id is only used for the HTML cache key). Worker-vs-Vercel check is: `x-vercel-id` absent, `content-disposition: inline` and `access-control-allow-origin: *` present.
+- Deploying a config with `routes` and no `workers_dev` key disables the workers.dev URL for that Worker. Redeploying the original config re-enables it.
+- A scoped Cloudflare API token (Zone DNS Edit + Zone Read, wetbulb35.com only) lives in `~/.cloudflare-dns-token` on this Mac. Revoke it and delete the file after cutover.
+- Step 3 (partial): fresh Vercel recovery capture taken on LaClaw 2026-09-12T14:35Z (`docs/phase1/captures/vercel/`, env backup `production-env-2026-09-12T14-35-13Z.env`). Vercel production is already built from `a497d73`, so the `.relative` parity exception can go. Vercel requests/day and GA sessions/day: not captured (dashboard-only; Michael chose to skip, not a blocker). LaClaw checkout is now on `main` at `a497d73`.
+
 ## Remaining sequence
 
 1. **Merge the stack**, bottom up with merge commits: merge #8, retarget #9 to `main`, merge, repeat through #12. Check `gh pr view N --json mergeable,mergeStateStatus` after each retarget.
 2. **Route rehearsal on a throwaway hostname** (runbook section 7): Michael adds proxied DNS record `cutover-test.wetbulb35.com` (same target as `www`). Deploy the staging Worker with a temporary copy of `wrangler.weather-staging.toml` plus `routes = [{ pattern = "cutover-test.wetbulb35.com/*", zone_name = "wetbulb35.com" }]`. Curl it, then delete the route in the dashboard, curl again (expect Vercel response), delete the DNS record, and note how long each step took.
 3. **Gather baselines:** Vercel requests/day, GA sessions/day for the last 14 days, and a fresh Vercel recovery capture (`scripts/capture-vercel-recovery-baseline.sh` on LaClaw, needs `vercel` CLI login there).
 4. **Redeploy production Worker from `main`:** `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY=... npm run build:hono-renderer-assets && ./node_modules/.bin/wrangler deploy --config wrangler.weather-production.toml`. Confirm `wrangler deployments list` shows the new version and `wrangler secret list` still shows `OPENWEATHER_API_KEY`.
-5. **Cutover:** open the dashboard route page for the production Worker in a browser tab first. Run `./node_modules/.bin/wrangler tail --config wrangler.weather-production.toml` in one terminal. Then `./node_modules/.bin/wrangler deploy --config wrangler.weather-production-route.toml`. Curl `https://www.wetbulb35.com/` and a city page; check for the `x-worker-version` header, `/cdn-cgi/` injections still present, and no 5xx in tail. Load a city page in a browser and confirm weather renders.
+5. **Cutover:** open the dashboard route page for the production Worker in a browser tab first. Run `./node_modules/.bin/wrangler tail --config wrangler.weather-production.toml` in one terminal. Then `./node_modules/.bin/wrangler deploy --config wrangler.weather-production-route.toml`. Curl `https://www.wetbulb35.com/` and a city page; check that `x-vercel-id` is absent and `content-disposition: inline` is present, `/cdn-cgi/` injections still present, and no 5xx in tail. Load a city page in a browser and confirm weather renders.
 6. **Rollback if anything is wrong:** delete the `www.wetbulb35.com/*` route in the dashboard. Traffic returns to Vercel within seconds. Re-adding later is step 5 again.
 7. **After a quiet day:** set up uptime monitor and cap alert. Keep the Vercel project alive for at least a month.
 
