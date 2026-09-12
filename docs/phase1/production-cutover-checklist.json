@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "sanitized": true,
+  "recommendation": {
+    "control_plane": "route",
+    "reason": "A route keeps the existing proxied www DNS/origin path available when the route is deleted; a custom domain makes the Worker the origin and creates Worker-directed DNS."
+  },
+  "scope": {
+    "route": "www.wetbulb35.com/*",
+    "apex": "wetbulb35.com",
+    "worker_name": "wetbulb35-weather-production"
+  },
+  "evidence": {
+    "production_zone_routes": 0,
+    "account_custom_domains": 0,
+    "staging_version": "0f11f222-c122-4c11-801d-410fb592e553",
+    "staging_deployment": "fee68cf9-4982-47a1-90d2-97396450d2c7",
+    "vercel_rollback_deployment": "dpl_98CXao2fnVfTWFmn8AxFeuNSnUXe",
+    "vercel_retained_deployments": 42,
+    "staging_parity": "8/16; eight GET HTML differences are production-zone email transformation only",
+    "route_free_production_worker": {
+      "deployment_id": "c3473d0f-e269-49d7-9abb-56b5647550d4",
+      "version_id": "368ecf1b-04b0-4444-b9ec-3cbcf33685d8",
+      "targets": 0,
+      "production_zone_routes": 0,
+      "account_custom_domains": 0,
+      "secret_names": ["OPENWEATHER_API_KEY"]
+    }
+  },
+  "gates": [
+    "all PR checks complete and mergeable after each serial merge/retarget",
+    "stack is merged with merge commits, or each child is explicitly rebased before retargeting",
+    "production Worker has no route or custom domain before live approval",
+    "encrypted secret is present by name; no value is recorded",
+    "approved 100-attempt daily ceiling is unchanged; budget owner, alert recipient, logs/metrics access and retention are approved",
+    "named owner approves route scope, window, abort owner, and rollback observer",
+    "apex redirect and Vercel fallback are separately verified",
+    "Search Console access is granted or the baseline is explicitly waived"
+  ],
+  "abort_conditions": [
+    "any unexpected 5xx on a sampled HTML, asset, robots, sitemap, or intentional 404 request",
+    "missing or wrong canonical, robots, content type, cache/HSTS, or expected zone transform",
+    "weather budget ceiling, timeout/error alert, or missing telemetry/alert evidence",
+    "apex behavior changes or Vercel fallback fails after route deletion",
+    "route scope differs from www.wetbulb35.com/*"
+  ],
+  "approvals": [
+    "Michael: merge order and retarget authority",
+    "Michael: production Worker/secret/route and live-canary authority",
+    "Cloudflare owner: route attachment, deletion, observability and alert ownership",
+    "Vercel owner: retained deployment verification and fallback observer",
+    "incident owner: abort and rollback authority"
+  ]
+}

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   BROWSER_CACHE_CONTROL,
   WeatherGate,
+  createObservability,
   canonicalNumber,
   parseWeatherCoordinates,
   transformOpenWeather,
@@ -48,7 +49,8 @@ function fakeGate(handler) {
   };
 }
 
-function edgeEnv(handler) { return { WEATHER_GATE: fakeGate(handler) }; }
+const disabledObservability = createObservability({ logger: () => {} });
+function edgeEnv(handler) { return { WEATHER_GATE: fakeGate(handler), OBSERVABILITY: disabledObservability }; }
 function request(path, options) { return new Request(`https://test${path}`, options); }
 function gateRequest(body, path = "/refresh") {
   return request(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -63,6 +65,7 @@ function gateEnv(overrides = {}) {
     WEATHER_FRESH_SECONDS: "300",
     WEATHER_STALE_SECONDS: "600",
     WEATHER_TIMEOUT_MS: "5000",
+    OBSERVABILITY: disabledObservability,
     ...overrides,
   };
 }
@@ -294,4 +297,79 @@ test("HTML rendering performs zero weather provider calls", async () => {
   });
   assert.equal(response.status, 200);
   assert.equal(gateCalls, 0);
+});
+
+test("observability emits allowlisted terminal provider outcomes once without sensitive inputs", async () => {
+  const events = [];
+  const observability = createObservability({ deploymentVersion: "unit-v1", logger: (event) => events.push(event) });
+  const { storage } = storageWith();
+  const gate = new WeatherGate({ storage }, gateEnv({ OBSERVABILITY: observability }));
+  await withGlobals({ fetch: async () => new Response("no", { status: 503 }) }, async () => {
+    const body = { key: weatherKey({ lat: 12.34, lon: -56.78 }), lat: 12.34, lon: -56.78, state: "miss" };
+    assert.equal((await gate.fetch(gateRequest(body))).status, 500);
+  });
+  const provider = events.filter((event) => event.event === "weather_provider_call");
+  assert.equal(provider.length, 1);
+  assert.deepEqual(Object.keys(provider[0]).sort(), ["cache_state", "canonical_key_hash", "deployment_version", "event", "latency_ms", "outcome", "reserved_budget_limit", "reserved_budget_used", "upstream_status"]);
+  assert.equal(provider[0].outcome, "upstream_http");
+  assert.equal(provider[0].upstream_status, 503);
+  const serialized = JSON.stringify(events).toLowerCase();
+  for (const forbidden of ["12.34", "-56.78", "test-secret", "openweathermap", "apikey", "query", "error"]) assert.equal(serialized.includes(forbidden), false, forbidden);
+
+  const htmlEvents = [];
+  createObservability({ deploymentVersion: "unit-v1", logger: (event) => htmlEvents.push(event), htmlSampleRate: 1 }).html("hit");
+  assert.deepEqual(htmlEvents, [{ event: "html_cache_outcome", deployment_version: "unit-v1", outcome: "hit", cache_state: "hit", route_class: "html" }]);
+
+  const safeGate = new WeatherGate({ storage: storageWith().storage }, gateEnv({ OBSERVABILITY: createObservability({ logger: () => { throw new Error("sink failure"); } }) }));
+  await withGlobals({ fetch: async () => Response.json(upstreamPayload) }, async () => {
+    assert.equal((await safeGate.fetch(gateRequest({ key: weatherKey({ lat: 1, lon: 2 }), lat: 1, lon: 2, state: "miss" }))).status, 200);
+  });
+});
+
+
+test("observability enforces fixed schemas and falls back to a null hash", async () => {
+  const events = [];
+  {
+    const observability = createObservability({ deploymentVersion: "unit-v1", logger: (event) => events.push(event), htmlSampleRate: 1, hashCanonicalKey: async () => { throw new Error("hash failure"); } });
+    await observability.weather({
+      event: "weather_provider_call", outcome: "success", upstream_status: 200, latency_ms: 4, cache_state: "miss",
+      reserved_budget_used: 1, reserved_budget_limit: 20, secret: "do-not-log", lat: 12.34, lon: -56.78,
+      query: "appid=secret", error: new Error("raw error"), url: "https://provider.example/?appid=secret",
+    }, "weather:v1:lat:12.34:lon:-56.78");
+    observability.weatherUnkeyed({ event: "weather_validation_failure", cache_state: "none", raw_coordinate: "12.34", query: "lat=12.34", error: "raw", url: "https://x" });
+    observability.html("hit", { secret: "do-not-log", url: "https://x" });
+  }
+  assert.deepEqual(events[0], { event: "weather_provider_call", deployment_version: "unit-v1", outcome: "success", upstream_status: 200, latency_ms: 4, cache_state: "miss", reserved_budget_used: 1, reserved_budget_limit: 20, canonical_key_hash: null });
+  assert.deepEqual(events[1], { event: "weather_validation_failure", deployment_version: "unit-v1", cache_state: "none" });
+  assert.deepEqual(events[2], { event: "html_cache_outcome", deployment_version: "unit-v1", outcome: "hit", cache_state: "hit", route_class: "html" });
+  const serialized = JSON.stringify(events);
+  for (const forbidden of ["do-not-log", "12.34", "-56.78", "appid", "raw error", "provider.example", "lat=12.34"]) assert.equal(serialized.includes(forbidden), false, forbidden);
+});
+
+test("keyed edge cache events are retained with waitUntil without delaying responses", async () => {
+  const key = weatherKey({ lat: 1, lon: 2 });
+  const cases = [
+    { name: "hit", storedAt: Date.now(), freshUntil: Date.now() + 300_000, staleUntil: Date.now() + 600_000, expected: "weather_cache_hit" },
+    { name: "stale", storedAt: Date.now() - 400_000, freshUntil: Date.now() - 1, staleUntil: Date.now() + 200_000, expected: "weather_cache_stale" },
+  ];
+  for (const item of cases) {
+    const cache = new FakeCache();
+    cache.values.set("https://test/__weather_cache__/" + encodeURIComponent(key), Response.json(envelope(item)));
+    const events = []; const waits = [];
+    await withGlobals({ caches: { default: cache } }, async () => {
+      const response = await weatherResponse(request("/api/weather?lat=1&lon=2"), { WEATHER_GATE: fakeGate(async () => Response.json(envelope({ storedAt: Date.now(), freshUntil: Date.now() + 300_000, staleUntil: Date.now() + 600_000 }))), OBSERVABILITY: createObservability({ logger: (event) => events.push(event) }) }, { waitUntil(promise) { waits.push(promise); } });
+      assert.equal(response.status, 200, item.name);
+      assert.ok(waits.length >= 1, item.name);
+      await Promise.all(waits);
+    });
+    assert.equal(events.filter((event) => event.event === item.expected).length, 1, item.name);
+  }
+  const waits = []; const events = [];
+  await withGlobals({ caches: { default: new FakeCache() } }, async () => {
+    const response = await weatherResponse(request("/api/weather?lat=1&lon=2"), { WEATHER_GATE: fakeGate(async () => Response.json(envelope({ storedAt: Date.now(), freshUntil: Date.now() + 300_000, staleUntil: Date.now() + 600_000 }))), OBSERVABILITY: createObservability({ logger: (event) => events.push(event) }) }, { waitUntil(promise) { waits.push(promise); } });
+    assert.equal(response.status, 200);
+    assert.ok(waits.length >= 1);
+    await Promise.all(waits);
+  });
+  assert.equal(events.filter((event) => event.event === "weather_cache_miss").length, 1);
 });

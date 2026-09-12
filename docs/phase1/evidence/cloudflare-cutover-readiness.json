@@ -1,0 +1,132 @@
+{
+  "captured_at_utc": "2026-09-09T17:19:30.040260Z",
+  "custom_domains": {
+    "count": 0,
+    "list_access": "available"
+  },
+  "durable_objects": {
+    "namespace_count": 1,
+    "namespace_list_access": "available"
+  },
+  "notes": [
+    "No Cloudflare configuration was created, edited, deployed, or deleted.",
+    "No live tail, weather API, production page, Logpush, telemetry query, alert, DNS, route, or custom-domain request was made beyond fixed control-plane GET inventory calls.",
+    "HTTP error bodies and all provider payload fields outside explicit allowlists are discarded."
+  ],
+  "notification_policies": {
+    "access": "available",
+    "alert_types": [
+      "billing_budget_alert"
+    ],
+    "available_alert_categories": [
+      "Abuse",
+      "Access",
+      "Billing",
+      "Brand Protection",
+      "CASB",
+      "Cloudflare Status",
+      "Cloudforce One",
+      "DoS Protection",
+      "Health Checks",
+      "Images",
+      "Load Balancing",
+      "Log Explorer",
+      "Logpush",
+      "Magic Transit",
+      "NSC Maintenance Notifications",
+      "Pages",
+      "Radar Notification",
+      "Route Leak Detection",
+      "SSL/TLS",
+      "Script Monitor",
+      "Security Insights",
+      "Stream",
+      "Traffic Monitoring",
+      "Trust and Safety Blocks",
+      "Tunnel",
+      "Web Analytics",
+      "Workers Observability"
+    ],
+    "available_types_access": "available",
+    "count": 1,
+    "workers_observability_alert_types": [
+      "workers_observability_alert"
+    ]
+  },
+  "production_worker_routes": {
+    "access": "available",
+    "count": 0,
+    "script_names": []
+  },
+  "read_only": true,
+  "schema": 2,
+  "staging_worker": {
+    "active_deployment_id": "fee68cf9-4982-47a1-90d2-97396450d2c7",
+    "active_versions": [
+      {
+        "percentage": 100,
+        "version_id": "0f11f222-c122-4c11-801d-410fb592e553"
+      }
+    ],
+    "deployment_status_access": "available",
+    "name": "wetbulb35-weather-staging",
+    "retained_deployments_access": "available",
+    "retained_version_ids": [
+      "0f11f222-c122-4c11-801d-410fb592e553",
+      "4409d005-2169-42b1-b252-bd261cb30877",
+      "441621cc-e0cf-4b6c-926a-c60242dcdadc",
+      "5df11d29-b351-4d95-a845-298f0377a999",
+      "d1093b5f-bb6f-4776-8f3f-e4504828cd91",
+      "ddab28f9-26c1-4d08-ba03-d0ae99db4415",
+      "fc8b6893-f622-4467-ac6b-ea552a38bfda",
+      "fe629b5a-08f8-4b28-bc4e-185f04dfe93e"
+    ],
+    "secret_list_access": "available",
+    "secret_names": [
+      "OPENWEATHER_API_KEY"
+    ]
+  },
+  "token_name": "WETBULB35_CLOUDFLARE_API_TOKEN",
+  "workers_observability_query_list": {
+    "access": "unavailable_http_403"
+  },
+  "wrangler_version": "4.129.1",
+  "zone": {
+    "access": "available",
+    "name": "wetbulb35.com"
+  },
+  "zone_ruleset_inventory": {
+    "access": "unavailable_http_403",
+    "relevant_rulesets": []
+  },
+  "zone_settings": {
+    "browser_cache_ttl": {
+      "access": "available",
+      "value": 14400
+    },
+    "cache_level": {
+      "access": "available",
+      "value": "aggressive"
+    },
+    "edge_cache_ttl": {
+      "access": "available",
+      "value": 7200
+    },
+    "email_obfuscation": {
+      "access": "available",
+      "value": "on"
+    },
+    "security_header": {
+      "access": "available",
+      "value": {
+        "strict_transport_security": {
+          "enabled": false,
+          "include_subdomains": false,
+          "max_age": 0,
+          "nosniff": false,
+          "preload": false
+        }
+      }
+    }
+  }
+}
