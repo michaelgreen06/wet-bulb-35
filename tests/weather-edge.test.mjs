@@ -269,6 +269,29 @@ test("provider transformation matches source and forwards exact parsed Number co
   assert.equal(providerUrl.searchParams.get("lon"), String(lon));
 });
 
+test("valid extreme readings return weather and reuse the cached provider result", async () => {
+  for (const [temperature, humidity, expectedWetBulb] of [[25, 100, 25], [38, 99, 37.98], [-25, 60, -20.94], [30, 3, 10.77], [55, 50, 39.49]]) {
+    const { storage } = storageWith();
+    const gate = new WeatherGate({ storage }, gateEnv());
+    const env = edgeEnv((url, init) => gate.fetch(new Request(url, init)));
+    let calls = 0;
+    await withGlobals({ caches: { default: new FakeCache() }, fetch: async () => {
+      calls += 1;
+      return Response.json({ ...upstreamPayload, main: { temp: temperature + 273.15, humidity } });
+    } }, async () => {
+      for (let index = 0; index < 2; index += 1) {
+        const response = await weatherResponse(request("/api/weather?lat=1&lon=2"), env);
+        assert.equal(response.status, 200, `${temperature}C / ${humidity}%`);
+        const payload = await response.json();
+        assert.equal(payload.weather.temperature, temperature);
+        assert.equal(payload.weather.humidity, humidity);
+        assert.equal(payload.weather.wetBulb, expectedWetBulb);
+      }
+    });
+    assert.equal(calls, 1, "valid readings must be cached instead of consuming repeated provider attempts");
+  }
+});
+
 test("same-key concurrent misses coalesce inside one WeatherGate instance", async () => {
   const { storage } = storageWith();
   const gate = new WeatherGate({ storage }, gateEnv());

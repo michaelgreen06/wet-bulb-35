@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 const FORCE_BUILD_VALUES = new Set(["1", "true", "yes"]);
 
 export const DEPLOYMENT_INPUTS = [
+  { kind: "file", path: "lib/page-renderer.mjs" },
   { kind: "file", path: ".vercelignore" },
   { kind: "file", path: "package-lock.json" },
   { kind: "file", path: "package.json" },

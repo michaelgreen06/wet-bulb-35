@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -16,6 +17,66 @@ CAPTURES = ROOT / "docs" / "phase1" / "captures" / "vercel"
 
 
 class CaptureScriptSafetyTests(unittest.TestCase):
+    def test_full_capture_resolves_serving_alias_and_uses_portable_permissions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            executable = directory / "vercel"
+            executable.write_text(f"#!{sys.executable}\n" + '''
+import json, os, pathlib, sys
+args = sys.argv[1:]
+with open(os.environ['VERCEL_TEST_LOG'], 'a') as log:
+    log.write(json.dumps(args) + '\\n')
+if args == ['--version']:
+    print('Vercel CLI 1.2.3')
+elif args[:2] == ['project', 'inspect']:
+    print('ID prj_fixture')
+elif args[0] == 'list':
+    print(json.dumps({'deployments': [
+        {'url': 'old-serving.vercel.app', 'target': 'production', 'createdAt': 1000},
+        {'url': 'new-unpromoted.vercel.app', 'target': 'production', 'createdAt': 2000},
+        {'url': 'new-failed.vercel.app', 'target': 'production', 'createdAt': 3000},
+    ]}))
+elif args[0] == 'inspect':
+    serving = args[1] in ['https://www.wetbulb35.com', 'old-serving.vercel.app']
+    print(json.dumps({'id': 'dpl_serving' if serving else 'dpl_new',
+        'url': 'old-serving.vercel.app' if serving else args[1],
+        'readyState': os.environ.get('FIXTURE_ALIAS_STATE', 'READY') if serving else 'ERROR',
+        'target': 'production', 'aliases': ['www.wetbulb35.com'] if serving else [], 'builds': []}))
+elif args[:2] == ['env', 'pull']:
+    pathlib.Path(args[2]).write_text('FAKE_TEST_VALUE=placeholder\\n')
+else:
+    print('{}')
+''')
+            executable.chmod(0o755)
+            curl = directory / "curl"
+            curl.write_text('#!/bin/sh\nprintf "HTTP/2 200\\ncontent-type: text/html\\n"\n')
+            curl.chmod(0o755)
+            # If the old GNU-only permission check is reintroduced, fail even
+            # on Linux rather than letting the platform hide the regression.
+            stat = directory / "stat"
+            stat.write_text('#!/bin/sh\nexit 89\n')
+            stat.chmod(0o755)
+            for state in ['READY', 'ERROR']:
+                with self.subTest(state=state):
+                    output = directory / state
+                    log = directory / f'{state}.log'
+                    completed = subprocess.run([str(SCRIPT)], cwd=ROOT, capture_output=True, text=True, env={
+                        **os.environ, 'PATH': f'{directory}{os.pathsep}{os.environ["PATH"]}',
+                        'VERCEL_BIN': str(executable), 'VERCEL_TEST_LOG': str(log),
+                        'FIXTURE_ALIAS_STATE': state, 'VERCEL_CAPTURE_DIR': str(output),
+                        'VERCEL_BACKUP_DIR': str(directory / 'backups'),
+                    })
+                    if state == 'READY':
+                        self.assertEqual(completed.returncode, 0, completed.stderr)
+                        manifest = json.loads((output / 'recovery-manifest.json').read_text())
+                        self.assertEqual(manifest['current_production']['id'], 'dpl_serving')
+                        self.assertEqual(manifest['private_production_environment_backup']['mode'], '0o600')
+                        self.assertNotIn('FAKE_TEST_VALUE', ''.join(file.read_text() for file in output.iterdir()))
+                    else:
+                        self.assertNotEqual(completed.returncode, 0)
+                        self.assertIn('production alias did not resolve', completed.stderr)
+                        self.assertNotIn('"pull"', log.read_text())
+
     def test_uses_installed_vercel_or_explicit_executable_override(self):
         source = SCRIPT.read_text()
         self.assertIn('VERCEL_BIN="${VERCEL_BIN:-vercel}"', source)

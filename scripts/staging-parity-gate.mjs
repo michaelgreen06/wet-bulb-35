@@ -26,7 +26,10 @@ export const IGNORED_HEADERS = new Set([
   "x-vercel-cache", "x-vercel-id", "x-vercel-sc-headers", "x-worker-version",
 ]);
 export const COMPARED_HEADERS = ["access-control-allow-origin", "cache-control", "content-disposition", "strict-transport-security"];
-export const EXPECTED_ZONE_MANAGED_DIFFERENCES = Object.freeze({ robots: ["bodyHash"] });
+// browser-css: production lacks only `.relative` until Vercel rebuilds with the Tailwind scanning fix; remove after that deploy.
+export const EXPECTED_ZONE_MANAGED_DIFFERENCES = Object.freeze({ robots: ["bodyHash"], "browser-css": ["bodyHash"] });
+// The production zone injects email obfuscation (/cdn-cgi/) and the Web Analytics beacon; workers.dev bypasses the zone.
+export const isZoneInjectedReference = (url) => url.startsWith("/cdn-cgi/") || url.startsWith("https://static.cloudflareinsights.com/");
 export const INTERNAL_HTML_CACHE_POLICY = Object.freeze({ schema: 1, freshSeconds: 86_400, staleSeconds: 604_800, storageTtlSeconds: 691_200, browserCacheControl: "public, max-age=0, must-revalidate" });
 
 const ROUTES = [
@@ -46,6 +49,9 @@ const ROUTES = [
   ["sitemap-index", "/sitemap.xml", "xml"],
   ["sitemap-member", "/sitemaps/sitemap-main.xml", "xml"],
   ["public-asset", "/favicon.svg", "asset"],
+  ["browser-css", "/assets/app.css", "asset"],
+  ["browser-js", "/assets/app.js", "asset"],
+  ["browser-search-index", "/assets/locations.json", "asset"],
 ];
 
 function arg(name, fallback) {
@@ -65,7 +71,10 @@ function attribute(tag, name) {
 }
 function tags(html, pattern) { return [...html.matchAll(pattern)].map((match) => match[0]); }
 function normalizeFooterYear(html) { return html.replace(/(©|&copy;)\s*20\d{2}/gi, "$1 YEAR"); }
-function normalizeContentType(value) { return (value || "").split(";", 1)[0].trim().toLowerCase(); }
+export function normalizeContentType(value) {
+  const type = (value || "").split(";", 1)[0].trim().toLowerCase();
+  return type === "application/javascript" ? "text/javascript" : type;
+}
 function stableHeaders(headers) {
   return Object.fromEntries(COMPARED_HEADERS.map((name) => [name, headers.get(name) || null]));
 }
@@ -80,7 +89,8 @@ export function htmlSemanticFields(html) {
     .map((tag) => tag.replace(/^.*?>|<\/script>$/g, ""))
     .map((source) => canonicalJson(JSON.parse(source)));
   const hrefs = links.map((tag) => attribute(tag, "href")).filter(Boolean).sort();
-  const anchors = tags(html, /<a\b[^>]*>/gi).map((tag) => attribute(tag, "href")).filter(Boolean).sort();
+  const scriptSources = scripts.map((tag) => attribute(tag, "src")).filter(Boolean);
+  const anchors = tags(html, /<a\b[^>]*>/gi).map((tag) => attribute(tag, "href")).filter((href) => href && !isZoneInjectedReference(href)).sort();
   const coordinates = [...html.matchAll(/\b(?:data-(?:lat|latitude)|lat)=(?:"([^"]*)"|'([^']*)'|([^\s>]+))|\b(?:data-(?:lon|lng|longitude)|lon|lng)=(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi)]
     .map((match) => match.slice(1).find((value) => value !== undefined)).filter(Boolean).sort();
   return {
@@ -88,10 +98,11 @@ export function htmlSemanticFields(html) {
     description: named("description"), canonical: attribute(links.find((tag) => attribute(tag, "rel")?.toLowerCase() === "canonical"), "href"),
     robots: named("robots"), og: Object.fromEntries(["og:title", "og:description", "og:type", "og:url", "og:image", "og:site_name"].map((name) => [name, property(name)])),
     jsonLd, links: anchors, widgetCoordinates: coordinates,
-    publicAssetReferences: hrefs.filter((href) => href.startsWith("/") || href.startsWith("https://www.googletagmanager.com/")).sort(),
+    publicAssetReferences: [...hrefs.filter((href) => href.startsWith("/")), ...scriptSources].filter((url) => !isZoneInjectedReference(url)).sort(),
   };
 }
 export function comparableBody(kind, body) {
+  if (kind === "asset") return { sha256: sha256(body), bytes: Buffer.byteLength(body) };
   if (kind === "html") return htmlSemanticFields(normalizeFooterYear(body));
   if (kind === "not-found") {
     const normalized = normalizeFooterYear(body);
@@ -120,7 +131,9 @@ export async function request(base, pathname, method = "GET", accept = "text/htm
   return { status: response.status, contentType: normalizeContentType(response.headers.get("content-type")), headers: stableHeaders(response.headers), body, latencyMs: Number((performance.now() - started).toFixed(2)) };
 }
 function isExpectedZoneManagedDifference(name, difference, production, staging) {
-  if (name !== "robots" || difference !== "bodyHash") return false;
+  if (difference !== "bodyHash") return false;
+  if (name === "browser-css") return !production.body.includes(".relative{") && staging.body === production.body.replace(".static{position:static}", ".static{position:static}.relative{position:relative}");
+  if (name !== "robots") return false;
   const committedRobots = fs.readFileSync(path.join(root, "public/robots.txt"), "utf8");
   return staging.body === committedRobots
     && production.body.startsWith("# As a condition of accessing this website, you agree to abide by the following\n# content signals:\n")

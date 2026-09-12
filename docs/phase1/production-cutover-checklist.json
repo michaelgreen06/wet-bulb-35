@@ -32,7 +32,7 @@
     "stack is merged with merge commits, or each child is explicitly rebased before retargeting",
     "production Worker has no route or custom domain before live approval",
     "encrypted secret is present by name; no value is recorded",
-    "approved 100-attempt daily ceiling is unchanged; budget owner, alert recipient, logs/metrics access and retention are approved",
+    "2,000-attempt daily ceiling matches the OpenWeather subscription cap (approved 2026-09-12); alerting is a fast follow",
     "named owner approves route scope, window, abort owner, and rollback observer",
     "apex redirect and Vercel fallback are separately verified",
     "Search Console access is granted or the baseline is explicitly waived"

@@ -42,14 +42,10 @@
       "pathname": "/",
       "kind": "html",
       "accept": null,
-      "pass": false,
-      "differences": [
-        "htmlSemanticFields"
-      ],
+      "pass": true,
+      "differences": [],
       "expectedDifferences": [],
-      "unexpectedDifferences": [
-        "htmlSemanticFields"
-      ],
+      "unexpectedDifferences": [],
       "production": {
         "status": 200,
         "contentType": "text/html",
@@ -59,7 +55,7 @@
           "content-disposition": "inline",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 461.01
+        "latencyMs": 233.02
       },
       "staging": {
         "status": 200,
@@ -70,7 +66,7 @@
           "content-disposition": "inline",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 222.02
+        "latencyMs": 197.68
       }
     },
     {
@@ -78,14 +74,10 @@
       "pathname": "/wetbulb-temperature",
       "kind": "html",
       "accept": null,
-      "pass": false,
-      "differences": [
-        "htmlSemanticFields"
-      ],
+      "pass": true,
+      "differences": [],
       "expectedDifferences": [],
-      "unexpectedDifferences": [
-        "htmlSemanticFields"
-      ],
+      "unexpectedDifferences": [],
       "production": {
         "status": 200,
         "contentType": "text/html",
@@ -95,7 +87,7 @@
           "content-disposition": "inline; filename=\"wetbulb-temperature\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 205.01
+        "latencyMs": 84.07
       },
       "staging": {
         "status": 200,
@@ -106,7 +98,7 @@
           "content-disposition": "inline; filename=\"wetbulb-temperature\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 89.79
+        "latencyMs": 58.39
       }
     },
     {
@@ -114,14 +106,10 @@
       "pathname": "/wetbulb-temperature/andorra",
       "kind": "html",
       "accept": null,
-      "pass": false,
-      "differences": [
-        "htmlSemanticFields"
-      ],
+      "pass": true,
+      "differences": [],
       "expectedDifferences": [],
-      "unexpectedDifferences": [
-        "htmlSemanticFields"
-      ],
+      "unexpectedDifferences": [],
       "production": {
         "status": 200,
         "contentType": "text/html",
@@ -131,7 +119,7 @@
           "content-disposition": "inline; filename=\"andorra\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 71.61
+        "latencyMs": 64.96
       },
       "staging": {
         "status": 200,
@@ -142,7 +130,7 @@
           "content-disposition": "inline; filename=\"andorra\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 173.56
+        "latencyMs": 32.99
       }
     },
     {
@@ -150,14 +138,10 @@
       "pathname": "/wetbulb-temperature/andorra/encamp",
       "kind": "html",
       "accept": null,
-      "pass": false,
-      "differences": [
-        "htmlSemanticFields"
-      ],
+      "pass": true,
+      "differences": [],
       "expectedDifferences": [],
-      "unexpectedDifferences": [
-        "htmlSemanticFields"
-      ],
+      "unexpectedDifferences": [],
       "production": {
         "status": 200,
         "contentType": "text/html",
@@ -167,7 +151,7 @@
           "content-disposition": "inline; filename=\"encamp\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 71.14
+        "latencyMs": 70.03
       },
       "staging": {
         "status": 200,
@@ -178,7 +162,7 @@
           "content-disposition": "inline; filename=\"encamp\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 61.54
+        "latencyMs": 48.81
       }
     },
     {
@@ -186,14 +170,10 @@
       "pathname": "/wetbulb-temperature/andorra/encamp/vila",
       "kind": "html",
       "accept": null,
-      "pass": false,
-      "differences": [
-        "htmlSemanticFields"
-      ],
+      "pass": true,
+      "differences": [],
       "expectedDifferences": [],
-      "unexpectedDifferences": [
-        "htmlSemanticFields"
-      ],
+      "unexpectedDifferences": [],
       "production": {
         "status": 200,
         "contentType": "text/html",
@@ -203,7 +183,7 @@
           "content-disposition": "inline; filename=\"vila\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 76.9
+        "latencyMs": 68.48
       },
       "staging": {
         "status": 200,
@@ -214,7 +194,7 @@
           "content-disposition": "inline; filename=\"vila\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 48.55
+        "latencyMs": 44.88
       }
     },
     {
@@ -222,14 +202,10 @@
       "pathname": "/wetbulb-temperature/armenia/armavir/metsamor-40-0723-44-2917",
       "kind": "html",
       "accept": null,
-      "pass": false,
-      "differences": [
-        "htmlSemanticFields"
-      ],
+      "pass": true,
+      "differences": [],
       "expectedDifferences": [],
-      "unexpectedDifferences": [
-        "htmlSemanticFields"
-      ],
+      "unexpectedDifferences": [],
       "production": {
         "status": 200,
         "contentType": "text/html",
@@ -239,7 +215,7 @@
           "content-disposition": "inline; filename=\"metsamor-40-0723-44-2917\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 73.13
+        "latencyMs": 113.64
       },
       "staging": {
         "status": 200,
@@ -250,7 +226,7 @@
           "content-disposition": "inline; filename=\"metsamor-40-0723-44-2917\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 51.32
+        "latencyMs": 113.46
       }
     },
     {
@@ -258,14 +234,10 @@
       "pathname": "/wetbulb-temperature/andorra/encamp/vila/",
       "kind": "html",
       "accept": null,
-      "pass": false,
-      "differences": [
-        "htmlSemanticFields"
-      ],
+      "pass": true,
+      "differences": [],
       "expectedDifferences": [],
-      "unexpectedDifferences": [
-        "htmlSemanticFields"
-      ],
+      "unexpectedDifferences": [],
       "production": {
         "status": 200,
         "contentType": "text/html",
@@ -275,7 +247,7 @@
           "content-disposition": "inline; filename=\"vila\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 64.97
+        "latencyMs": 68.11
       },
       "staging": {
         "status": 200,
@@ -286,7 +258,7 @@
           "content-disposition": "inline; filename=\"vila\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 39.1
+        "latencyMs": 34.21
       }
     },
     {
@@ -294,14 +266,10 @@
       "pathname": "/wetbulb-temperature/andorra/encamp/vila",
       "kind": "html",
       "accept": null,
-      "pass": false,
-      "differences": [
-        "htmlSemanticFields"
-      ],
+      "pass": true,
+      "differences": [],
       "expectedDifferences": [],
-      "unexpectedDifferences": [
-        "htmlSemanticFields"
-      ],
+      "unexpectedDifferences": [],
       "production": {
         "status": 200,
         "contentType": "text/html",
@@ -311,7 +279,7 @@
           "content-disposition": "inline; filename=\"vila\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 64.54
+        "latencyMs": 61.64
       },
       "staging": {
         "status": 200,
@@ -322,7 +290,7 @@
           "content-disposition": "inline; filename=\"vila\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 39.07
+        "latencyMs": 42.92
       }
     },
     {
@@ -343,7 +311,7 @@
           "content-disposition": "inline; filename=\"vila\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 119.81
+        "latencyMs": 91.13
       },
       "staging": {
         "status": 200,
@@ -354,7 +322,7 @@
           "content-disposition": "inline; filename=\"vila\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 36.98
+        "latencyMs": 41.16
       }
     },
     {
@@ -375,7 +343,7 @@
           "content-disposition": null,
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 130.03
+        "latencyMs": 125.49
       },
       "staging": {
         "status": 404,
@@ -386,7 +354,7 @@
           "content-disposition": null,
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 130.38
+        "latencyMs": 102.65
       }
     },
     {
@@ -407,7 +375,7 @@
           "content-disposition": null,
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 312.89
+        "latencyMs": 180.79
       },
       "staging": {
         "status": 404,
@@ -418,7 +386,7 @@
           "content-disposition": null,
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 31.37
+        "latencyMs": 28.39
       }
     },
     {
@@ -439,7 +407,7 @@
           "content-disposition": null,
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 66.14
+        "latencyMs": 69.39
       },
       "staging": {
         "status": 404,
@@ -450,7 +418,7 @@
           "content-disposition": null,
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 34.7
+        "latencyMs": 38.22
       }
     },
     {
@@ -475,7 +443,7 @@
           "content-disposition": null,
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 186.53
+        "latencyMs": 98.62
       },
       "staging": {
         "status": 200,
@@ -486,7 +454,7 @@
           "content-disposition": null,
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 45.73
+        "latencyMs": 40.72
       }
     },
     {
@@ -507,7 +475,7 @@
           "content-disposition": "inline; filename=\"sitemap.xml\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 236.28
+        "latencyMs": 79.87
       },
       "staging": {
         "status": 200,
@@ -518,7 +486,7 @@
           "content-disposition": "inline; filename=\"sitemap.xml\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 46.35
+        "latencyMs": 35.79
       }
     },
     {
@@ -539,7 +507,7 @@
           "content-disposition": "inline; filename=\"sitemap-main.xml\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 107.56
+        "latencyMs": 55.14
       },
       "staging": {
         "status": 200,
@@ -550,7 +518,7 @@
           "content-disposition": "inline; filename=\"sitemap-main.xml\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 44.92
+        "latencyMs": 36.98
       }
     },
     {
@@ -571,7 +539,7 @@
           "content-disposition": "inline; filename=\"favicon.svg\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 164.42
+        "latencyMs": 77.74
       },
       "staging": {
         "status": 200,
@@ -582,7 +550,107 @@
           "content-disposition": "inline; filename=\"favicon.svg\"",
           "strict-transport-security": "max-age=63072000"
         },
-        "latencyMs": 39.69
+        "latencyMs": 40.79
+      }
+    },
+    {
+      "name": "browser-css",
+      "pathname": "/assets/app.css",
+      "kind": "asset",
+      "accept": null,
+      "pass": true,
+      "differences": [
+        "bodyHash"
+      ],
+      "expectedDifferences": [
+        "bodyHash"
+      ],
+      "unexpectedDifferences": [],
+      "production": {
+        "status": 200,
+        "contentType": "text/css",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=14400, must-revalidate",
+          "content-disposition": "inline; filename=\"app.css\"",
+          "strict-transport-security": "max-age=63072000"
+        },
+        "latencyMs": 140.11
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/css",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=14400, must-revalidate",
+          "content-disposition": "inline; filename=\"app.css\"",
+          "strict-transport-security": "max-age=63072000"
+        },
+        "latencyMs": 42.1
+      }
+    },
+    {
+      "name": "browser-js",
+      "pathname": "/assets/app.js",
+      "kind": "asset",
+      "accept": null,
+      "pass": true,
+      "differences": [],
+      "expectedDifferences": [],
+      "unexpectedDifferences": [],
+      "production": {
+        "status": 200,
+        "contentType": "text/javascript",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=14400, must-revalidate",
+          "content-disposition": "inline; filename=\"app.js\"",
+          "strict-transport-security": "max-age=63072000"
+        },
+        "latencyMs": 76.84
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "text/javascript",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=14400, must-revalidate",
+          "content-disposition": "inline; filename=\"app.js\"",
+          "strict-transport-security": "max-age=63072000"
+        },
+        "latencyMs": 46.94
+      }
+    },
+    {
+      "name": "browser-search-index",
+      "pathname": "/assets/locations.json",
+      "kind": "asset",
+      "accept": null,
+      "pass": true,
+      "differences": [],
+      "expectedDifferences": [],
+      "unexpectedDifferences": [],
+      "production": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"locations.json\"",
+          "strict-transport-security": "max-age=63072000"
+        },
+        "latencyMs": 277.7
+      },
+      "staging": {
+        "status": 200,
+        "contentType": "application/json",
+        "headers": {
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-disposition": "inline; filename=\"locations.json\"",
+          "strict-transport-security": "max-age=63072000"
+        },
+        "latencyMs": 842.23
       }
     }
   ],
@@ -599,24 +667,24 @@
     "pathname": "/wetbulb-temperature/andorra/encamp/vila",
     "production": {
       "samples": [
-        145.1,
-        77.36,
-        59.13
+        619.38,
+        147.93,
+        78.05
       ],
-      "medianMs": 77.36
+      "medianMs": 147.93
     },
     "staging": {
       "samples": [
-        186.95,
-        53.89,
-        55.85
+        78.59,
+        43.6,
+        37.42
       ],
-      "medianMs": 55.85
+      "medianMs": 43.6
     }
   },
   "summary": {
-    "total": 16,
-    "passed": 8,
-    "failed": 8
+    "total": 19,
+    "passed": 19,
+    "failed": 0
   }
 }
