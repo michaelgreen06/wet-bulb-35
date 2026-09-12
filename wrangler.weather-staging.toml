@@ -1,0 +1,25 @@
+name = "wetbulb35-weather-staging"
+main = "workers/hono-page-renderer.mjs"
+compatibility_date = "2026-09-08"
+
+# Isolated workers.dev staging candidate only. No routes, DNS, custom domain, secret, or deploy.
+[assets]
+directory = "worker-assets"
+binding = "ASSETS"
+run_worker_first = true
+
+[durable_objects]
+bindings = [{ name = "WEATHER_GATE", class_name = "WeatherGate" }]
+
+[[migrations]]
+tag = "v1-weather-gate"
+new_sqlite_classes = ["WeatherGate"]
+
+[vars]
+CANONICAL_ORIGIN = "https://www.wetbulb35.com"
+GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"
+WEATHER_FRESH_SECONDS = "300"
+WEATHER_STALE_SECONDS = "600"
+WEATHER_TIMEOUT_MS = "5000"
+# Approved initial global ceiling; attempts are reserved before provider fetches.
+WEATHER_DAILY_ATTEMPT_LIMIT = "100"

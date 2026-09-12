@@ -193,16 +193,16 @@ test("Hono renderer matches immutable pre-extraction golden hashes", { timeout: 
   } finally { fs.rmSync(outDir, { recursive: true, force: true }); }
 });
 
-test("weather API is explicitly unavailable and never calls a provider", async () => {
+test("weather API fails closed without a WeatherGate binding and never calls a provider", async () => {
   let providerCalls = 0;
   const app = createHonoPageRenderer();
   const response = await app.fetch(new Request(`${base}/api/weather?lat=1&lon=2`), {
     ASSETS: fixtureBinding(),
     WEATHER_PROVIDER: { fetch() { providerCalls += 1; return new Response("unexpected"); } },
   });
-  assert.equal(response.status, 501);
+  assert.equal(response.status, 500);
   assert.equal(response.headers.get("content-type"), "application/json; charset=UTF-8");
-  assert.deepEqual(await response.json(), { error: "Live weather is not available in the static staging renderer." });
+  assert.deepEqual(await response.json(), { error: "Failed to refresh weather data." });
   assert.equal(providerCalls, 0);
 });
 
@@ -341,6 +341,9 @@ test("Wrangler serves renderer pages and public assets while hiding metadata", {
     const city = await localFetch(port, "/wetbulb-temperature/andorra/encamp/vila");
     assert.equal(city.status, 200);
     assert.match(await city.text(), /<link rel="canonical" href="https:\/\/www\.wetbulb35\.com\/wetbulb-temperature\/andorra\/encamp\/vila\/">/);
+    const weather = await localFetch(port, "/api/weather?lat=1&lon=2");
+    assert.equal(weather.status, 500, "local integration has no provider secret and fails closed");
+    assert.deepEqual(await weather.json(), { error: "Failed to refresh weather data." });
     for (const pathname of ["/assets/app.css", "/assets/app.js", "/assets/locations.json", "/favicon.svg", "/logo.svg", "/images/wetbulb-default.jpg"]) {
       const response = await localFetch(port, pathname);
       assert.equal(response.status, 200, pathname);

@@ -94,7 +94,7 @@ Freshness, stale serving, revalidation, eviction behavior, and same-key collapse
 
 **Verified parity evidence:** `URLSearchParams.get()` returns `null` for an absent parameter, and the source's `Number(source.lat)` / `Number(source.lon)` coercion turns both `null` and `""` into `0`. Thus the current API sends missing and empty coordinates through as zero rather than returning `400`; non-numeric, `NaN`, and infinite values return the established `{"error":"Valid lat and lon are required."}` payload. Otherwise finite out-of-range values are forwarded unchanged.
 
-**Approval required — recommend approval before cutover:** adopt one coordinate-validation contract explicitly. Presence/non-empty validation and geographic-range validation are a single abuse-protection decision: require both parameters to be present and non-empty, coerce them to finite JavaScript numbers, and reject `lat` outside `[-90, 90]` or `lon` outside `[-180, 180]` with the established `400` payload. This prevents malformed requests from creating cache entries or provider calls. It changes current parity, so it must not be silently preserved or silently fixed. If approval is withheld, the approved contract must instead explicitly retain the documented `Number()` coercion (including missing/empty-as-zero) and finite out-of-range forwarding; no implementation may infer a contract from this recommendation.
+**Implemented approved abuse protection:** require both parameters to be present and non-empty, coerce them to finite JavaScript numbers, and reject `lat` outside `[-90, 90]` or `lon` outside `[-180, 180]` with the established `400` payload. This occurs before any cache or Durable Object call.
 
 For cache identity, canonicalize each accepted parsed JavaScript `Number` using its exact JavaScript number string (`String(number)`), normalizing `-0` to `0`. Use the internal key:
 
@@ -106,7 +106,7 @@ The exact same parsed numbers are forwarded upstream; no provider-coordinate rou
 
 ### TTL, stale, and failure semantics
 
-**Approval required — proposed defaults:** fresh API TTL **300 seconds**; stale-on-error/while-revalidate window **600 seconds**; upstream timeout **5 seconds**. These values need provider quota and traffic review.
+**Approved initial values:** fresh API TTL **300 seconds**; stale-on-error/while-revalidate window **600 seconds**; upstream timeout **5 seconds**; global provider-attempt ceiling **100 attempts per UTC day**. The ceiling counts reserved attempts, including ambiguous timeouts, and can be lowered before production cutover if staging evidence warrants it.
 
 **Decision:**
 
