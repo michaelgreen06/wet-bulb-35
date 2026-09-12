@@ -1,0 +1,11 @@
+name = "wetbulb35-hono-binding-probe-local-test"
+main = "workers/hono-binding-probe.mjs"
+compatibility_date = "2026-09-08"
+
+[assets]
+directory = "tests/fixtures/hono-binding-assets"
+binding = "ASSETS"
+run_worker_first = true
+
+[vars]
+CANONICAL_ORIGIN = "https://www.wetbulb35.com"

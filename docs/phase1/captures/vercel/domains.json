@@ -1,0 +1,11 @@
+{
+  "dns_boundary": "Third Party / external nameservers; Cloudflare DNS is out of scope.",
+  "domains": [
+    {
+      "createdAt": "2025-02-19T10:07:39.150000Z",
+      "name": "wetbulb35.com",
+      "nameservers": "external",
+      "registrar": "Third Party"
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Current Wet Bulb Temperature</title>
+  <meta name="description" content="Get real-time wet bulb temperature, humidity, and air temperature for your location or browse our static location index.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.wetbulb35.com/">
+  <meta property="og:title" content="Current Wet Bulb Temperature">
+  <meta property="og:description" content="Get real-time wet bulb temperature, humidity, and air temperature for your location or browse our static location index.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.wetbulb35.com/">
+  <meta property="og:image" content="https://www.wetbulb35.com/images/wetbulb-default.jpg">
+  <meta property="og:site_name" content="Wet Bulb Temperature">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Current Wet Bulb Temperature">
+  <meta name="twitter:description" content="Get real-time wet bulb temperature, humidity, and air temperature for your location or browse our static location index.">
+  <meta name="twitter:image" content="https://www.wetbulb35.com/images/wetbulb-default.jpg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LNPWV0JL7S"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-LNPWV0JL7S");
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.wetbulb35.com"}]}</script>
+</head>
+<body>
+  <main class="min-h-screen bg-gray-50 py-8 px-4">
+    <div class="max-w-4xl mx-auto space-y-8">
+      <header class="text-center mb-8">
+    <div class="flex justify-center mb-4">
+      <a href="/" class="cursor-pointer">
+        <img src="/logo.svg" alt="Wet Bulb Temperature Logo" width="80" height="80">
+      </a>
+    </div>
+    <h1 class="text-4xl font-bold text-gray-900 mb-2">Current Wet Bulb Temperature</h1>
+    <p class="text-gray-600">Get real-time wet bulb temperature for any location</p>
+  </header>
+      <div class="space-y-6">
+    <div class="w-full max-w-md mx-auto">
+    <form class="flex gap-2" data-search-form>
+      <input
+        id="location-search"
+        name="query"
+        type="search"
+        placeholder="Search for a location..."
+        autocomplete="off"
+        data-search-input
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-black placeholder-gray-700 caret-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      >
+      <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors whitespace-nowrap">Search</button>
+      <p class="sr-only" data-search-status></p>
+    </form>
+  </div>
+    <button type="button" class="mx-auto block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors" data-current-location>Use Current Location</button>
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto" data-weather-widget="" data-mode="home" data-location="" data-lat="" data-lon="">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800" data-weather-location>Choose a location</h2>
+      <p class="text-sm text-gray-600" data-weather-coordinates>Search or use your current location to load weather.</p>
+      <p class="sr-only" data-weather-status>Idle</p>
+    </div>
+    <div class="grid grid-cols-2 gap-4" data-weather-grid>
+      <div class="bg-blue-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-blue-800 mb-2">Wet Bulb Temperature</h3>
+        <p class="text-3xl font-bold text-blue-600" data-weather-wetbulb>--</p>
+      </div>
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Air Temperature</h3>
+        <p class="text-3xl font-bold text-gray-600" data-weather-temp>--</p>
+      </div>
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Relative Humidity</h3>
+        <p class="text-3xl font-bold text-gray-600" data-weather-humidity>--</p>
+      </div>
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Last Updated</h3>
+        <p class="text-lg text-gray-600" data-weather-updated>Waiting for weather</p>
+      </div>
+    </div>
+    <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700" data-weather-error hidden></div>
+  </div>
+    <div class="mt-8 text-center text-sm text-gray-500 px-4">
+    <p class="mb-2">
+      Disclaimer: The wet-bulb temperatures shown are estimates calculated using the Stull formula.
+      For more information about wet-bulb temperature calculations, visit
+      <a href="https://www.omnicalculator.com/physics/wet-bulb" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-600 underline">Omni Calculator&apos;s Wet-Bulb Temperature Calculator</a>.
+    </p>
+  </div>
+  </div>
+    </div>
+    <footer class="mt-12 py-6 border-t border-gray-200">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <p class="text-sm text-gray-600">© 2026 Wet Bulb Temperature Monitor</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Contact us at: <span class="font-medium"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="563f3830391621332234233a3465637835393b">[email&#160;protected]</a></span></p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  </main>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="/assets/app.js" defer></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"3310282ac9354e67970cce65f62bb939","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

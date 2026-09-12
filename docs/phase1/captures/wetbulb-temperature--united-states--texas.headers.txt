@@ -1,0 +1,21 @@
+HTTP/2 200 
+date: Tue, 08 Sep 2026 01:21:37 GMT
+content-type: text/html; charset=utf-8
+access-control-allow-origin: *
+age: 955
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="texas"
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=dQgCdzSR%2F4xy57sYsb6%2FbFaYSatcLHaoCYK3sgEzrvXPpfyjfModdDZKieZ67Q8o%2BrSG0iUvSRMwiaf7tc%2BZh3ggg8QrJIVKzp4pu9NsyxK%2BWqGwh%2FVOXt2ZW4PT%2FwLcazGWzA%3D%3D"}]}
+last-modified: Tue, 08 Sep 2026 01:05:41 GMT
+server: cloudflare
+strict-transport-security: max-age=63072000
+x-vercel-cache: HIT
+x-vercel-id: sfo1::zrg2n-1788830497330-7feee2465df9
+cf-cache-status: DYNAMIC
+vary: accept-encoding
+server-timing: cfCacheStatus;desc="DYNAMIC"
+server-timing: cfEdge;dur=4,cfOrigin;dur=40
+cf-ray: a37a23303f6c987c-DEN
+alt-svc: h3=":443"; ma=86400
+

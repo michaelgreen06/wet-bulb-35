@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+hermes_home=${HERMES_HOME:-"$HOME/.hermes"}
+python=${HERMES_PYTHON:-"$hermes_home/hermes-agent/venv/bin/python"}
+if [ ! -x "$python" ]; then
+  printf >&2 'codex quota gate: Hermes Python interpreter is not executable: %s\n' "$python"
+  exit 127
+fi
+exec "$python" "$(dirname "$0")/codex-quota-gate.py" "$@"
