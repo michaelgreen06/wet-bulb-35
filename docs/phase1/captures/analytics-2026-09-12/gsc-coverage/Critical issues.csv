@@ -1,0 +1,8 @@
+Reason,Source,Validation,Pages
+Alternate page with proper canonical tag,Website,Not Started,3534
+Not found (404),Website,Not Started,166
+Page with redirect,Website,Not Started,3
+Discovered - currently not indexed,Google systems,Not Started,68685
+Crawled - currently not indexed,Google systems,Not Started,6418
+"Duplicate, Google chose different canonical than user",Google systems,Not Started,3647
+Server error (5xx),Website,N/A,0

@@ -32,6 +32,33 @@ Read this first in a fresh session. It records the current state and the remaini
 - Step 5 CUTOVER done 2026-09-12T14:42:53Z (Michael confirmed weather and Places autocomplete render in browser): `wrangler deploy --config wrangler.weather-production-route.toml`, version `c18cba53`, route `www.wetbulb35.com/*` on `wetbulb35-weather-production`. Worker served `www` 11s after deploy. Matrix: home, country, city, robots, sitemap, app.js, favicon all 200 with HSTS and correct content types; unknown path 404; `/api/weather` 200 JSON; `x-vercel-id` absent; canonical correct; GA tag present; Places key in app.js; apex still 308 to `www`; managed-robots prefix present. Tail: 42 events, all ok, no 5xx. Zone email obfuscation is not observable (no page contains an email address). Cloudflare Web Analytics beacon (`static.cloudflareinsights.com`) is NOT present in Worker-served HTML; check the zone's Web Analytics setting if that data matters.
 - Vercel usage baseline (from dashboard Usage page, billing period 2026-08-13 to 2026-09-12, about 30 days): Fast Data Transfer 111.68 GB of 100 GB included; Fast Origin Transfer 24.82 MB of 10 GB; Edge Requests 907K of 1M; Edge Request CPU 1h45m of 1h. Two metrics were already over the Hobby allowance, so the Worker also removes overage exposure. Deployment Storage 26.74 GB of 10 GB (deployment count rose from 11 to 27 on 2026-09-07). Baseline rate: about 30K edge requests/day, about 3.7 GB fast data transfer/day.
 
+## Post-cutover 2026-09-13
+
+- Health check (about 26 h after cutover): home, `/wetbulb-temperature`, country, region, city (with and without trailing slash), robots, sitemap, `app.js`, `favicon.svg` all 200 from the Worker (`x-vercel-id` absent, `content-disposition: inline`, HSTS present). `/api/weather` 200 JSON with lat/lon, 400 JSON without. Unknown path 404. Tail 3 min: 24 events, all `ok`, 23x200 + 1x404, zero exceptions, still version `c18cba53`, wallTime p50 37 ms / p95 255 ms / max 418 ms. Pre-existing on Vercel too, not regressions: `/about` is in `sitemap-main.xml` but 404 (see `baseline.md`); `/favicon.ico` 404 (HTML links `/favicon.svg`).
+- Vercel deployment cleanup: 53 of 57 `wetbulb2` deployments deleted with `vercel rm` on LaClaw. Kept: `8nvkvaic7` (current production, aliased to `www.wetbulb35.com`, built from `e90ec6d`), `cyy3dy805` (`726bc5d`), `8yz5c9v71` (`d6fdcc2`), and PR #7's preview `4t03iuj3j`. The three kept production builds are docs-only commits on top of `a497d73`, so app code is identical to `a497d73`. Deployment Storage was 26.74 GB of 10 GB before; re-read the Usage page for the new figure. Every push to `main` still triggers a Vercel production build (three docs commits produced three builds on 2026-09-12).
+- Decision: cap-proximity alert (Cron Trigger + Telegram) and uptime monitor are deferred, not scheduled. Revisit when traffic or the OpenWeather bill warrants it. The `.relative` parity exception removal is also parked.
+- Deploy hazard: the `www.wetbulb35.com/*` route exists only in `wrangler.weather-production-route.toml`. Deploying `wrangler.weather-production.toml` (no `routes`) would drop the route and send `www` back to Vercel. Always deploy production with the route config.
+
+### Baselines (raw files in `captures/analytics-2026-09-12/`)
+
+GA4 (property "wetbulbwatch", 2026-08-16 to 2026-09-12; 08-16 is a partial day):
+
+| Metric | 28 days total | Avg/day, last 14 days (08-30 to 09-12) |
+|---|---|---|
+| Views | 14,964 | 533 |
+| Sessions | 11,585 | 414 |
+| Users | 8,442 | 354 |
+
+Daily range 80 to 1,320 views; weekends and cool days drop hard. Home page 3,181 views; 3,138 distinct paths; 777 paths carry a trailing slash (2,277 views), which the Worker serves as 200 with the canonical intact. Top city pages: `united-states/california/san-marcos` 325 views, `united-states/texas/prosper/` 247.
+
+GSC Performance (Web, last 28 days, 2026-08-14 to 2026-09-10): 5,242 clicks, 71,627 impressions, CTR 7.3%. Mobile 3,273 clicks / 48,967 impressions (position 5.45), desktop 1,950 / 22,351 (position 9.68). United States 5,010 clicks of 5,242. Top page `texas/prosper/` 177 clicks; top query "wet bulb temperature prosper tx" 42 clicks. Daily clicks 20 to 467.
+
+GSC Crawl stats (90 days to 2026-09-10): www 93,673 requests, apex 52. Response codes: 200 95.82%, 304 3.58%, 404 0.52%, 301 0.06%, unreachable 0.01%, 5xx 0.00%. File types: HTML 57.35%, JSON 29.28%. Purpose: refresh 75.61%. Googlebot smartphone 60.64%. Average response time, last days before cutover: 09-04 265 ms, 09-05 264, 09-06 263, 09-07 251, 09-08 345, 09-09 427, 09-10 329. Daily crawl requests 522 to 2,773 in that window.
+
+GSC Coverage (as of 2026-09-03): 47,554 indexed, 82,453 not indexed. Not-indexed reasons: discovered not indexed 68,685; crawled not indexed 6,418; duplicate with Google-chosen canonical 3,647; alternate page with proper canonical 3,534; 404 166; redirect 3; 5xx 0.
+
+Compare in two to four weeks: GSC avg response time (expect below 265 ms), 5xx stays 0, indexed count trend, clicks/day, GA sessions/day.
+
 ## Remaining sequence
 
 1. **Merge the stack**, bottom up with merge commits: merge #8, retarget #9 to `main`, merge, repeat through #12. Check `gh pr view N --json mergeable,mergeStateStatus` after each retarget.
