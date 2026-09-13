@@ -11,7 +11,7 @@
     {
       "type": "home",
       "route": "/",
-      "sha256": "155164867c4456a324b45fa58930b32232e040980cb479f676cd912de4fb04a4"
+      "sha256": "c480e6b2aa1f74400a0411b3dce2c2042914ee83390272555bee9d5e4449d285"
     },
     {
       "type": "browse",
@@ -81,7 +81,7 @@
     {
       "type": "city",
       "route": "/wetbulb-temperature/afghanistan/badakhshan/ashkasham/",
-      "sha256": "ba4e91f6b2231a66b8e95b38974476c85da425e32f124394fc282be93e0f8173"
+      "sha256": "76b9ae5786cbb94b2d56d1433abb25687d7bfa389e1557be9dac9c9123311c0a"
     }
   ]
 }

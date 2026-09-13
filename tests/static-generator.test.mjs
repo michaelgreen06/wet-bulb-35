@@ -152,7 +152,7 @@ test("pageHtml emits required SEO and weather widget structure", () => {
   assert.match(html, /<title>Wet Bulb Temperature in Vila, Encamp, Andorra<\/title>/);
   assert.match(
     html,
-    /<meta name="description" content="Live wet bulb temperature and weather conditions for Vila, Encamp, Andorra\.">/,
+    /<meta name="description" content="Get the current wet bulb temperature for Vila, Encamp, Andorra\.">/,
   );
   assert.match(
     html,
@@ -321,6 +321,7 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
     "assets/locations.json",
     "robots.txt",
     "favicon.svg",
+    "openweather-logo.png",
   ];
 
   for (const file of expectedFiles) {
@@ -359,6 +360,7 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
     "/assets/app.js",
     "/assets/locations.json",
     "/images/wetbulb-default.jpg",
+    "/openweather-logo.png",
     "/robots.txt",
     "/sitemap.xml",
   ]);
