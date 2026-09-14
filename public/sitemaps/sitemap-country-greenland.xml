@@ -1,68 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/avannaata/upernavik</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/avannaata/ilulissat/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/qeqqata/sisimiut</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/avannaata/upernavik/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/qeqertalik/qasigiannguit</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/avannaata/uummannaq/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/kujalleq/qaqortoq</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/kujalleq/nanortalik/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/sermersooq/paamiut</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/kujalleq/narsaq/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/sermersooq/nuuk</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/kujalleq/qaqortoq/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/kujalleq/narsaq</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/qeqertalik/aasiaat/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/kujalleq/nanortalik</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/qeqertalik/qasigiannguit/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/qeqqata/maniitsoq</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/qeqqata/maniitsoq/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/avannaata/ilulissat</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/qeqqata/sisimiut/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/sermersooq/tasiilaq</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/sermersooq/nuuk/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/qeqertalik/aasiaat</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/sermersooq/paamiut/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/avannaata/uummannaq</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/greenland/sermersooq/tasiilaq/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
 </urlset>

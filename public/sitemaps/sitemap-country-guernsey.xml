@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/guernsey/st-sampson/saint-sampson</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/guernsey/st-peter-port/saint-peter-port/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/guernsey/st-peter-port/saint-peter-port</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/guernsey/st-sampson/saint-sampson/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
 </urlset>

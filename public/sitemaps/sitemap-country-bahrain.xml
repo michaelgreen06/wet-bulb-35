@@ -1,53 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/manama/sitrah</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/manama/jidd-afs/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/manama/sanabis</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/manama/manama/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/southern-governorate/madinat-isa</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/manama/sanabis/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/manama/jidd-afs</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/manama/sitrah/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/northern/madinat-amad</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/muharraq/al-add/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/southern-governorate/dar-kulayb</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/muharraq/al-muharraq/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/muharraq/al-muharraq</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/northern/madinat-amad/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/manama/manama</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/southern-governorate/ar-rifa/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/muharraq/al-add</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/southern-governorate/dar-kulayb/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/southern-governorate/ar-rifa</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/bahrain/southern-governorate/madinat-isa/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
 </urlset>

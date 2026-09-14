@@ -1,23 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/tuvalu/funafuti/funafuti</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/tuvalu/funafuti/alapi-village/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/tuvalu/funafuti/alapi-village</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/tuvalu/funafuti/fakaifou-village/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/tuvalu/funafuti/senala-village</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/tuvalu/funafuti/funafuti/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/tuvalu/funafuti/fakaifou-village</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/tuvalu/funafuti/senala-village/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
 </urlset>
