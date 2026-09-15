@@ -40,6 +40,6 @@ function main() {
   }));
   const source = args.get("source") ?? "scripts/resolved_cities.json";
   const out = args.get("out") ?? "worker-assets";
-  console.log(JSON.stringify(buildHonoRendererAssets({ sourceCities: JSON.parse(fs.readFileSync(source, "utf8")), outDir: out, placesApiKey: "", tier1Manifest: JSON.parse(fs.readFileSync("scripts/tier1-city-manifest.json", "utf8")) })));
+  console.log(JSON.stringify(buildHonoRendererAssets({ sourceCities: JSON.parse(fs.readFileSync(source, "utf8")), outDir: out, placesApiKey: process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY ?? "", tier1Manifest: JSON.parse(fs.readFileSync("scripts/tier1-city-manifest.json", "utf8")) })));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

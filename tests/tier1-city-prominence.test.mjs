@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -6,7 +7,6 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { createSiteData, pageHtml, renderBrowsePage, renderCountryPage, renderStatePage, routePathForCity, tier1ByCanonicalPath } from "../lib/page-renderer.mjs";
-import { buildHonoRendererAssets } from "../scripts/build-hono-renderer-assets.mjs";
 import { createHonoPageRenderer } from "../workers/hono-page-renderer.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -93,7 +93,15 @@ test("directory pages pin Tier-1 cities and their states without labels or dupli
 test("production Worker assets render the same Popular links and new city routes", async () => {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "wetbulb35-tier1-assets-"));
   try {
-    buildHonoRendererAssets({ sourceCities: inventory, outDir, publicDir: path.join(root, "public"), tier1Manifest: manifest });
+    const testPlacesKey = "test-browser-restricted-places-key";
+    execFileSync(process.execPath, [
+      path.join(root, "scripts/build-hono-renderer-assets.mjs"),
+      `--source=${path.join(root, "scripts/resolved_cities.json")}`,
+      `--out=${outDir}`,
+    ], { cwd: root, env: { ...process.env, NEXT_PUBLIC_GOOGLE_PLACES_API_KEY: testPlacesKey }, stdio: "pipe" });
+    const browserRuntime = fs.readFileSync(path.join(outDir, "assets/app.js"), "utf8");
+    assert.match(browserRuntime, /maps\.googleapis\.com\/maps\/api\/js/);
+    assert.match(browserRuntime, new RegExp(encodeURIComponent(testPlacesKey)));
     const assets = {
       async fetch(request) {
         const filePath = path.join(outDir, new URL(request.url).pathname);
