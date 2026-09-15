@@ -152,7 +152,7 @@ test("pageHtml emits required SEO and weather widget structure", () => {
   assert.match(html, /<title>Wet Bulb Temperature in Vila, Encamp, Andorra<\/title>/);
   assert.match(
     html,
-    /<meta name="description" content="Live wet bulb temperature and weather conditions for Vila, Encamp, Andorra\.">/,
+    /<meta name="description" content="Get the current wet bulb temperature for Vila, Encamp, Andorra\.">/,
   );
   assert.match(
     html,
@@ -213,6 +213,11 @@ test("page templates include expected listings and route counts", () => {
   assert.match(homeHtml, /Search for a location\.\.\./);
   assert.match(homeHtml, /bg-white text-black placeholder-gray-700 caret-black/);
   assert.match(homeHtml, /Use Current Location/);
+  assert.match(homeHtml, /<a href="\/wetbulb-temperature">browse all wet bulb temperatures<\/a>/);
+  const homeCurrentLocationAt = homeHtml.indexOf("data-current-location");
+  const homeDirectoryLinkAt = homeHtml.indexOf(">browse all wet bulb temperatures</a>");
+  const homeWeatherWidgetAt = homeHtml.indexOf("data-weather-widget");
+  assert.ok(homeCurrentLocationAt < homeDirectoryLinkAt && homeDirectoryLinkAt < homeWeatherWidgetAt);
   assert.doesNotMatch(homeHtml, /maps\.googleapis\.com\/maps\/api\/js/);
   assert.doesNotMatch(homeHtml, /location-options/);
   assert.doesNotMatch(homeHtml, /Browse all countries/);
@@ -321,6 +326,7 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
     "assets/locations.json",
     "robots.txt",
     "favicon.svg",
+    "openweather-logo.png",
   ];
 
   for (const file of expectedFiles) {
@@ -359,9 +365,11 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
     "/assets/app.js",
     "/assets/locations.json",
     "/images/wetbulb-default.jpg",
+    "/openweather-logo.png",
     "/robots.txt",
     "/sitemap.xml",
   ]);
+  const knownRouteAliases = new Set(["/wetbulb-temperature"]);
 
   for (const file of htmlFiles) {
     const html = fs.readFileSync(file, "utf8");
@@ -373,7 +381,7 @@ test("generateStaticSite writes expected routes and valid internal assets", () =
       }
 
       assert.ok(
-        siteData.pageRoutes.has(href) || knownAssets.has(href),
+        siteData.pageRoutes.has(href) || knownRouteAliases.has(href) || knownAssets.has(href),
         `${path.relative(result.outDir, file)} -> ${href}`,
       );
     }

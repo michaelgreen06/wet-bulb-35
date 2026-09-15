@@ -1,33 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/monte-carlo</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/fontvieille/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/monaco</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/la-condamine/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/la-condamine</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/monaco/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/fontvieille</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/moneghetti/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/saint-roman</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/monte-carlo/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
   <url>
-    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/moneghetti</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.wetbulb35.com/wetbulb-temperature/monaco/municipality-of-monaco/saint-roman/</loc>
+    <lastmod>2026-09-13</lastmod>
   </url>
 </urlset>
