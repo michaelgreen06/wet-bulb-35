@@ -167,6 +167,69 @@ Avoid “record,” “safe,” “dangerous,” or return-period claims unless 
 
 Compare the live reading with the historical distribution for the same calendar month. State the dataset, period, percentile method, and uncertainty. Do not compare live OpenWeather observations directly with gridded reanalysis without labeling the sources.
 
+### Historical highs and lows for today’s calendar date
+
+Add a dynamic module for the visitor’s current local calendar date, but distinguish two different products:
+
+1. **Globally consistent modeled wet-bulb extremes:** the highest and lowest hourly wet-bulb estimates for that month-and-day during a fixed ERA5-Land reference period.
+2. **Official observed records where supportable:** station-observed air-temperature records, or derived wet-bulb records when simultaneous quality-controlled temperature and dew point are sufficiently complete.
+
+The recommended global implementation uses [ERA5-Land hourly time series](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land-timeseries), which provides 2 m temperature and dew point from 1950 to the present at approximately 9 km resolution. For each city:
+
+1. Select the reviewed city point or urban-polygon spatial rule.
+2. Retrieve hourly temperature and dew point for a fixed baseline, initially 1991–2020.
+3. Convert UTC timestamps into the city’s GeoNames/IANA timezone before assigning calendar dates.
+4. Derive relative humidity and wet-bulb temperature with the same versioned formulas used elsewhere in the pipeline.
+5. Calculate each local day’s hourly wet-bulb minimum and maximum.
+6. Group those daily values by month and day across the baseline years.
+7. Store the highest and lowest modeled values, timestamp/year, number of contributing years, data completeness, source version, grid coordinates, and formula version for each of 366 possible calendar dates.
+8. Treat February 29 separately; never merge it with February 28 or March 1.
+
+A page shown on September 15 could then state:
+
+> For September 15, the highest modeled wet-bulb temperature at this location during 1991–2020 was X°C, and the lowest was Y°C.
+
+Use **“highest/lowest modeled wet-bulb estimate”**, not “record,” for reanalysis data. A grid-cell extreme is not an official station record and may not capture local urban, coastal, or terrain effects. Also show the median daily high and low or percentile range so a single extreme does not dominate the context.
+
+[NASA POWER’s hourly API](https://power.larc.nasa.gov/docs/services/api/temporal/hourly) exposes the `T2MWET` wet-bulb parameter and is suitable for a fast ten-city prototype. Its coarser meteorological grid makes it less suitable for final record-like claims.
+
+For observation-based validation, [NOAA’s Global Historical Climatology Network hourly dataset](https://www.ncei.noaa.gov/products/global-historical-climatology-network-hourly) is the preferred authoritative option. It includes fixed-station temperature, dew point, relative humidity, and in some inputs wet-bulb observations, while preserving source quality flags. A deterministic station workflow must:
+
+- choose stations by distance, elevation difference, reporting cadence, period coverage, and quality flags—not distance alone;
+- require simultaneous temperature and dew-point observations when deriving wet bulb;
+- publish the station name, identifier, distance, period, observation count, and missing-data rate;
+- avoid combining stations into a purported record unless the homogenization method is documented; and
+- omit the observed-record module when coverage fails the threshold.
+
+Use GHCNh for manually reviewed Top-50 validation, not as the initial global page source: station availability, relocations, airport bias, missing humidity, and uneven historical coverage prevent uniform worldwide automation.
+
+Extend each derived city record with compact calendar-day data:
+
+```json
+{
+  "calendarDay": {
+    "source": "ERA5-Land",
+    "referencePeriod": "1991-2020",
+    "timezone": "Asia/Kolkata",
+    "formulaVersion": "",
+    "days": {
+      "09-15": {
+        "modeledHighWetBulbC": 0.0,
+        "modeledHighTimestamp": "",
+        "modeledLowWetBulbC": 0.0,
+        "modeledLowTimestamp": "",
+        "medianDailyHighWetBulbC": 0.0,
+        "medianDailyLowWetBulbC": 0.0,
+        "contributingYears": 0,
+        "hourlyCompleteness": 0.0
+      }
+    }
+  }
+}
+```
+
+Validate local-date conversion, physical ranges, minimum contributing years, completeness, duplicate hours around daylight-saving transitions, source updates, and reproducibility. Render nothing when a validation gate fails.
+
 ### Geographic and urban context
 
 Conditionally show elevation, coastal proximity, timezone, urban-centre population, land area, and density. Avoid generic city descriptions and causal claims.
