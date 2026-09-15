@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
+import { relevantRoutes, selectRouteAction } from "./restore-production-worker-route.mjs";
+import { indexable, robotsAllowPublicPages } from "./release-indexing-checks.mjs";
 
 const DEFAULT_ORIGIN = "https://www.wetbulb35.com";
 const EXPECTED_ROUTE = "www.wetbulb35.com/*";
 const EXPECTED_WORKER = "wetbulb35-weather-production";
-const EXPECTED_CITY_COUNT = 130_686;
 const EXPECTED_SITEMAP_MEMBER_COUNT = 228;
 const EXPECTED_SITEMAP_ENTRY_COUNT = 134_668;
 const EXPECTED_PAGE_COUNT = 134_440;
@@ -72,6 +73,15 @@ async function request(fetchImpl, url, { method = "GET", timeoutMs = 20_000 } = 
   }
 }
 
+function beforeDeadline(fetchImpl, deadline) {
+  return (url, options = {}) => {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new DOMException("Monitor deadline exceeded", "TimeoutError");
+    const timeout = AbortSignal.timeout(Math.ceil(remaining));
+    return fetchImpl(url, { ...options, signal: options.signal ? AbortSignal.any([options.signal, timeout]) : timeout });
+  };
+}
+
 async function cfJson(fetchImpl, url, token) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20_000);
@@ -107,6 +117,8 @@ export async function readControlPlane({ fetchImpl = fetch, apiBase = "https://a
     activeDeploymentId: active?.id || null,
     activeVersion,
     exactRoutes: exactRoutes.map((route) => ({ id: route.id, pattern: route.pattern, script: route.script || null })),
+    relevantRoutes: relevantRoutes(routes),
+    routeAction: selectRouteAction(routes),
     zoneId: zones[0].id,
   };
 }
@@ -131,7 +143,7 @@ async function checkHead(fetchImpl, origin, path, predicate, failures, name) {
   }
 }
 
-async function checkWeather(fetchImpl, origin, warnings) {
+async function checkWeather(fetchImpl, origin, failures) {
   const locations = [
     ["houston", "29.7605", "-95.3634"],
     ["singapore", "1.28967", "103.85007"],
@@ -142,35 +154,48 @@ async function checkWeather(fetchImpl, origin, warnings) {
       let parsed;
       try { parsed = JSON.parse(body); } catch { parsed = null; }
       const valid = response.ok && parsed?.weather && Number.isFinite(parsed.weather.temperature)
-        && Number.isFinite(parsed.weather.humidity) && Number.isFinite(parsed.weather.wetBulb);
-      if (!valid) warnings.push(`weather_${name}:${response.status}`);
+        && Number.isFinite(parsed.weather.humidity) && Number.isFinite(parsed.weather.wetBulb)
+        && Number.isFinite(parsed.weather.timestamp) && typeof parsed.location?.name === "string"
+        && Number.isFinite(parsed.location.lat) && Number.isFinite(parsed.location.lng);
+      if (!valid) failures.push(`weather_${name}:${response.status}`);
     } catch (error) {
-      warnings.push(`weather_${name}:${error.name || "request_error"}`);
+      failures.push(`weather_${name}:${error.name || "request_error"}`);
     }
   }
 }
 
-async function checkAllSitemaps(fetchImpl, origin, indexXml, failures) {
+async function checkAllSitemaps(fetchImpl, origin, indexXml, failures, { timeoutMs = 45_000 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  fetchImpl = beforeDeadline(fetchImpl, deadline);
   const members = [...indexXml.matchAll(/<loc>(https:\/\/www\.wetbulb35\.com\/sitemaps\/[^<]+)<\/loc>/g)].map((match) => match[1]);
   const counts = new Map();
   let entries = members.length;
-  for (const member of members) {
-    const memberPath = new URL(member).pathname;
-    const target = `${origin}${memberPath}`;
-    try {
-      const { response, body } = await request(fetchImpl, target, { timeoutMs: 30_000 });
-      if (!response.ok) {
-        failures.push(`sitemap_member:${memberPath}:${response.status}`);
-        continue;
+  let next = 0;
+  let failedMembers = 0;
+  async function crawl() {
+    while (next < members.length && failedMembers < 3 && Date.now() < deadline) {
+      const member = members[next++];
+      const memberPath = new URL(member).pathname;
+      const target = `${origin}${memberPath}`;
+      try {
+        const { response, body } = await request(fetchImpl, target, { timeoutMs: 30_000 });
+        if (!response.ok) {
+          failedMembers += 1;
+          failures.push(`sitemap_member:${memberPath}:${response.status}`);
+          continue;
+        }
+        for (const match of body.matchAll(/<loc>https:\/\/www\.wetbulb35\.com([^<]+)<\/loc>/g)) {
+          counts.set(match[1], (counts.get(match[1]) || 0) + 1);
+          entries += 1;
+        }
+      } catch (error) {
+        failedMembers += 1;
+        failures.push(`sitemap_member:${memberPath}:${error.name || "request_error"}`);
       }
-      for (const match of body.matchAll(/<loc>https:\/\/www\.wetbulb35\.com([^<]+)<\/loc>/g)) {
-        counts.set(match[1], (counts.get(match[1]) || 0) + 1);
-        entries += 1;
-      }
-    } catch (error) {
-      failures.push(`sitemap_member:${new URL(member).pathname}:${error.name || "request_error"}`);
     }
   }
+  await Promise.all(Array.from({ length: 4 }, crawl));
+  if (next < members.length) failures.push("sitemap_crawl_incomplete:failure_limit_or_deadline");
   if (entries !== EXPECTED_SITEMAP_ENTRY_COUNT) failures.push(`sitemap_entry_count:${entries}`);
   const duplicates = [...counts.values()].filter((count) => count !== 1).length;
   if (duplicates) failures.push(`sitemap_duplicate_paths:${duplicates}`);
@@ -188,7 +213,10 @@ export async function runReleaseChecks({
   fullSitemaps = false,
   weather = false,
   recovery = false,
+  deadlineMs = 120_000,
+  sitemapTimeoutMs = 45_000,
 }) {
+  fetchImpl = beforeDeadline(fetchImpl, Date.now() + deadlineMs);
   uuid(expectedVersion, "expected version");
   if (rollbackVersion) uuid(rollbackVersion, "rollback version");
   const criticalFailures = [];
@@ -200,27 +228,30 @@ export async function runReleaseChecks({
     return { status: "control_unavailable", rollbackEligible: false, criticalFailures: [`control_plane:${error.message}`], warnings, control: null };
   }
 
-  const routeHealthy = control.exactRoutes.length === 1 && control.exactRoutes[0].script === EXPECTED_WORKER;
+  const routeHealthy = control.routeAction.action === "none";
   const currentIsExpected = control.activeVersion === expectedVersion;
   const currentIsRollback = rollbackVersion && control.activeVersion === rollbackVersion;
-  if (!currentIsExpected) {
+  if (!currentIsExpected && !currentIsRollback) {
     return {
-      status: currentIsRollback ? "already_rolled_back" : "superseded",
+      status: "superseded",
       rollbackEligible: false,
       criticalFailures: [],
       warnings,
       control,
     };
   }
-  if (!routeHealthy) criticalFailures.push(`production_route:${JSON.stringify(control.exactRoutes)}`);
+  recovery = recovery || Boolean(currentIsRollback);
+  if (!routeHealthy) criticalFailures.push(`production_route:${JSON.stringify(control.relevantRoutes)}`);
+  const htmlCheck = (path, predicate = () => true) => (body, response) =>
+    predicate(body) && canonicalPresent(body, path) && indexable(body, response);
 
-  await checkText(fetchImpl, origin, "/", (body) => /<title>Current Wet Bulb Temperature<\/title>/.test(body), criticalFailures, "home");
-  const browse = await checkText(fetchImpl, origin, "/wetbulb-temperature/", (body) => /<title>Wet Bulb Temperature by Country<\/title>/.test(body), criticalFailures, "browse");
-  await checkText(fetchImpl, origin, "/wetbulb-temperature/united-states/texas/houston/", (body) => canonicalPresent(body, "/wetbulb-temperature/united-states/texas/houston/"), criticalFailures, "houston");
+  await checkText(fetchImpl, origin, "/", htmlCheck("/", (body) => /<title>Current Wet Bulb Temperature<\/title>/.test(body)), criticalFailures, "home");
+  const browse = await checkText(fetchImpl, origin, "/wetbulb-temperature/", htmlCheck("/wetbulb-temperature/", (body) => /<title>Wet Bulb Temperature by Country<\/title>/.test(body)), criticalFailures, "browse");
+  await checkText(fetchImpl, origin, "/wetbulb-temperature/united-states/texas/houston/", htmlCheck("/wetbulb-temperature/united-states/texas/houston/"), criticalFailures, "houston");
   const app = await checkText(fetchImpl, origin, "/assets/app.js", (body) => body.includes("maps.googleapis.com/maps/api/js") && body.includes("fetchWeather"), criticalFailures, "browser_runtime");
   void app;
   await checkHead(fetchImpl, origin, "/assets/locations.json", (response) => (response.headers.get("content-type") || "").includes("application/json"), criticalFailures, "search_index");
-  const robots = await checkText(fetchImpl, origin, "/robots.txt", (body) => body.includes("Sitemap: https://www.wetbulb35.com/sitemap.xml"), criticalFailures, "robots");
+  const robots = await checkText(fetchImpl, origin, "/robots.txt", (body) => body.includes("Sitemap: https://www.wetbulb35.com/sitemap.xml") && robotsAllowPublicPages(body, ["/", "/wetbulb-temperature/", "/wetbulb-temperature/united-states/texas/houston/", "/wetbulb-temperature/singapore/singapore/singapore/", "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/"]), criticalFailures, "robots");
   void robots;
   const sitemap = await checkText(fetchImpl, origin, "/sitemap.xml", (body) => {
     const members = [...body.matchAll(/<loc>/g)].length;
@@ -231,8 +262,8 @@ export async function runReleaseChecks({
     const popular = browse.match(/<section aria-labelledby="popular-wet-bulb-temperatures"[^>]*>([\s\S]*?)<\/section>/)?.[1] || "";
     const popularLinks = [...popular.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
     if (popularLinks.length !== 40 || new Set(popularLinks).size !== 40) criticalFailures.push(`popular_links:${popularLinks.length}/${new Set(popularLinks).size}`);
-    const us = await checkText(fetchImpl, origin, "/wetbulb-temperature/united-states/", () => true, criticalFailures, "united_states");
-    const texas = await checkText(fetchImpl, origin, "/wetbulb-temperature/united-states/texas/", () => true, criticalFailures, "texas");
+    const us = await checkText(fetchImpl, origin, "/wetbulb-temperature/united-states/", htmlCheck("/wetbulb-temperature/united-states/"), criticalFailures, "united_states");
+    const texas = await checkText(fetchImpl, origin, "/wetbulb-temperature/united-states/texas/", htmlCheck("/wetbulb-temperature/united-states/texas/"), criticalFailures, "texas");
     const usNames = cardNames(us);
     const texasNames = cardNames(texas);
     if (usNames.length !== 51 || !isAlphabetical(usNames)) criticalFailures.push(`us_directory:${usNames.length}/${isAlphabetical(usNames)}`);
@@ -241,15 +272,16 @@ export async function runReleaseChecks({
       "/wetbulb-temperature/singapore/singapore/singapore/",
       "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/",
     ]) {
-      await checkText(fetchImpl, origin, path, (body) => canonicalPresent(body, path), criticalFailures, path.includes("singapore") ? "singapore" : "hong_kong");
+      await checkText(fetchImpl, origin, path, htmlCheck(path), criticalFailures, path.includes("singapore") ? "singapore" : "hong_kong");
     }
-    if (fullSitemaps && sitemap) await checkAllSitemaps(fetchImpl, origin, sitemap, criticalFailures);
+    if (fullSitemaps && sitemap && !criticalFailures.length) await checkAllSitemaps(fetchImpl, origin, sitemap, criticalFailures, { timeoutMs: sitemapTimeoutMs });
   }
 
-  if (weather) await checkWeather(fetchImpl, origin, warnings);
+  if (weather) await checkWeather(fetchImpl, origin, criticalFailures);
   return {
-    status: criticalFailures.length ? "critical_failure" : warnings.length ? "healthy_with_weather_warning" : "healthy",
-    rollbackEligible: criticalFailures.length > 0 && currentIsExpected,
+    status: recovery ? (criticalFailures.length ? "recovery_failure" : "recovered") : (criticalFailures.length ? "critical_failure" : "healthy"),
+    rollbackEligible: !recovery && criticalFailures.length > 0 && currentIsExpected,
+    weatherRequests: weather ? 2 : 0,
     criticalFailures,
     warnings,
     control,
@@ -288,6 +320,7 @@ async function main() {
   if (args.get("output")) fs.writeFileSync(args.get("output"), `${output}\n`);
   if (result.status === "control_unavailable") process.exitCode = 4;
   else if (result.status === "superseded") process.exitCode = 3;
+  else if (result.status === "recovery_failure") process.exitCode = 5;
   else if (result.rollbackEligible) process.exitCode = 2;
 }
 

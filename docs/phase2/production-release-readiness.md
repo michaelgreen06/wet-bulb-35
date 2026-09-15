@@ -2,7 +2,7 @@
 
 ## Status
 
-This runbook prepares the combined production release represented by already-merged PR #13 plus open PR #15. It does not authorize merging or production deployment. The monitoring workflow must be merged and rehearsed on GitHub-hosted Actions before requesting production approval.
+This runbook prepares the combined production release represented by already-merged PR #13 plus open PR #15. It does not authorize merging or production deployment. The credential-free rehearsal runs on pull requests as well as through `workflow_dispatch`. Record its successful GitHub-hosted run for the reviewed monitor commit before requesting production approval; merge the operations workflow before starting scheduled production monitoring.
 
 ## Exact release boundary
 
@@ -83,7 +83,7 @@ It may only:
 - create `www.wetbulb35.com/*` pointing to `wetbulb35-weather-production` when that exact pattern is absent; and
 - verify the resulting route.
 
-It refuses duplicate exact routes and refuses to replace a route owned by another Worker. Dry run is the default. The authorized recovery action is:
+It refuses duplicate exact routes, broadened routes assigned to this Worker, and any additional route that can match `www` (including more-specific overrides and null-script exclusions). It refuses to replace a route owned by another Worker. An unexpected route is reported for operator intervention; automation never silently deletes it or claims restoration succeeded. Dry run is the default. The authorized recovery action is:
 
 ```sh
 node scripts/restore-production-worker-route.mjs --apply=true
@@ -102,7 +102,12 @@ State is stored in one labeled GitHub issue containing:
 - rollback version;
 - start and expiration times;
 - most recent check time; and
-- most recent structured result.
+- most recent structured result;
+- persistent `recovering` state and whether weather recovery is required;
+- reserved/consumed weather request count; and
+- completed full-crawl and first-hour checkpoints.
+
+State schema 2 is required. An older active monitor must be stopped and restarted explicitly. The runner records recovery intent before a mutation and resumes it on subsequent runs until verified, stopped, superseded, or expired. At expiry, unresolved recovery stays visible as `expired_unhealthy` and raises an alert instead of claiming success.
 
 Workflow failures and recovery failures create issue comments and failed GitHub Actions runs, using GitHub's normal notification system. Exactly one active monitor issue is allowed.
 
@@ -117,7 +122,7 @@ Both are installed. The secret value is not stored in Git, logs, issues, or work
 
 ### First hour
 
-The manually started GitHub-hosted job checks every two minutes for 30 cycles. It survives the initiating agent session ending.
+The manually started GitHub-hosted job pauses two minutes between completed cycles until one elapsed hour, then performs a final checkpoint. Request time adds to the interval. It survives the initiating agent session ending.
 
 - full sitemap crawl: start and end of the hour;
 - two weather locations: start and every ten minutes;
@@ -125,45 +130,46 @@ The manually started GitHub-hosted job checks every two minutes for 30 cycles. I
 
 ### Hours 2–24
 
-A scheduled workflow wakes every five minutes but runs a health cycle only when 30 minutes have elapsed since the previous completed check.
+A scheduled workflow requests a run every five minutes but normally runs a health cycle only when 30 minutes have elapsed since the previous completed check. Incomplete recovery is retried on each eligible scheduled run. GitHub can delay or drop scheduled runs; this is best-effort monitoring, not a guaranteed response-time service. A late heartbeat produces a coverage warning on the next runner and prevents a claim of uninterrupted first-hour coverage.
 
 - critical checks: every 30 minutes;
 - weather checks: every 60 minutes;
-- full sitemap crawl: near the end of the 24-hour window.
+- full sitemap crawl: at the first eligible check after hour 23.
 
-At 24 hours the workflow closes the monitor issue and performs no more checks. A manual stop action is also available.
+At 24 hours the workflow performs no more recovery actions. A healthy expiry closes the issue; unresolved recovery leaves an explicit incident open. Manual stop closes the issue and runs independently of the intensive job. Runners re-read closure and expiry before each cycle and before rollback and route restoration. A command already in progress cannot be recalled.
+
+Each check pass has a 120-second deadline. Full sitemap crawling uses four concurrent requests, a 45-second deadline, and stops scheduling more members after three failed members. Already-failing critical pages/routes bypass the expensive crawl. The confirmation retry is separated by 20 seconds. These limits leave time for recovery within the hosted job timeout, even when endpoints hang.
 
 ## Checks
 
 Critical checks cover:
 
 - active Cloudflare version;
-- exact production route and Worker ownership;
+- exact production route, Worker ownership, and absence of unexpected matching routes;
 - homepage and browse page;
 - Popular section count and uniqueness;
 - country and region alphabetical order;
-- Houston, Singapore, and Hong Kong canonicals;
+- sampled page canonicals and absence of meta/HTTP `noindex` directives;
 - browser JavaScript and Google Places runtime;
 - search-index asset availability;
-- robots sitemap declaration;
+- robots sitemap declaration and crawl permission for the sampled public pages;
 - sitemap member count;
 - full sitemap status, count, and duplicate checks at bounded milestones.
 
-Weather checks use only Houston and Singapore. They validate response structure but are warnings rather than automatic rollback triggers because provider outages, quota exhaustion, and release regressions cannot be safely distinguished from the public response alone.
+Weather checks use only Houston and Singapore and validate the complete location/weather response shape. A confirmed HTTP, network, or schema failure is a critical rollback trigger. The public API does not reliably distinguish provider/quota failures from application regressions, so the monitor does not invent that classification or exempt all weather failures. This conservative policy can roll back once during an upstream outage. It never resets provider counters. If weather caused rollback, recovery must include a successful weather check; an ongoing upstream failure stays an unresolved incident.
 
-Worst-case provider-attempt budget from monitoring is bounded at 58 requests over 24 hours: 12 during the first hour and at most 46 afterward. Normal caching should make the actual provider count lower. The monitor never resets or assumes a reset of the Durable Object's 2,000-attempt UTC-day counter.
+All hosted weather requests, including confirmation retries and recovery, share a persisted cap of 58 per monitoring window. Requests are reserved before execution and unused reservations are refunded after a completed cycle; a killed runner conservatively consumes its reservation. Retries may reduce later weather sampling. A weather failure cannot be cleared by a retry that omitted weather due to budget exhaustion. If weather recovery cannot be verified within the remaining allowance, the incident stays unresolved. Normal caching should make provider attempts lower. No state in the Durable Object's 2,000-attempt UTC-day counter is changed by rollback.
 
 ## Failure threshold
 
-A critical failure must occur in two consecutive attempts separated by 20 seconds before automatic rollback. This filters short network and control-plane transients.
+A matching critical failure category must occur in two consecutive attempts separated by 20 seconds before automatic rollback. Different failures, loss of control-plane access, or a weather retry without budget produce an alert rather than an unearned success. This filters short network and control-plane transients.
 
 No automatic rollback occurs when:
 
-- only weather checks fail;
 - the Cloudflare control plane cannot be verified; or
 - the active Worker version differs from the release version recorded by the monitor.
 
-Those cases create an alert instead.
+Those cases create an alert instead. A stopped/expired monitor has no recovery authority. A rollback version already active triggers recovery verification, rather than skipping public checks.
 
 ## Protection from stale monitors
 
@@ -180,7 +186,7 @@ On a confirmed critical failure:
 3. Run the narrow exact-route restoration action.
 4. Verify the rollback version is active at 100%.
 5. Verify the exact production route points to `wetbulb35-weather-production`.
-6. Verify the homepage, browse page, established city page, browser asset, search index, robots file, and 227-member pre-release sitemap index.
+6. Verify the homepage, browse page, established city page, browser asset, search index, robots file, and 227-member pre-release sitemap index. If weather caused rollback, verify weather as well.
 
 If any rollback, route restoration, or recovery check fails, the workflow:
 
@@ -189,11 +195,13 @@ If any rollback, route restoration, or recovery check fails, the workflow:
 - links the failed workflow run; and
 - exits failed so GitHub sends its configured notifications.
 
+The persistent state remains `recovering`. Subsequent runners recheck deployment identity, skip an already-completed version rollback, retry permitted route restoration, and verify public health. They never roll back a newer deployment. GitHub notification delivery depends on the operator's notification settings; confirm those settings before release.
+
 Connected resources, including the Durable Object and its provider-attempt counter, are not reset by a version rollback.
 
 ## Rehearsal gates
 
-The local deterministic rehearsal uses a mock HTTP site and mock Cloudflare API. It proves:
+The local and GitHub-hosted deterministic rehearsal runs the production state machine against a mock HTTP site and Cloudflare API. It also invokes the actual shell rollback entry point with an intercepted fetch implementation and simulated Wrangler command. It needs no credentials and cannot contact production. It proves:
 
 - healthy release detection;
 - critical failure detection;
@@ -203,11 +211,17 @@ The local deterministic rehearsal uses a mock HTTP site and mock Cloudflare API.
 - dry-run behavior;
 - successful mock route creation and verification;
 - refusal to take over another Worker's route; and
-- two-minute, 30-minute, and 24-hour scheduling decisions.
+- bounded sitemap timeouts and short-circuiting;
+- robots, meta/HTTP indexing, and broadened-route detection;
+- confirmed weather failure and the persisted request cap;
+- failed recovery, process restart, and successful verification without duplicate rollback;
+- deployment supersession and operator stop before recovery;
+- actual runner start, first-hour checkpoint, scheduled resumption, and stop; and
+- expiry without a false recovery claim.
 
 A live read-only run against isolated staging and the production Cloudflare control plane passed the complete proposed sitemap, route, weather, asset, canonical, Popular, and alphabetical-order checks.
 
-Before production approval, merge this operations-only workflow, run its GitHub-hosted `rehearse` action successfully, and record the run URL. No production deployment may begin without that external rehearsal evidence.
+Before production approval, record the passing `rehearse` job URL on the reviewed monitor commit. After merging the operations workflow, verify repository Actions permissions, secret/variable names, scheduled availability, and operator notifications. The simulated rehearsal verifies orchestration, not live credentials or permission to mutate Cloudflare. Retain live read-only preflight evidence separately. No production deployment may begin without both gates.
 
 ## Approval boundary
 
