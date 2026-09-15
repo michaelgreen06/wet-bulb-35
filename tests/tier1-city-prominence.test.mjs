@@ -73,20 +73,19 @@ test("the browse root has exactly the 40 curated canonical Popular links", () =>
   assert.doesNotMatch(html, />Hong Kong, Hong Kong, Hong Kong</);
 });
 
-test("directory pages pin Tier-1 cities and their states without labels or duplicate links", () => {
+test("country and region directory pages remain alphabetical without duplicate links", () => {
   const texas = site.states.find((state) => state.countrySlug === "united-states" && state.stateSlug === "texas");
   const texasHtml = renderStatePage(texas);
   const cityLinks = [...texasHtml.matchAll(/href="(\/wetbulb-temperature\/united-states\/texas\/[^"/]+\/)"/g)].map((match) => match[1]);
-  const featuredTexas = texas.cities.filter((city) => city.tier1).map(routePathForCity);
-  assert.ok(featuredTexas.length > 0);
-  assert.deepEqual(cityLinks.slice(0, featuredTexas.length), featuredTexas);
+  const expectedCities = [...texas.cities].sort((a, b) => a.name.localeCompare(b.name) || routePathForCity(a).localeCompare(routePathForCity(b))).map(routePathForCity);
+  assert.deepEqual(cityLinks, expectedCities);
   assert.equal(new Set(cityLinks).size, cityLinks.length);
 
   const unitedStates = site.countries.find((country) => country.slug === "united-states");
   const countryHtml = renderCountryPage(unitedStates);
   const stateLinks = [...countryHtml.matchAll(/href="(\/wetbulb-temperature\/united-states\/[^"/]+\/)"/g)].map((match) => match[1]);
-  const featuredStates = [...unitedStates.states].filter((state) => state.tier1Count).sort((a, b) => b.tier1Count - a.tier1Count || a.name.localeCompare(b.name)).map((state) => `/wetbulb-temperature/united-states/${state.slug}/`);
-  assert.deepEqual(stateLinks.slice(0, featuredStates.length), featuredStates);
+  const expectedStates = [...unitedStates.states].sort((a, b) => a.name.localeCompare(b.name) || a.slug.localeCompare(b.slug)).map((state) => `/wetbulb-temperature/united-states/${state.slug}/`);
+  assert.deepEqual(stateLinks, expectedStates);
   assert.equal(new Set(stateLinks).size, stateLinks.length);
 });
 
@@ -114,6 +113,14 @@ test("production Worker assets render the same Popular links and new city routes
     assert.equal(browseResponse.status, 200);
     const browseHtml = await browseResponse.text();
     assert.deepEqual(hrefsInPopularSection(browseHtml), hrefsInPopularSection(renderBrowsePage(site)));
+    const workerCountryResponse = await app.fetch(new Request("https://renderer.test/wetbulb-temperature/united-states/"), { ASSETS: assets });
+    assert.equal(workerCountryResponse.status, 200);
+    const workerStateLinks = [...((await workerCountryResponse.text()).matchAll(/href="(\/wetbulb-temperature\/united-states\/[^"/]+\/)"/g))].map((match) => match[1]);
+    assert.deepEqual(workerStateLinks, site.countries.find((country) => country.slug === "united-states").states.map((state) => `/wetbulb-temperature/united-states/${state.slug}/`));
+    const workerRegionResponse = await app.fetch(new Request("https://renderer.test/wetbulb-temperature/united-states/texas/"), { ASSETS: assets });
+    assert.equal(workerRegionResponse.status, 200);
+    const workerCityLinks = [...((await workerRegionResponse.text()).matchAll(/href="(\/wetbulb-temperature\/united-states\/texas\/[^"/]+\/)"/g))].map((match) => match[1]);
+    assert.deepEqual(workerCityLinks, site.states.find((state) => state.countrySlug === "united-states" && state.stateSlug === "texas").cities.map(routePathForCity));
     for (const route of [
       "/wetbulb-temperature/singapore/singapore/singapore/",
       "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/",

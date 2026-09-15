@@ -66,17 +66,14 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
     const country = countries.get(row.countrySlug);
     country.states.set(row.stateSlug, row.resolvedAdmin1Code);
     const route = `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`;
-    const featured = tier1.get(route) || null;
-    if (featured) resolvedTier1.add(route);
-    const compactRow = [
+    if (tier1.has(route)) resolvedTier1.add(route);
+    country.rows.push([
       row.name,
       row.resolvedAdmin1Code,
       row.latitude,
       row.longitude,
       row.outputCitySlug,
-    ];
-    if (featured) compactRow.push(featured.rank);
-    country.rows.push(compactRow);
+    ]);
   }
 
   const manifest = [...countries.values()]
@@ -91,7 +88,6 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
         slug,
         name,
         count: countries.get(countrySlug).rows.filter((row) => row[1] === name).length,
-        tier1Count: countries.get(countrySlug).rows.filter((row) => row[1] === name && Number.isInteger(row[5])).length,
       })),
     }));
   if (tier1.size && resolvedTier1.size !== tier1.size) throw new Error("Every Tier-1 manifest path must resolve exactly once from inventory");

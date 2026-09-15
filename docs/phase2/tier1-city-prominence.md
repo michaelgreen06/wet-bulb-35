@@ -18,8 +18,7 @@ Each entry contains only `rank`, `tier`, `path`, and `popular`. Runtime validati
 ## Visible behavior
 
 - `/wetbulb-temperature/` displays **Popular Wet Bulb Temperatures** with 40 unique canonical city links, ordered alphabetically for navigation.
-- Country directory pages place regions containing Tier-1 cities first.
-- Region directory pages place Tier-1 cities first, preserving alphabetical order within the featured and ordinary groups.
+- Country and region directory pages remain alphabetical; Tier-1 status does not distort normal browsing order.
 - Ranks, tiers, and scores are not shown to users.
 - The homepage is unchanged; it continues to link to `/wetbulb-temperature/`.
 
@@ -45,6 +44,6 @@ Tests require:
 - all 200 paths to resolve exactly once;
 - Singapore and Hong Kong to render canonical pages;
 - exactly 40 unique Popular links from both static and Worker renderers;
-- Tier-1 directory ordering without duplicate links;
+- alphabetical country and region directory ordering without duplicate links;
 - exact renderer/sitemap city-route equality; and
 - the complete 130,686-city Worker metadata inventory to resolve.

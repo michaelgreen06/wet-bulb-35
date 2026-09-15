@@ -29,11 +29,11 @@ function indexCountryShard(country, rows) {
   const states = new Map();
   for (const row of rows) {
     if (!Array.isArray(row) || typeof row[1] !== "string" || typeof row[4] !== "string") continue;
-    const [name, stateName, latitude, longitude, outputCitySlug, tier1Rank] = row;
+    const [name, stateName, latitude, longitude, outputCitySlug] = row;
     if (!states.has(stateName)) states.set(stateName, []);
-    states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug, tier1: Number.isInteger(tier1Rank) ? { rank: tier1Rank } : null });
+    states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug });
   }
-  for (const cities of states.values()) cities.sort((a, b) => Number(Boolean(b.tier1)) - Number(Boolean(a.tier1)) || a.name.localeCompare(b.name) || a.outputCitySlug.localeCompare(b.outputCitySlug));
+  for (const cities of states.values()) cities.sort((a, b) => a.name.localeCompare(b.name) || a.outputCitySlug.localeCompare(b.outputCitySlug));
   return new Map([...states].map(([stateName, cities]) => [stateName, {
     cities,
     citiesBySlug: new Map(cities.map((city) => [city.outputCitySlug, city])),
@@ -44,7 +44,7 @@ function stateFromIndex(country, state, index) {
   if (!indexedState) return null;
   return { countryName: country.country, countrySlug: country.countrySlug, stateName: state.name, stateSlug: state.slug, cities: indexedState.cities, citiesBySlug: indexedState.citiesBySlug };
 }
-function countryFromManifest(country) { return { name: country.country, slug: country.countrySlug, count: country.count, states: (country.states || []).map((state) => ({ name: state.name, slug: state.slug, count: state.count, tier1Count: state.tier1Count || 0 })) }; }
+function countryFromManifest(country) { return { name: country.country, slug: country.countrySlug, count: country.count, states: (country.states || []).map((state) => ({ name: state.name, slug: state.slug, count: state.count })) }; }
 function htmlResponse(html, routePath) { return new Response(html, { headers: htmlHeaders(routePath) }); }
 function safeFilename(pathname) {
   const filename = pathname.split("/").filter(Boolean).at(-1);
