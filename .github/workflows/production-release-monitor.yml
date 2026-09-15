@@ -1,8 +1,9 @@
 name: Production release monitor
 
 on:
+  pull_request:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "3-58/5 * * * *"
   workflow_dispatch:
     inputs:
       action:
@@ -12,189 +13,56 @@ on:
         options: [rehearse, start, check, stop]
       expected_version:
         description: "New Cloudflare Worker version UUID (start only)"
-        required: false
         type: string
       rollback_version:
-        description: "Last-known-good Cloudflare Worker version UUID (start only)"
-        required: false
+        description: "Last-known-good Cloudflare version UUID (start only)"
         type: string
       release_sha:
         description: "Approved 40-character Git commit (start only)"
-        required: false
         type: string
 
 permissions:
   contents: read
-  issues: write
-
-concurrency:
-  group: wetbulb35-production-release-control
-  cancel-in-progress: false
-
-env:
-  CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-  CLOUDFLARE_API_TOKEN: ${{ secrets.WETBULB35_CLOUDFLARE_API_TOKEN }}
-  MONITOR_LABEL: production-monitor-active
 
 jobs:
   rehearse:
-    if: github.event_name == 'workflow_dispatch' && inputs.action == 'rehearse'
+    if: github.event_name == 'pull_request' || inputs.action == 'rehearse'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - run: node --test tests/production-release-monitor.test.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # No credentials, provider requests, route changes, or live rollback.
+      - run: npm run test:production-release-monitor
+      - run: bash -n scripts/deploy-production-release.sh scripts/execute-production-rollback.sh scripts/run-production-monitor-cycle.sh
 
-  start:
-    if: github.event_name == 'workflow_dispatch' && inputs.action == 'start'
+  monitor:
+    if: github.event_name != 'pull_request' && inputs.action != 'rehearse'
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    permissions:
+      contents: read
+      issues: write
+    concurrency:
+      # Stop must run while an intensive monitor is sleeping. The runner checks
+      # issue closure before each cycle and again before any recovery action.
+      group: wetbulb35-production-${{ inputs.action == 'stop' && 'stop' || 'monitor' }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Validate and create monitor state
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run durable monitor controller
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.WETBULB35_CLOUDFLARE_API_TOKEN }}
+          MONITOR_ACTION: ${{ inputs.action || 'check' }}
           EXPECTED_VERSION: ${{ inputs.expected_version }}
           ROLLBACK_VERSION: ${{ inputs.rollback_version }}
           RELEASE_SHA: ${{ inputs.release_sha }}
-        run: |
-          set -euo pipefail
-          [[ "$EXPECTED_VERSION" =~ ^[0-9a-f-]{36}$ ]]
-          [[ "$ROLLBACK_VERSION" =~ ^[0-9a-f-]{36}$ ]]
-          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          test -n "$CLOUDFLARE_ACCOUNT_ID"
-          test -n "$CLOUDFLARE_API_TOKEN"
-          gh label create "$MONITOR_LABEL" --color B60205 --description "Active WetBulb35 production monitor" --force
-          existing=$(gh issue list --state open --label "$MONITOR_LABEL" --json number --jq 'length')
-          test "$existing" = "0"
-          started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          expires=$(date -u -d '+24 hours' +%Y-%m-%dT%H:%M:%SZ)
-          body=$(jq -nc --arg expected "$EXPECTED_VERSION" --arg rollback "$ROLLBACK_VERSION" --arg sha "$RELEASE_SHA" --arg started "$started" --arg expires "$expires" '{schema:1,expectedVersion:$expected,rollbackVersion:$rollback,releaseSha:$sha,startedAt:$started,expiresAt:$expires,lastCheckedAt:null,status:"active"}')
-          issue=$(gh api --method POST "repos/$GITHUB_REPOSITORY/issues" -f title="Production monitor: $EXPECTED_VERSION" -f body="$body" -f "labels[]=$MONITOR_LABEL" --jq .number)
-          echo "ISSUE_NUMBER=$issue" >> "$GITHUB_ENV"
-      - name: Intensive first-hour monitoring
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXPECTED_VERSION: ${{ inputs.expected_version }}
-          ROLLBACK_VERSION: ${{ inputs.rollback_version }}
-        run: |
-          set -uo pipefail
-          for i in $(seq 0 29); do
-            full=false
-            weather=false
-            if [[ "$i" = "0" || "$i" = "29" ]]; then full=true; fi
-            if (( i % 5 == 0 )); then weather=true; fi
-            set +e
-            result=$(scripts/run-production-monitor-cycle.sh "$EXPECTED_VERSION" "$ROLLBACK_VERSION" "$full" "$weather")
-            rc=$?
-            set -e
-            now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-            state=$(gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --jq .body | jq -c --arg now "$now" --argjson result "$result" '.lastCheckedAt=$now | .lastResult=$result')
-            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" -f body="$state" >/dev/null
-            if [[ "$rc" = "2" ]]; then
-              if scripts/execute-production-rollback.sh "$EXPECTED_VERSION" "$ROLLBACK_VERSION"; then
-                gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" -f body="Critical release checks failed. Automated rollback completed and recovery checks passed." >/dev/null
-                gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" -f state=closed -f state_reason=completed >/dev/null
-                exit 0
-              fi
-              gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" -f body="CRITICAL: rollback or recovery verification failed. Immediate operator attention is required. Workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
-              exit 1
-            elif [[ "$rc" = "3" ]]; then
-              gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" -f body="Monitor stopped without rollback because a later Worker version is active." >/dev/null
-              gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" -f state=closed -f state_reason=not_planned >/dev/null
-              exit 0
-            elif [[ "$rc" = "4" ]]; then
-              gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" -f body="Monitoring could not verify the Cloudflare control plane, so automatic rollback was intentionally blocked. Workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
-              exit 1
-            fi
-            if [[ "$result" == *'healthy_with_weather_warning'* ]]; then
-              gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" -f body="Weather check warning; no automatic rollback because quota/provider failures are not classified as release regressions. Result: \`$result\`" >/dev/null
-            fi
-            if [[ "$i" != "29" ]]; then sleep 120; fi
-          done
-          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" -f body="First-hour monitoring completed without a release-regression rollback." >/dev/null
-
-  scheduled-check:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.action == 'check')
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Load active monitor
-        id: state
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          issue=$(gh issue list --state open --label "$MONITOR_LABEL" --json number,body --jq 'if length == 1 then .[0] else empty end')
-          if [[ -z "$issue" ]]; then echo "active=false" >> "$GITHUB_OUTPUT"; exit 0; fi
-          echo "active=true" >> "$GITHUB_OUTPUT"
-          echo "number=$(jq -r .number <<<"$issue")" >> "$GITHUB_OUTPUT"
-          body=$(jq -r .body <<<"$issue")
-          echo "body=$body" >> "$GITHUB_OUTPUT"
-          decision=$(node --input-type=module - "$body" <<'NODE'
-          import { pollingPhase } from './scripts/production-release-monitor.mjs';
-          const state = JSON.parse(process.argv[2]);
-          const phase = pollingPhase({ startedAt: state.startedAt, lastCheckedAt: state.lastCheckedAt });
-          process.stdout.write(JSON.stringify({ ...phase, expectedVersion: state.expectedVersion, rollbackVersion: state.rollbackVersion }));
-          NODE
-          )
-          echo "decision=$decision" >> "$GITHUB_OUTPUT"
-      - name: Expire monitor
-        if: steps.state.outputs.active == 'true' && fromJSON(steps.state.outputs.decision).expired
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE: ${{ steps.state.outputs.number }}
-        run: |
-          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" -f body="The 24-hour production monitoring window completed." >/dev/null
-          gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE" -f state=closed -f state_reason=completed >/dev/null
-      - name: Extended monitoring cycle
-        if: steps.state.outputs.active == 'true' && fromJSON(steps.state.outputs.decision).due && !fromJSON(steps.state.outputs.decision).expired
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE: ${{ steps.state.outputs.number }}
-          STATE_JSON: ${{ steps.state.outputs.body }}
-          DECISION_JSON: ${{ steps.state.outputs.decision }}
-        run: |
-          set -uo pipefail
-          expected=$(jq -r .expectedVersion <<<"$DECISION_JSON")
-          rollback=$(jq -r .rollbackVersion <<<"$DECISION_JSON")
-          full=$(jq -r .fullSitemaps <<<"$DECISION_JSON")
-          weather=$(jq -r .weather <<<"$DECISION_JSON")
-          set +e
-          result=$(scripts/run-production-monitor-cycle.sh "$expected" "$rollback" "$full" "$weather")
-          rc=$?
-          set -e
-          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          state=$(jq -c --arg now "$now" --argjson result "$result" '.lastCheckedAt=$now | .lastResult=$result' <<<"$STATE_JSON")
-          gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE" -f body="$state" >/dev/null
-          if [[ "$rc" = "2" ]]; then
-            if scripts/execute-production-rollback.sh "$expected" "$rollback"; then
-              gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" -f body="Critical release checks failed. Automated rollback completed and recovery checks passed." >/dev/null
-              gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE" -f state=closed -f state_reason=completed >/dev/null
-              exit 0
-            fi
-            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" -f body="CRITICAL: rollback or recovery verification failed. Immediate operator attention is required. Workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
-            exit 1
-          elif [[ "$rc" = "3" ]]; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" -f body="Monitor stopped without rollback because a later Worker version is active." >/dev/null
-            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE" -f state=closed -f state_reason=not_planned >/dev/null
-          elif [[ "$rc" = "4" ]]; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" -f body="Monitoring could not verify the Cloudflare control plane, so automatic rollback was intentionally blocked. Workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
-            exit 1
-          elif [[ "$result" == *'healthy_with_weather_warning'* ]]; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" -f body="Weather warning only; no rollback. Result: \`$result\`" >/dev/null
-          fi
-
-  stop:
-    if: github.event_name == 'workflow_dispatch' && inputs.action == 'stop'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Close active monitor
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          issue=$(gh issue list --state open --label "$MONITOR_LABEL" --json number --jq 'if length == 1 then .[0].number else empty end')
-          test -n "$issue"
-          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$issue/comments" -f body="Production monitor stopped manually." >/dev/null
-          gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/$issue" -f state=closed -f state_reason=not_planned >/dev/null
+        run: node scripts/run-production-monitor.mjs

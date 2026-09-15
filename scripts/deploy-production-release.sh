@@ -19,17 +19,15 @@ if [[ -n "$(git status --porcelain)" ]]; then
   echo "Worktree must be clean" >&2
   exit 2
 fi
-if [[ -z "${CLOUDFLARE_API_TOKEN:-}" || -z "${NEXT_PUBLIC_GOOGLE_PLACES_API_KEY:-}" ]]; then
+if [[ -z "${CLOUDFLARE_API_TOKEN:-}" || -z "${CLOUDFLARE_ACCOUNT_ID:-}" || -z "${NEXT_PUBLIC_GOOGLE_PLACES_API_KEY:-}" ]]; then
   echo "Required deployment credentials are not present" >&2
   exit 2
 fi
 
-node - <<'NODE'
-const fs = require('fs');
-const route = fs.readFileSync('wrangler.weather-production-route.toml', 'utf8');
-if (!route.includes('name = "wetbulb35-weather-production"')) throw new Error('wrong Worker name');
-if (!route.includes('pattern = "www.wetbulb35.com/*"')) throw new Error('exact production route is missing');
-if (route.includes('custom_domain = true')) throw new Error('custom domains are forbidden');
+node --input-type=module - <<'NODE'
+import fs from 'node:fs';
+import { validateProductionConfig } from './scripts/validate-production-release-config.mjs';
+validateProductionConfig(fs.readFileSync('wrangler.weather-production-route.toml', 'utf8'));
 NODE
 
 npm run test:tier1-cities
