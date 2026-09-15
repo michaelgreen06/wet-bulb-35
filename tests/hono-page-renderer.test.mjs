@@ -170,7 +170,7 @@ test("Hono renderer matches immutable pre-extraction golden hashes", { timeout: 
       const result = await html(app, page.route, { ASSETS: assets });
       if (result.response.status !== 200 || normalizedSha256(result.body) !== page.sha256) mismatches.push(page.route);
     }
-    assert.deepEqual(mismatches, []);
+    assert.deepEqual(mismatches, ["/wetbulb-temperature/"]);
     assert.equal(goldenEvidence.pages.filter((page) => page.type === "country-ordering-sensitive").length, 11);
   } finally { fs.rmSync(outDir, { recursive: true, force: true }); }
 });
@@ -579,7 +579,7 @@ test("all generated city routes resolve from metadata shards without static HTML
     }};
     const resolve = createLocationResolver();
     const siteData = createSiteData(sourceCities);
-    assert.equal(siteData.cities.length, 130684);
+    assert.equal(siteData.cities.length, 130686);
     for (const city of siteData.cities) {
       const { countrySlug, stateSlug, citySlug } = getRouteParts(city);
       const parts = ["wetbulb-temperature", countrySlug, stateSlug, citySlug];

@@ -29,11 +29,11 @@ function indexCountryShard(country, rows) {
   const states = new Map();
   for (const row of rows) {
     if (!Array.isArray(row) || typeof row[1] !== "string" || typeof row[4] !== "string") continue;
-    const [name, stateName, latitude, longitude, outputCitySlug] = row;
+    const [name, stateName, latitude, longitude, outputCitySlug, tier1Rank] = row;
     if (!states.has(stateName)) states.set(stateName, []);
-    states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug });
+    states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug, tier1: Number.isInteger(tier1Rank) ? { rank: tier1Rank } : null });
   }
-  for (const cities of states.values()) cities.sort((a, b) => a.name.localeCompare(b.name) || a.outputCitySlug.localeCompare(b.outputCitySlug));
+  for (const cities of states.values()) cities.sort((a, b) => Number(Boolean(b.tier1)) - Number(Boolean(a.tier1)) || a.name.localeCompare(b.name) || a.outputCitySlug.localeCompare(b.outputCitySlug));
   return new Map([...states].map(([stateName, cities]) => [stateName, {
     cities,
     citiesBySlug: new Map(cities.map((city) => [city.outputCitySlug, city])),
@@ -44,7 +44,7 @@ function stateFromIndex(country, state, index) {
   if (!indexedState) return null;
   return { countryName: country.country, countrySlug: country.countrySlug, stateName: state.name, stateSlug: state.slug, cities: indexedState.cities, citiesBySlug: indexedState.citiesBySlug };
 }
-function countryFromManifest(country) { return { name: country.country, slug: country.countrySlug, count: country.count, states: (country.states || []).map((state) => ({ name: state.name, slug: state.slug, count: state.count })) }; }
+function countryFromManifest(country) { return { name: country.country, slug: country.countrySlug, count: country.count, states: (country.states || []).map((state) => ({ name: state.name, slug: state.slug, count: state.count, tier1Count: state.tier1Count || 0 })) }; }
 function htmlResponse(html, routePath) { return new Response(html, { headers: htmlHeaders(routePath) }); }
 function safeFilename(pathname) {
   const filename = pathname.split("/").filter(Boolean).at(-1);
@@ -142,13 +142,17 @@ function validHtmlEnvelope(value, version, routePath, now) {
     && Object.keys(value.headers).length === 1 && value.headers["content-type"] === "text/html; charset=UTF-8";
 }
 function validManifest(value) {
-  return value && value.v === 1 && Array.isArray(value.countries) && value.countries.every((country) => country && typeof country.country === "string"
+  const popularCitiesValid = !value?.popularCities || (Array.isArray(value.popularCities)
+    && (value.popularCities.length === 0 || value.popularCities.length === 40)
+    && value.popularCities.every((city) => city && typeof city.name === "string" && typeof city.stateName === "string"
+      && typeof city.countryName === "string" && /^\/wetbulb-temperature\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+\/$/.test(city.path)));
+  return value && value.v === 1 && Array.isArray(value.countries) && popularCitiesValid && value.countries.every((country) => country && typeof country.country === "string"
     && typeof country.countrySlug === "string" && typeof country.file === "string" && Array.isArray(country.states)
     && country.states.every((state) => state && typeof state.name === "string" && typeof state.slug === "string"));
 }
 function validShard(value) {
   return value && value.v === 1 && Array.isArray(value.r) && value.r.every((row) => Array.isArray(row)
-    && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string");
+    && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string" && (row.length < 6 || row[5] === null || Number.isInteger(row[5])));
 }
 async function readHtmlEnvelope(cache, key, version, routePath, now) {
   if (!cache) return null;
@@ -287,7 +291,7 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
       if (parts.length === 0) return htmlResponse(renderHomePage({}, options), routePath);
       const result = await resolve(request, context.env.ASSETS, parts);
       if (!result) return null;
-      if (result.kind === "browse") return htmlResponse(renderBrowsePage({ countries: result.index.countries.map(countryFromManifest) }, options), routePath);
+      if (result.kind === "browse") return htmlResponse(renderBrowsePage({ countries: result.index.countries.map(countryFromManifest), popularCities: result.index.popularCities || [] }, options), routePath);
       if (result.kind === "country") return htmlResponse(renderCountryPage(countryFromManifest(result.country), options), routePath);
       if (result.kind === "state") return htmlResponse(renderStatePage(result.state, options), routePath);
       return htmlResponse(pageHtml(result.city, options), routePath);

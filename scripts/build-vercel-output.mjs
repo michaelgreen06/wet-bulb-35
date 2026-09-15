@@ -140,7 +140,8 @@ export function buildVercelOutput() {
 
   const result = generateStaticSite({
     outDir: STATIC_DIR,
-    limit: 130684,
+    limit: 130686,
+    tier1Manifest: JSON.parse(fs.readFileSync(path.resolve("scripts/tier1-city-manifest.json"), "utf8")),
   });
 
   fs.mkdirSync(FUNCTION_DIR, { recursive: true });

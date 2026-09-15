@@ -12,6 +12,7 @@ export const DEPLOYMENT_INPUTS = [
   { kind: "file", path: "scripts/build-vercel-output.mjs" },
   { kind: "file", path: "scripts/prototype-static-generator.mjs" },
   { kind: "file", path: "scripts/resolved_cities.json" },
+  { kind: "file", path: "scripts/tier1-city-manifest.json" },
   { kind: "file", path: "scripts/static-tailwind.css" },
   { kind: "file", path: "tailwind.config.ts" },
   { kind: "file", path: "vercel.json" },

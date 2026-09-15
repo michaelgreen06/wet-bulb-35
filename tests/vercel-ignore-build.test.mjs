@@ -9,6 +9,7 @@ import {
 test("detects files that affect the Vercel build output", () => {
   assert.equal(affectsDeployment("scripts/prototype-static-generator.mjs"), true);
   assert.equal(affectsDeployment("./scripts/resolved_cities.json"), true);
+  assert.equal(affectsDeployment("scripts/tier1-city-manifest.json"), true);
   assert.equal(affectsDeployment("public/logo.svg"), true);
   assert.equal(affectsDeployment("tailwind.config.ts"), true);
   assert.equal(affectsDeployment("components/Header.tsx"), false);
