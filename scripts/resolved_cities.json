@@ -914786,5 +914786,21 @@
   "resolvedAdmin1Code": "Mashonaland West",
   "latitude": -16.89196,
   "longitude": 30.15902
+},
+{
+  "name": "Singapore",
+  "resolvedCountryName": "Singapore",
+  "resolvedAdmin1Code": "Singapore",
+  "latitude": 1.28967,
+  "longitude": 103.85007,
+  "geonameid": 1880252
+},
+{
+  "name": "Hong Kong",
+  "resolvedCountryName": "Hong Kong",
+  "resolvedAdmin1Code": "Hong Kong",
+  "latitude": 22.27832,
+  "longitude": 114.17469,
+  "geonameid": 1819729
 }
 ]
