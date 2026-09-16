@@ -156,7 +156,7 @@ Critical checks cover:
 - sitemap member count;
 - full sitemap status, count, and duplicate checks at bounded milestones.
 
-Weather checks use only Houston and Singapore and validate the complete location/weather response shape. A confirmed HTTP, network, or schema failure is a critical rollback trigger. The public API does not reliably distinguish provider/quota failures from application regressions, so the monitor does not invent that classification or exempt all weather failures. This conservative policy can roll back once during an upstream outage. It never resets provider counters. If weather caused rollback, recovery must include a successful weather check; an ongoing upstream failure stays an unresolved incident.
+Weather checks use only Houston and Singapore and validate the complete location/weather response shape. Weather depends on the OpenWeather upstream, and the public API cannot distinguish a provider outage from an application regression, so a weather failure is reported to the operator as a WARNING and never triggers automatic rollback. Neither PR #13 nor PR #15 changes the weather edge. Weather failures are fixed forward or waited out.
 
 All hosted weather requests, including confirmation retries and recovery, share a persisted cap of 58 per monitoring window. Requests are reserved before execution and unused reservations are refunded after a completed cycle; a killed runner conservatively consumes its reservation. Retries may reduce later weather sampling. A weather failure cannot be cleared by a retry that omitted weather due to budget exhaustion. If weather recovery cannot be verified within the remaining allowance, the incident stays unresolved. Normal caching should make provider attempts lower. No state in the Durable Object's 2,000-attempt UTC-day counter is changed by rollback.
 
@@ -186,7 +186,7 @@ On a confirmed critical failure:
 3. Run the narrow exact-route restoration action.
 4. Verify the rollback version is active at 100%.
 5. Verify the exact production route points to `wetbulb35-weather-production`.
-6. Verify the homepage, browse page, established city page, browser asset, search index, robots file, and 227-member pre-release sitemap index. If weather caused rollback, verify weather as well.
+6. Verify the homepage, browse page, established city page, browser asset, search index, robots file, and 227-member pre-release sitemap index. Weather is reported but is not a recovery gate.
 
 If any rollback, route restoration, or recovery check fails, the workflow:
 

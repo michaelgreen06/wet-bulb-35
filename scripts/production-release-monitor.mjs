@@ -106,7 +106,8 @@ export async function readControlPlane({ fetchImpl = fetch, apiBase = "https://a
   required(token, "Cloudflare API token");
   required(accountId, "Cloudflare account ID");
   const deployments = await cfJson(fetchImpl, `${apiBase}/accounts/${accountId}/workers/scripts/${worker}/deployments`, token);
-  const active = deployments.deployments?.[0];
+  // The list is retained history, not necessarily newest-first; the newest deployment is the active one.
+  const active = [...(deployments.deployments || [])].sort((a, b) => Date.parse(b.created_on) - Date.parse(a.created_on))[0];
   const activeVersions = active?.versions || [];
   const activeVersion = activeVersions.length === 1 && activeVersions[0].percentage === 100 ? activeVersions[0].version_id : null;
   const zones = await cfJson(fetchImpl, `${apiBase}/zones?name=${encodeURIComponent(zoneName)}`, token);
@@ -277,7 +278,8 @@ export async function runReleaseChecks({
     if (fullSitemaps && sitemap && !criticalFailures.length) await checkAllSitemaps(fetchImpl, origin, sitemap, criticalFailures, { timeoutMs: sitemapTimeoutMs });
   }
 
-  if (weather) await checkWeather(fetchImpl, origin, criticalFailures);
+  // Weather depends on OpenWeather upstream; an outage there is not a release regression, so it never triggers rollback.
+  if (weather) await checkWeather(fetchImpl, origin, warnings);
   return {
     status: recovery ? (criticalFailures.length ? "recovery_failure" : "recovered") : (criticalFailures.length ? "critical_failure" : "healthy"),
     rollbackEligible: !recovery && criticalFailures.length > 0 && currentIsExpected,

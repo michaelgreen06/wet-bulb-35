@@ -45,7 +45,11 @@ async function fixture() {
       if (request.method !== "HEAD") response.end(body); else response.end();
     };
     if (url.pathname === "/client/v4/accounts/account-1/workers/scripts/wetbulb35-weather-production/deployments") {
-      return send(200, "application/json", JSON.stringify({ success: true, result: { deployments: [{ id: "deployment-1", versions: [{ version_id: fixtureState.activeVersion, percentage: 100 }] }] } }));
+      return send(200, "application/json", JSON.stringify({ success: true, result: { deployments: [
+        // Oldest first, like the live API history: the monitor must pick the newest, not index 0.
+        { id: "deployment-0", created_on: "2026-09-01T00:00:00Z", versions: [{ version_id: "00000000-0000-4000-8000-000000000000", percentage: 100 }] },
+        { id: "deployment-1", created_on: "2026-09-15T00:00:00Z", versions: [{ version_id: fixtureState.activeVersion, percentage: 100 }] },
+      ] } }));
     }
     if (url.pathname === "/client/v4/zones" && request.method === "GET") {
       return send(200, "application/json", JSON.stringify({ success: true, result: [{ id: "zone-1", name: "wetbulb35.com", status: "active" }] }));
@@ -107,8 +111,9 @@ test("release monitor detects health, failure, rollback eligibility, and stale m
 
     mock.state.failWeather = true;
     const weatherFailure = await runReleaseChecks(options);
-    assert.equal(weatherFailure.status, "critical_failure");
-    assert.equal(weatherFailure.rollbackEligible, true);
+    assert.equal(weatherFailure.status, "healthy");
+    assert.equal(weatherFailure.rollbackEligible, false);
+    assert.ok(weatherFailure.warnings.some((warning) => warning.startsWith("weather_")));
     mock.state.failWeather = false;
 
     mock.state.failBrowse = true;
@@ -350,20 +355,21 @@ test("new deployment between detection and rollback refuses both rollback and ro
   } finally { mock.server.close(); }
 });
 
-test("weather regression triggers recovery and cannot be declared recovered while weather still fails", async () => {
+test("weather failure warns the operator but never rolls back", async () => {
   const mock = await fixture();
   try {
     mock.state.failWeather = true;
-    let saved;
+    const notices = [];
+    let rolledBack = false;
     const result = await advanceMonitor(newState(), {
-      save: async (state) => { saved = structuredClone(state); }, notify: async () => {}, now: () => new Date(startedAt), options: optionsFor(mock),
+      save: async () => {}, notify: async (message) => notices.push(message), now: () => new Date(startedAt), options: optionsFor(mock),
       checks: (args) => confirmedChecks(args, { sleep: async () => {} }),
-      recover: (args) => recoverRelease(args, { rollback: async () => { mock.state.activeVersion = ROLLBACK; } }),
+      recover: (args) => recoverRelease(args, { rollback: async () => { rolledBack = true; } }),
     });
-    assert.equal(result.status, "recovering");
-    assert.equal(saved.requireWeatherRecovery, true);
-    assert.equal(saved.weatherRequests, 6);
-    assert.ok(saved.lastResult.criticalFailures.some((item) => item.startsWith("weather_")));
+    assert.equal(result.status, "active");
+    assert.equal(rolledBack, false);
+    assert.equal(mock.state.activeVersion, EXPECTED);
+    assert.ok(notices.some((message) => /^WARNING: weather_/.test(message)));
   } finally { mock.server.close(); }
 });
 

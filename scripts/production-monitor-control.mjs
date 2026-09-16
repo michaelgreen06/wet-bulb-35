@@ -50,7 +50,10 @@ export async function recoverRelease(options, dependencies = {}) {
     if (![expected, baseline].includes(state.activeVersion)) return { status: "superseded", weatherRequests };
     if (state.activeVersion === expected) {
       if (options.authorized && !await options.authorized()) return { status: "stopped", weatherRequests };
-      try { await rollback(baseline); } catch { /* A timeout may follow a successful deployment. */ }
+      try { await rollback(baseline); } catch (error) {
+        // A timeout may follow a successful deployment; the control-plane re-read below decides.
+        console.error(JSON.stringify({ status: "rollback_command_error", error: error.message }));
+      }
       state = await control(options);
     }
     if (state.activeVersion !== baseline) return { status: state.activeVersion === expected ? "recovery_failure" : "superseded", reason: "rollback_version_not_active", weatherRequests };
@@ -65,8 +68,9 @@ export async function recoverRelease(options, dependencies = {}) {
     if (result.status !== "recovered") return { ...result, status: "recovery_failure", weatherRequests };
     if (options.requireWeatherRecovery && !weather) return { status: "recovery_failure", reason: "weather_budget_exhausted_recovery_unverified", weatherRequests };
     return { ...result, weatherRequests };
-  } catch {
-    // Never store CLI stderr, credentials, or provider responses in issue state.
+  } catch (error) {
+    // Log to the runner only; never store CLI stderr, credentials, or provider responses in issue state.
+    console.error(JSON.stringify({ status: "recovery_error", error: error.message }));
     return { status: "recovery_failure", reason: "recovery_command_or_control_plane_failed", weatherRequests };
   }
 }
@@ -152,5 +156,6 @@ export async function advanceMonitor(state, {
   if (state.status === "recovered") await notify("Rollback recovery verified: baseline version, routing, and public checks passed.");
   else if (state.status === "superseded") await notify("Monitor stopped: a different deployment is active; no further recovery action taken.");
   else if (result.status !== "healthy") await notify(`CRITICAL: ${result.status}; recovery is not confirmed. State retained for the next check.`);
+  else if (result.warnings?.length) await notify(`WARNING: ${result.warnings.join(", ")}; no rollback taken.`);
   return state;
 }
