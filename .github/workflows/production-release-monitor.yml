@@ -1,0 +1,68 @@
+name: Production release monitor
+
+on:
+  pull_request:
+  schedule:
+    - cron: "3-58/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "rehearse, start, check, or stop"
+        required: true
+        type: choice
+        options: [rehearse, start, check, stop]
+      expected_version:
+        description: "New Cloudflare Worker version UUID (start only)"
+        type: string
+      rollback_version:
+        description: "Last-known-good Cloudflare version UUID (start only)"
+        type: string
+      release_sha:
+        description: "Approved 40-character Git commit (start only)"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  rehearse:
+    if: github.event_name == 'pull_request' || inputs.action == 'rehearse'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # No credentials, provider requests, route changes, or live rollback.
+      - run: npm run test:production-release-monitor
+      - run: bash -n scripts/deploy-production-release.sh scripts/execute-production-rollback.sh scripts/run-production-monitor-cycle.sh
+
+  monitor:
+    if: github.event_name != 'pull_request' && inputs.action != 'rehearse'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      issues: write
+    concurrency:
+      # Stop must run while an intensive monitor is sleeping. The runner checks
+      # issue closure before each cycle and again before any recovery action.
+      group: wetbulb35-production-${{ inputs.action == 'stop' && 'stop' || 'monitor' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run durable monitor controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.WETBULB35_CLOUDFLARE_API_TOKEN }}
+          MONITOR_ACTION: ${{ inputs.action || 'check' }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+          ROLLBACK_VERSION: ${{ inputs.rollback_version }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: node scripts/run-production-monitor.mjs
