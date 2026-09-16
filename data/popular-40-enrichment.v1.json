@@ -1,0 +1,1488 @@
+{
+  "schemaVersion": 1,
+  "dataVersion": "popular-40-2026-09-16",
+  "provenance": {
+    "geonames": {
+      "snapshot": "2026-09-16",
+      "file": "cities1000.zip",
+      "sha256": "b0d39ebf8d1935d425f3efc1d90c881bdc83d7567ca6db1232973eaebc51e2e2",
+      "license": "CC BY 4.0",
+      "url": "https://download.geonames.org/export/dump/cities1000.zip"
+    },
+    "beck": {
+      "version": "v3",
+      "period": "1991-2020",
+      "file": "koppen_geiger_tif.zip",
+      "sha256": "bb84453d4541f1a0bc5a804ead83f483c19ce70f16a5197f6d3a7b6a63e65562",
+      "rasterSha256": "2130f0071dfb2904947d8ec3a0d807fac71004df76e769262004f1602e4d6a13",
+      "legendSha256": "2ede2ad270a036cc11c31705a2c1dbf0314a8cf011fc972cd4a9665e3339e5e5",
+      "method": "center plus 3x3 modal share",
+      "license": "CC BY 4.0",
+      "url": "https://doi.org/10.6084/m9.figshare.21789074.v3"
+    },
+    "nasaPower": {
+      "accessedDate": "2026-09-16",
+      "apiVersion": "v2.9.7",
+      "parameter": "T2MWET",
+      "period": "1991-2020",
+      "timeStandard": "LST",
+      "sourceLockSha256": "afd3c1e3b4e14f4fe2601008be14794ffb5da098cab162d4310d028f86c49221"
+    }
+  },
+  "reviewCohort": [
+    "/wetbulb-temperature/bangladesh/dhaka-division/dhaka/",
+    "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/",
+    "/wetbulb-temperature/india/delhi/new-delhi/",
+    "/wetbulb-temperature/japan/tokyo/tokyo/",
+    "/wetbulb-temperature/mexico/mexico-city/mexico-city/",
+    "/wetbulb-temperature/nigeria/lagos/lagos/",
+    "/wetbulb-temperature/singapore/singapore/singapore/",
+    "/wetbulb-temperature/united-arab-emirates/dubai/dubai/",
+    "/wetbulb-temperature/united-states/arizona/phoenix/",
+    "/wetbulb-temperature/united-states/texas/houston/"
+  ],
+  "cities": [
+    {
+      "path": "/wetbulb-temperature/argentina/buenos-aires-fd/buenos-aires/",
+      "geonames": {
+        "id": 3435910,
+        "timezone": "America/Argentina/Buenos_Aires",
+        "elevationM": 31,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cfa",
+        "label": "Temperate, no dry season, hot summer",
+        "modalCode": "Cfa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          21.2,
+          20.9,
+          19.5,
+          16.4,
+          13.5,
+          10.5,
+          9.3,
+          10.7,
+          12.1,
+          14.9,
+          17.4,
+          19.7
+        ],
+        "peakMonths": [
+          1
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-58.37723&latitude=-34.61315&format=JSON&start=1991&end=2020",
+        "responseSha256": "9d6f33217de5866594c7c5a838936014613941e42d106033cd3de8deb8436bb3"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/australia/new-south-wales/sydney/",
+      "geonames": {
+        "id": 2147714,
+        "timezone": "Australia/Sydney",
+        "elevationM": 58,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cfa",
+        "label": "Temperate, no dry season, hot summer",
+        "modalCode": "Cfa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          20.2,
+          20.4,
+          19.2,
+          16.9,
+          14.4,
+          12.6,
+          11.4,
+          11.5,
+          13.3,
+          15.2,
+          16.9,
+          18.6
+        ],
+        "peakMonths": [
+          2
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=151.20732&latitude=-33.86785&format=JSON&start=1991&end=2020",
+        "responseSha256": "865235019190a76f2f60b7afece0e8a3f6e58884617867ad01cb6f688a699895"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/bangladesh/dhaka-division/dhaka/",
+      "geonames": {
+        "id": 1185241,
+        "timezone": "Asia/Dhaka",
+        "elevationM": 23,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cwa",
+        "label": "Temperate, dry winter, hot summer",
+        "modalCode": "Cwa",
+        "modalShare": 0.8889
+      },
+      "nasaPower": {
+        "monthlyC": [
+          13.8,
+          16.3,
+          20.6,
+          25.2,
+          26.9,
+          27.5,
+          27.3,
+          27.2,
+          26.7,
+          24.7,
+          20.4,
+          16.1
+        ],
+        "peakMonths": [
+          6
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=90.40744&latitude=23.71040&format=JSON&start=1991&end=2020",
+        "responseSha256": "c05eac8f8384f2128c363f55c8ef01d753a326b74fe1ba192168050f0e9e50bc"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/brazil/rio-de-janeiro/rio-de-janeiro/",
+      "geonames": {
+        "id": 3451190,
+        "timezone": "America/Sao_Paulo",
+        "elevationM": 12,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Aw",
+        "label": "Tropical savanna",
+        "modalCode": "Aw",
+        "modalShare": 0.8889
+      },
+      "nasaPower": {
+        "monthlyC": [
+          24.0,
+          24.2,
+          23.7,
+          22.4,
+          20.4,
+          19.4,
+          18.7,
+          18.8,
+          19.5,
+          20.7,
+          21.6,
+          23.1
+        ],
+        "peakMonths": [
+          2
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-43.18223&latitude=-22.90642&format=JSON&start=1991&end=2020",
+        "responseSha256": "4d4583acf46d3e452cdc3d8b2ad735b2478b0f5c31f14d6c87740e07f43018c9"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/brazil/sao-paulo/sao-paulo/",
+      "geonames": {
+        "id": 3448439,
+        "timezone": "America/Sao_Paulo",
+        "elevationM": 769,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cfa",
+        "label": "Temperate, no dry season, hot summer",
+        "modalCode": "Cfa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          20.7,
+          20.7,
+          20.0,
+          18.3,
+          15.6,
+          14.4,
+          13.7,
+          14.4,
+          16.0,
+          17.9,
+          18.6,
+          20.0
+        ],
+        "peakMonths": [
+          2
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-46.63611&latitude=-23.54750&format=JSON&start=1991&end=2020",
+        "responseSha256": "2d644f7ae02d98310150517cd7516a6b75b2980424ed0f9279d0cb89167606f3"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/canada/ontario/toronto/",
+      "geonames": {
+        "id": 6167865,
+        "timezone": "America/Toronto",
+        "elevationM": 161,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Dfb",
+        "label": "Cold, no dry season, warm summer",
+        "modalCode": "Dfb",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          -4.2,
+          -4.2,
+          -1.1,
+          3.5,
+          9.0,
+          14.8,
+          18.0,
+          18.0,
+          14.8,
+          8.8,
+          3.3,
+          -1.2
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-79.39864&latitude=43.70643&format=JSON&start=1991&end=2020",
+        "responseSha256": "3b873250e99fb0c437b4cef4e859474622940af0058178fbb636b3d46b32230a"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/egypt/cairo/cairo/",
+      "geonames": {
+        "id": 360630,
+        "timezone": "Africa/Cairo",
+        "elevationM": 23,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "BWh",
+        "label": "Hot desert",
+        "modalCode": "BWh",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          8.0,
+          8.4,
+          10.4,
+          12.9,
+          16.4,
+          19.4,
+          21.2,
+          21.8,
+          20.5,
+          18.0,
+          13.9,
+          9.9
+        ],
+        "peakMonths": [
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=31.24967&latitude=30.06263&format=JSON&start=1991&end=2020",
+        "responseSha256": "8052539211e66aa969fda2cc0b2582b8b5b7cdeb22e8a43b2c430e8518fd5dde"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/france/ile-de-france/paris/",
+      "geonames": {
+        "id": 2988507,
+        "timezone": "Europe/Paris",
+        "elevationM": 42,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cfb",
+        "label": "Temperate, no dry season, warm summer",
+        "modalCode": "Cfb",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          2.4,
+          2.6,
+          5.3,
+          7.9,
+          11.5,
+          14.5,
+          16.3,
+          16.1,
+          13.1,
+          9.9,
+          5.9,
+          3.0
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=2.34880&latitude=48.85341&format=JSON&start=1991&end=2020",
+        "responseSha256": "b26d74b915e1319ca8149e769f7a2d3c311c2e6c8c115b7c8418e86bb4759bc6"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/",
+      "geonames": {
+        "id": 1819729,
+        "timezone": "Asia/Hong_Kong",
+        "elevationM": 60,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cwa",
+        "label": "Temperate, dry winter, hot summer",
+        "modalCode": "Cwa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          13.5,
+          15.4,
+          18.2,
+          21.5,
+          24.5,
+          26.5,
+          26.9,
+          26.8,
+          25.6,
+          22.5,
+          18.8,
+          14.4
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=114.17469&latitude=22.27832&format=JSON&start=1991&end=2020",
+        "responseSha256": "e318ce5aa488ff82bf1f89218fa6359078024066d2eb91c41c5424b5aba7d201"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/india/delhi/new-delhi/",
+      "geonames": {
+        "id": 1261481,
+        "timezone": "Asia/Kolkata",
+        "elevationM": 211,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "BSh",
+        "label": "Hot steppe",
+        "modalCode": "BSh",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          6.9,
+          9.4,
+          13.2,
+          17.1,
+          21.4,
+          26.0,
+          27.7,
+          27.1,
+          24.8,
+          18.8,
+          12.5,
+          7.8
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=77.21480&latitude=28.62137&format=JSON&start=1991&end=2020",
+        "responseSha256": "df0e5e3dceb0531ca8afafe62022810118ecc5261bdda463cdbad0a45d7cddf7"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/india/maharashtra/mumbai/",
+      "geonames": {
+        "id": 1275339,
+        "timezone": "Asia/Kolkata",
+        "elevationM": 8,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Am",
+        "label": "Tropical monsoon",
+        "modalCode": "Am",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          16.9,
+          17.8,
+          20.5,
+          23.9,
+          26.1,
+          26.5,
+          25.6,
+          25.1,
+          25.0,
+          23.9,
+          21.2,
+          18.3
+        ],
+        "peakMonths": [
+          6
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=72.88261&latitude=19.07283&format=JSON&start=1991&end=2020",
+        "responseSha256": "2728d8bb85de643cac0e680b499039ffb3f7778b1892d1c7e1548c54a371264a"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/india/tamil-nadu/chennai/",
+      "geonames": {
+        "id": 1264527,
+        "timezone": "Asia/Kolkata",
+        "elevationM": 14,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Aw",
+        "label": "Tropical savanna",
+        "modalCode": "Aw",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          21.7,
+          22.5,
+          24.3,
+          26.4,
+          27.3,
+          26.5,
+          26.0,
+          26.0,
+          25.9,
+          25.3,
+          24.1,
+          22.4
+        ],
+        "peakMonths": [
+          5
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=80.27847&latitude=13.08784&format=JSON&start=1991&end=2020",
+        "responseSha256": "1b147435cc9ede3f1e77f2dfb1973426c9664da38da51167bead8475d1eca013"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/india/telangana/hyderabad/",
+      "geonames": {
+        "id": 1269843,
+        "timezone": "Asia/Kolkata",
+        "elevationM": 515,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Aw",
+        "label": "Tropical savanna",
+        "modalCode": "Aw",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          15.7,
+          16.9,
+          19.2,
+          22.4,
+          24.1,
+          24.4,
+          23.7,
+          23.5,
+          23.4,
+          21.9,
+          19.0,
+          16.2
+        ],
+        "peakMonths": [
+          6
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=78.45636&latitude=17.38405&format=JSON&start=1991&end=2020",
+        "responseSha256": "4858b04f7ed55db34e9c253bdb3c7a719bfd4b0b8030a24944c3030f304c2c45"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/india/west-bengal/kolkata/",
+      "geonames": {
+        "id": 1275004,
+        "timezone": "Asia/Kolkata",
+        "elevationM": 11,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Aw",
+        "label": "Tropical savanna",
+        "modalCode": "Aw",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          13.6,
+          16.9,
+          21.3,
+          25.7,
+          27.5,
+          27.8,
+          27.4,
+          27.2,
+          26.6,
+          24.3,
+          19.6,
+          14.8
+        ],
+        "peakMonths": [
+          6
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=88.36304&latitude=22.56263&format=JSON&start=1991&end=2020",
+        "responseSha256": "72b895b3411eed08e2e6bbe5485dad192bfc671535ca2e26cdfc4b5f9eba8a29"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/indonesia/jakarta/jakarta/",
+      "geonames": {
+        "id": 1642911,
+        "timezone": "Asia/Jakarta",
+        "elevationM": 16,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Af",
+        "label": "Tropical rainforest",
+        "modalCode": "Af",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          25.4,
+          25.4,
+          25.7,
+          26.0,
+          26.0,
+          25.5,
+          24.9,
+          24.6,
+          25.0,
+          25.6,
+          25.8,
+          25.6
+        ],
+        "peakMonths": [
+          5
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=106.84513&latitude=-6.21462&format=JSON&start=1991&end=2020",
+        "responseSha256": "eef066334dda26cdbb133c9715717563f0e67ca11b845c528b652d9cb87159a3"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/japan/tokyo/tokyo/",
+      "geonames": {
+        "id": 1850147,
+        "timezone": "Asia/Tokyo",
+        "elevationM": 44,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cfa",
+        "label": "Temperate, no dry season, hot summer",
+        "modalCode": "Cfa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          2.6,
+          3.1,
+          6.4,
+          11.3,
+          16.1,
+          20.0,
+          23.7,
+          24.8,
+          21.8,
+          16.4,
+          10.9,
+          5.4
+        ],
+        "peakMonths": [
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=139.69171&latitude=35.68950&format=JSON&start=1991&end=2020",
+        "responseSha256": "edee29237c8d70e2b13b6710a1850e9809a9ab3e532913bca08cbb02c041f98e"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/malaysia/kuala-lumpur/kuala-lumpur/",
+      "geonames": {
+        "id": 1735161,
+        "timezone": "Asia/Kuala_Lumpur",
+        "elevationM": 56,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Af",
+        "label": "Tropical rainforest",
+        "modalCode": "Af",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          23.5,
+          23.6,
+          24.3,
+          24.8,
+          25.0,
+          24.5,
+          24.1,
+          24.1,
+          24.1,
+          24.2,
+          24.2,
+          23.8
+        ],
+        "peakMonths": [
+          5
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=101.68653&latitude=3.14120&format=JSON&start=1991&end=2020",
+        "responseSha256": "65664e5c7f7eb4f18d54b7e455e450f615d15aae61363607b5ecb736820cf09f"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/mexico/mexico-city/mexico-city/",
+      "geonames": {
+        "id": 3530597,
+        "timezone": "America/Mexico_City",
+        "elevationM": 2240,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cwb",
+        "label": "Temperate, dry winter, warm summer",
+        "modalCode": "Cwb",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          5.9,
+          6.7,
+          7.6,
+          9.4,
+          11.4,
+          12.5,
+          12.4,
+          12.5,
+          12.2,
+          10.6,
+          8.6,
+          6.9
+        ],
+        "peakMonths": [
+          6
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-99.12766&latitude=19.42847&format=JSON&start=1991&end=2020",
+        "responseSha256": "251ce7c88e8cdf3a6be3244abc580b281c7540748b33783f43cc64391c039d57"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/nigeria/lagos/lagos/",
+      "geonames": {
+        "id": 2332459,
+        "timezone": "Africa/Lagos",
+        "elevationM": 11,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Aw",
+        "label": "Tropical savanna",
+        "modalCode": "Aw",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          24.0,
+          25.4,
+          26.1,
+          26.2,
+          25.9,
+          25.0,
+          24.0,
+          23.6,
+          24.2,
+          24.9,
+          25.3,
+          24.5
+        ],
+        "peakMonths": [
+          4
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=3.39467&latitude=6.45407&format=JSON&start=1991&end=2020",
+        "responseSha256": "93ad7cc9cd38d24ad01fe09c4de509fb44d12420d38d7087dfeefcb34a536a39"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/pakistan/punjab/lahore/",
+      "geonames": {
+        "id": 1172451,
+        "timezone": "Asia/Karachi",
+        "elevationM": 216,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "BSh",
+        "label": "Hot steppe",
+        "modalCode": "BSh",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          5.9,
+          8.8,
+          13.1,
+          17.3,
+          20.7,
+          25.1,
+          28.0,
+          27.5,
+          24.2,
+          17.0,
+          10.5,
+          6.5
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=74.35071&latitude=31.55800&format=JSON&start=1991&end=2020",
+        "responseSha256": "21d0125398f10574f37b58c1a1bbe1692f28f5a32d848dce731dd98a3a40c0ab"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/pakistan/sindh/karachi/",
+      "geonames": {
+        "id": 1174872,
+        "timezone": "Asia/Karachi",
+        "elevationM": 8,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "BWh",
+        "label": "Hot desert",
+        "modalCode": "BWh",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          13.7,
+          15.6,
+          19.6,
+          23.3,
+          26.3,
+          27.6,
+          27.2,
+          26.2,
+          25.3,
+          23.2,
+          18.9,
+          14.8
+        ],
+        "peakMonths": [
+          6
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=67.01040&latitude=24.86080&format=JSON&start=1991&end=2020",
+        "responseSha256": "2ba6e4f8bd701d0dacfbfaf8028a12e009c432f4b5cc4f8df5a8d017b25eae53"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/philippines/metro-manila/manila/",
+      "geonames": {
+        "id": 1701668,
+        "timezone": "Asia/Manila",
+        "elevationM": 13,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Am",
+        "label": "Tropical monsoon",
+        "modalCode": "Am",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          22.2,
+          22.3,
+          23.2,
+          24.5,
+          25.5,
+          25.4,
+          25.0,
+          25.0,
+          24.9,
+          24.6,
+          24.1,
+          23.2
+        ],
+        "peakMonths": [
+          5
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=120.98220&latitude=14.60420&format=JSON&start=1991&end=2020",
+        "responseSha256": "cfea9fb3b61baed28196a08a960b9bace7400b6f51fdb134ae02291ba441b62c"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/puerto-rico/san-juan/san-juan/",
+      "geonames": {
+        "id": 4568127,
+        "timezone": "America/Puerto_Rico",
+        "elevationM": 7,
+        "elevationSource": "elevation"
+      },
+      "koppenGeiger": {
+        "code": "Af",
+        "label": "Tropical rainforest",
+        "modalCode": "Af",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          22.8,
+          22.6,
+          22.7,
+          23.6,
+          24.7,
+          25.4,
+          25.6,
+          25.9,
+          25.9,
+          25.5,
+          24.6,
+          23.5
+        ],
+        "peakMonths": [
+          8,
+          9
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-66.10572&latitude=18.46633&format=JSON&start=1991&end=2020",
+        "responseSha256": "e862c857c4389044ffdc520862be41f4b0bc974696965ea809164f3be7bf2620"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/saudi-arabia/mecca-region/jeddah/",
+      "geonames": {
+        "id": 105343,
+        "timezone": "Asia/Riyadh",
+        "elevationM": 7,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "BWh",
+        "label": "Hot desert",
+        "modalCode": "BWh",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          17.9,
+          18.2,
+          19.1,
+          21.5,
+          23.3,
+          23.9,
+          25.2,
+          26.6,
+          25.9,
+          23.8,
+          22.1,
+          19.6
+        ],
+        "peakMonths": [
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=39.18624&latitude=21.49012&format=JSON&start=1991&end=2020",
+        "responseSha256": "c606ddb5047ba145beb39d05c2cf6a3ecfb428262460690cb605ad003a9f9303"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/singapore/singapore/singapore/",
+      "geonames": {
+        "id": 1880252,
+        "timezone": "Asia/Singapore",
+        "elevationM": 23,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Af",
+        "label": "Tropical rainforest",
+        "modalCode": "Af",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          24.8,
+          24.8,
+          25.5,
+          26.1,
+          26.4,
+          26.0,
+          25.6,
+          25.6,
+          25.5,
+          25.6,
+          25.5,
+          25.1
+        ],
+        "peakMonths": [
+          5
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=103.85007&latitude=1.28967&format=JSON&start=1991&end=2020",
+        "responseSha256": "c213a191ed49704f2a9668ec2bfab40e02ae148d6052788d72957f72f0fac727"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/south-korea/seoul/seoul/",
+      "geonames": {
+        "id": 1835848,
+        "timezone": "Asia/Seoul",
+        "elevationM": 38,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Dwa",
+        "label": "Cold, dry winter, hot summer",
+        "modalCode": "Dwa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          -5.1,
+          -3.2,
+          1.3,
+          7.3,
+          13.2,
+          18.4,
+          22.5,
+          23.2,
+          18.2,
+          11.4,
+          4.3,
+          -2.6
+        ],
+        "peakMonths": [
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=126.97840&latitude=37.56600&format=JSON&start=1991&end=2020",
+        "responseSha256": "13343347ea07ad27b8a7a46083962007ebf1fdfc427afbaa6d1c7c9078e9bada"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/spain/madrid/madrid/",
+      "geonames": {
+        "id": 3117735,
+        "timezone": "Europe/Madrid",
+        "elevationM": 665,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "BSk",
+        "label": "Cold steppe",
+        "modalCode": "BSk",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          2.2,
+          2.8,
+          5.2,
+          7.5,
+          10.9,
+          14.4,
+          15.8,
+          15.6,
+          13.1,
+          9.9,
+          5.6,
+          3.1
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-3.70256&latitude=40.41650&format=JSON&start=1991&end=2020",
+        "responseSha256": "410a71aaa7d8b1b4ecdfe8ad6ee9ecb021cb2743126a822b7c7b464e57f1128c"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/thailand/bangkok/bangkok/",
+      "geonames": {
+        "id": 1609350,
+        "timezone": "Asia/Bangkok",
+        "elevationM": 12,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Aw",
+        "label": "Tropical savanna",
+        "modalCode": "Aw",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          22.2,
+          23.8,
+          25.5,
+          26.7,
+          26.8,
+          26.4,
+          25.9,
+          25.8,
+          25.8,
+          25.3,
+          23.7,
+          21.7
+        ],
+        "peakMonths": [
+          5
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=100.50144&latitude=13.75398&format=JSON&start=1991&end=2020",
+        "responseSha256": "515be370ec357fd5e7ab5f662ddbbc8fd0ab1ecb48d75d7541eaa1731de2e42a"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/turkey/istanbul/istanbul/",
+      "geonames": {
+        "id": 745044,
+        "timezone": "Europe/Istanbul",
+        "elevationM": 39,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Csa",
+        "label": "Temperate, dry summer, hot summer",
+        "modalCode": "Csa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          4.3,
+          4.5,
+          6.2,
+          9.8,
+          14.6,
+          18.9,
+          21.0,
+          21.5,
+          18.2,
+          14.5,
+          10.2,
+          6.3
+        ],
+        "peakMonths": [
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=28.94966&latitude=41.01384&format=JSON&start=1991&end=2020",
+        "responseSha256": "2eec153e465379d1a8eee62671583fa8fc256bece8fe070e1fd28c7390893ba9"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/united-arab-emirates/abu-dhabi/abu-dhabi/",
+      "geonames": {
+        "id": 292968,
+        "timezone": "Asia/Dubai",
+        "elevationM": 6,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "BWh",
+        "label": "Hot desert",
+        "modalCode": "BWh",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          16.5,
+          16.8,
+          18.7,
+          21.7,
+          25.3,
+          28.0,
+          29.6,
+          29.8,
+          28.3,
+          25.6,
+          22.1,
+          18.8
+        ],
+        "peakMonths": [
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=54.39696&latitude=24.45118&format=JSON&start=1991&end=2020",
+        "responseSha256": "093e5823fdd486514c7b780a0f30e625bb6703a6e404cc60805517e6dd0fb374"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/united-arab-emirates/dubai/dubai/",
+      "geonames": {
+        "id": 292223,
+        "timezone": "Asia/Dubai",
+        "elevationM": 24,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "BWh",
+        "label": "Hot desert",
+        "modalCode": "BWh",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          16.3,
+          16.7,
+          18.5,
+          21.5,
+          25.0,
+          27.7,
+          29.2,
+          29.2,
+          27.7,
+          25.1,
+          21.6,
+          18.4
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=55.30927&latitude=25.07725&format=JSON&start=1991&end=2020",
+        "responseSha256": "6e91df80b9bbeb5b72aa314455cf58d72917e691c3da9f3401d41dc1d0e2156d"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/united-kingdom/england/london/",
+      "geonames": {
+        "id": 2643743,
+        "timezone": "Europe/London",
+        "elevationM": 25,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cfb",
+        "label": "Temperate, no dry season, warm summer",
+        "modalCode": "Cfb",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          3.6,
+          3.5,
+          5.1,
+          7.1,
+          10.2,
+          13.2,
+          15.2,
+          15.1,
+          12.8,
+          9.8,
+          6.5,
+          4.2
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-0.12574&latitude=51.50853&format=JSON&start=1991&end=2020",
+        "responseSha256": "7039783aa119957b79c92a072a08aa2d2790e2e730c9ccacbebf50bb9af2e130"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/arizona/phoenix/",
+      "geonames": {
+        "id": 5308655,
+        "timezone": "America/Phoenix",
+        "elevationM": 331,
+        "elevationSource": "elevation"
+      },
+      "koppenGeiger": {
+        "code": "BWh",
+        "label": "Hot desert",
+        "modalCode": "BWh",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          5.0,
+          6.2,
+          8.5,
+          10.1,
+          13.1,
+          16.1,
+          22.3,
+          23.3,
+          19.6,
+          12.7,
+          7.5,
+          4.4
+        ],
+        "peakMonths": [
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-112.07404&latitude=33.44838&format=JSON&start=1991&end=2020",
+        "responseSha256": "fc94f3a0f9ca1856d9babdb44fea2d19a978e97d805df246450fecbc6b01c4f9"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/florida/miami/",
+      "geonames": {
+        "id": 4164138,
+        "timezone": "America/New_York",
+        "elevationM": 2,
+        "elevationSource": "elevation"
+      },
+      "koppenGeiger": {
+        "code": "Am",
+        "label": "Tropical monsoon",
+        "modalCode": "Am",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          19.1,
+          19.6,
+          20.3,
+          21.9,
+          23.7,
+          25.7,
+          26.4,
+          26.6,
+          26.2,
+          24.5,
+          22.0,
+          20.4
+        ],
+        "peakMonths": [
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-80.19366&latitude=25.77427&format=JSON&start=1991&end=2020",
+        "responseSha256": "ddee9a3fe29ad62115906c46d4c0daec5aac56d2315ae1111c671aea3fb213e4"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/louisiana/new-orleans/",
+      "geonames": {
+        "id": 4335045,
+        "timezone": "America/Chicago",
+        "elevationM": 0,
+        "elevationSource": "elevation"
+      },
+      "koppenGeiger": {
+        "code": "Cfa",
+        "label": "Temperate, no dry season, hot summer",
+        "modalCode": "Cfa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          10.5,
+          12.3,
+          15.3,
+          18.7,
+          22.4,
+          25.3,
+          26.2,
+          26.2,
+          24.4,
+          19.9,
+          14.9,
+          11.9
+        ],
+        "peakMonths": [
+          7,
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-90.07507&latitude=29.95465&format=JSON&start=1991&end=2020",
+        "responseSha256": "b02c9687462f2572ccb985494354ccae43fa1a87157d49329d98094893f54921"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/new-york/new-york-city/",
+      "geonames": {
+        "id": 5128581,
+        "timezone": "America/New_York",
+        "elevationM": 10,
+        "elevationSource": "elevation"
+      },
+      "koppenGeiger": {
+        "code": "Cfa",
+        "label": "Temperate, no dry season, hot summer",
+        "modalCode": "Cfa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          -0.3,
+          -0.2,
+          2.5,
+          7.3,
+          12.6,
+          18.1,
+          21.4,
+          21.1,
+          18.0,
+          12.5,
+          7.1,
+          2.7
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-74.00597&latitude=40.71427&format=JSON&start=1991&end=2020",
+        "responseSha256": "f72c2cbd28faf9fe543ea2032a4e300c9682b17f10d80024ebfac7d649ecfafa"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/texas/dallas/",
+      "geonames": {
+        "id": 4684888,
+        "timezone": "America/Chicago",
+        "elevationM": 128,
+        "elevationSource": "elevation"
+      },
+      "koppenGeiger": {
+        "code": "Cfa",
+        "label": "Temperate, no dry season, hot summer",
+        "modalCode": "Cfa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          4.0,
+          6.5,
+          10.7,
+          15.0,
+          19.9,
+          23.7,
+          25.0,
+          24.7,
+          21.2,
+          15.5,
+          9.6,
+          5.0
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-96.80667&latitude=32.78306&format=JSON&start=1991&end=2020",
+        "responseSha256": "d5fd7cc2ab3d9270eb4b85ce1b78608e765e56ab35ef50ee95d2d8465808ea8e"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/texas/houston/",
+      "geonames": {
+        "id": 4699066,
+        "timezone": "America/Chicago",
+        "elevationM": 12,
+        "elevationSource": "elevation"
+      },
+      "koppenGeiger": {
+        "code": "Cfa",
+        "label": "Temperate, no dry season, hot summer",
+        "modalCode": "Cfa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          8.7,
+          11.0,
+          14.3,
+          17.8,
+          21.9,
+          24.8,
+          25.6,
+          25.6,
+          23.2,
+          18.6,
+          13.4,
+          9.9
+        ],
+        "peakMonths": [
+          8
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=-95.36327&latitude=29.76328&format=JSON&start=1991&end=2020",
+        "responseSha256": "bad72703f2005615caad3e45784936800c5b0ea9f63d87cb1774377fee85ae32"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/vietnam/hanoi/hanoi/",
+      "geonames": {
+        "id": 1581130,
+        "timezone": "Asia/Bangkok",
+        "elevationM": 10,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Cwa",
+        "label": "Temperate, dry winter, hot summer",
+        "modalCode": "Cwa",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          13.9,
+          16.2,
+          19.5,
+          23.0,
+          25.4,
+          26.8,
+          26.8,
+          26.5,
+          25.1,
+          22.1,
+          18.4,
+          14.3
+        ],
+        "peakMonths": [
+          7
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=105.84117&latitude=21.02450&format=JSON&start=1991&end=2020",
+        "responseSha256": "86329ea2df9c08b1913caca09923092321f6bc7349b084a0baa44a180a2878ee"
+      }
+    },
+    {
+      "path": "/wetbulb-temperature/vietnam/ho-chi-minh/ho-chi-minh-city/",
+      "geonames": {
+        "id": 1566083,
+        "timezone": "Asia/Ho_Chi_Minh",
+        "elevationM": 7,
+        "elevationSource": "dem"
+      },
+      "koppenGeiger": {
+        "code": "Aw",
+        "label": "Tropical savanna",
+        "modalCode": "Aw",
+        "modalShare": 1.0
+      },
+      "nasaPower": {
+        "monthlyC": [
+          22.8,
+          23.3,
+          24.7,
+          25.9,
+          26.4,
+          25.8,
+          25.5,
+          25.4,
+          25.4,
+          25.2,
+          24.6,
+          23.4
+        ],
+        "peakMonths": [
+          5
+        ],
+        "requestUrl": "https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=T2MWET&community=RE&longitude=106.62965&latitude=10.82302&format=JSON&start=1991&end=2020",
+        "responseSha256": "7ecf54bf8b46dff9cb4bb8ec8dc7791fe69f7ddc86a84614f14515a3c04dab51"
+      }
+    }
+  ]
+}

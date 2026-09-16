@@ -64,3 +64,8 @@ __pycache__/
 *.sqlite3
 *.sqlite
 .gsc-*
+
+# Private enrichment inputs and local extraction work must never be committed.
+/enrichment-private/
+/sources/
+

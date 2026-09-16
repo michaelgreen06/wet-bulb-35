@@ -127,7 +127,10 @@ test("production Worker assets render the same Popular links and new city routes
     ]) {
       const response = await app.fetch(new Request(`https://renderer.test${route}`), { ASSETS: assets });
       assert.equal(response.status, 200, route);
-      assert.match(await response.text(), new RegExp(`<link rel="canonical" href="https://www\\.wetbulb35\\.com${route}">`));
+      const html = await response.text();
+      assert.match(html, new RegExp(`<link rel="canonical" href="https://www\\.wetbulb35\\.com${route}">`));
+      assert.match(html, /city-climate-context-heading/);
+      assert.match(html, /NASA POWER/);
     }
   } finally {
     fs.rmSync(outDir, { recursive: true, force: true });
