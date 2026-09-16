@@ -34,6 +34,7 @@ GEONAMES_SHA256 = "b0d39ebf8d1935d425f3efc1d90c881bdc83d7567ca6db1232973eaebc51e
 BECK_ZIP_SHA256 = "bb84453d4541f1a0bc5a804ead83f483c19ce70f16a5197f6d3a7b6a63e65562"
 BECK_RASTER_SHA256 = "2130f0071dfb2904947d8ec3a0d807fac71004df76e769262004f1602e4d6a13"
 BECK_LEGEND_SHA256 = "2ede2ad270a036cc11c31705a2c1dbf0314a8cf011fc972cd4a9665e3339e5e5"
+POWER_RANGE = "30-year Meteorological and Solar Monthly & Annual Climatologies (January 1991 - December 2020)"
 
 def sha256(path):
     digest = hashlib.sha256()
@@ -68,7 +69,33 @@ def raster_sample(dataset, longitude, latitude):
         raise ValueError("No valid Köppen-Geiger center value")
     counts = Counter(values)
     modal, count = min(counts.items(), key=lambda item: (-item[1], item[0]))
-    return {"code": LABELS[center][0], "label": LABELS[center][1], "modalCode": LABELS[modal][0], "modalShare": round(count / len(values), 4)}
+    modal_share = count / len(values)
+    if modal != center or modal_share < 0.67:
+        raise ValueError("Köppen-Geiger center and 3x3 neighborhood require manual review")
+    return {"code": LABELS[center][0], "label": LABELS[center][1], "modalCode": LABELS[modal][0], "modalShare": round(modal_share, 4)}
+
+def validate_power_request(entry, reviewed_city):
+    query = parse_qs(urlparse(entry["url"]).query, keep_blank_values=True)
+    expected = {
+        "parameters": ["T2MWET"], "community": ["RE"],
+        "longitude": [f'{reviewed_city["longitude"]:.5f}'], "latitude": [f'{reviewed_city["latitude"]:.5f}'],
+        "format": ["JSON"], "start": ["1991"], "end": ["2020"],
+    }
+    if query != expected:
+        raise ValueError(f'NASA request contract mismatch for {reviewed_city["path"]}')
+
+def validated_power_response(raw, entry, path_name):
+    header = raw.get("header", {})
+    values = raw.get("properties", {}).get("parameter", {}).get("T2MWET", {})
+    monthly = [values.get(month) for month in MONTHS]
+    if (header.get("time_standard") != "LST" or header.get("range") != POWER_RANGE
+            or header.get("api", {}).get("version") != entry["apiVersion"]
+            or set(header.get("sources", [])) != {"MERRA2", "POWER"}
+            or header.get("fill_value") != -999.0
+            or raw.get("parameters", {}).get("T2MWET", {}).get("units") != "C"
+            or any(not isinstance(value, (int, float)) or not math.isfinite(value) or value == -999 or value < -100 or value > 60 for value in monthly)):
+        raise ValueError(f"Invalid NASA response contract for {path_name}")
+    return monthly
 
 def main():
     parser = argparse.ArgumentParser()
@@ -114,17 +141,9 @@ def main():
                 raise ValueError(f"GeoNames identity coordinate mismatch for {path_name}")
             if sha256(nasa_dir / f"{geoname_id}.json") != entry["sha256"]:
                 raise ValueError(f"NASA checksum mismatch for {path_name}")
-            request_query = parse_qs(urlparse(entry["url"]).query)
-            if float(request_query["latitude"][0]) != reviewed_city["latitude"] or float(request_query["longitude"][0]) != reviewed_city["longitude"]:
-                raise ValueError(f"NASA request coordinate mismatch for {path_name}")
+            validate_power_request(entry, reviewed_city)
             raw = json.loads((nasa_dir / f"{geoname_id}.json").read_text())
-            header = raw["header"]
-            values = raw["properties"]["parameter"]["T2MWET"]
-            monthly = [values.get(month) for month in MONTHS]
-            if (header.get("time_standard") != "LST" or header.get("api", {}).get("version") != entry["apiVersion"]
-                    or raw.get("parameters", {}).get("T2MWET", {}).get("units") != "C"
-                    or any(not isinstance(value, (int, float)) or not math.isfinite(value) or value == -999 or value < -100 or value > 60 for value in monthly)):
-                raise ValueError(f"Invalid NASA monthly values for {path_name}")
+            monthly = validated_power_response(raw, entry, path_name)
             peak = max(monthly)
             rounded_monthly = [float(Decimal(str(value)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)) for value in monthly]
             elevation = record["elevationM"] if record["elevationM"] is not None else record["demM"]

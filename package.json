@@ -10,7 +10,7 @@
     "dev": "next dev --turbopack",
     "generate-sitemaps": "node scripts/generate-sitemaps.js",
     "generate:popular-40-enrichment": "python3 scripts/generate-popular-40-enrichment.py",
-    "test:popular-40-enrichment": "node --test tests/popular-40-enrichment.test.mjs",
+    "test:popular-40-enrichment": "node --test tests/popular-40-enrichment.test.mjs && python3 tests/test_popular_40_enrichment_generator.py",
     "build": "next build",
     "build:static-prototype": "node scripts/prototype-static-generator.mjs --limit=130686 --out=dist",
     "build:vercel-output": "node scripts/build-vercel-output.mjs",

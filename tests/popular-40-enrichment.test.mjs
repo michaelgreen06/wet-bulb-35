@@ -61,6 +61,15 @@ test("Popular-40 validator fails closed on malformed values and cohort drift", (
   const missing = structuredClone(enrichment);
   missing.cities.pop();
   assert.throws(() => validatePopular40Enrichment(missing), /exactly 40/);
+  const wrongPeriod = structuredClone(enrichment);
+  wrongPeriod.cities[0].nasaPower.requestUrl = wrongPeriod.cities[0].nasaPower.requestUrl.replace("start=1991&end=2020", "start=1981&end=2010");
+  assert.throws(() => validatePopular40Enrichment(wrongPeriod), /provenance/);
+  const missingProvenance = structuredClone(enrichment);
+  delete missingProvenance.provenance.nasaPower;
+  assert.throws(() => validatePopular40Enrichment(missingProvenance), /provenance/);
+  const ambiguousKoppen = structuredClone(enrichment);
+  ambiguousKoppen.cities[0].koppenGeiger.modalShare = 0.66;
+  assert.throws(() => validatePopular40Enrichment(ambiguousKoppen), /Köppen-Geiger/);
 });
 
 test("all Popular-40 city pages expose accessible attribution and modeled climatology caveats", () => {
