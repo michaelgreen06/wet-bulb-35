@@ -45,6 +45,7 @@ export {
 
 const DEFAULT_OUT_DIR = "/private/tmp/wetbulb-static-prototype";
 const DEFAULT_SOURCE_FILE = "scripts/resolved_cities.json";
+const DEFAULT_TIER1_MANIFEST_FILE = "scripts/tier1-city-manifest.json";
 const PUBLIC_DIR = path.resolve("public");
 const STATIC_TAILWIND_INPUT = path.resolve("scripts/static-tailwind.css");
 
@@ -95,6 +96,7 @@ export function generateStaticSite(options = {}) {
   const outDir = path.resolve(String(options.outDir ?? DEFAULT_OUT_DIR));
   const siteUrl = options.siteUrl ?? DEFAULT_SITE_URL;
   const sourceFile = path.resolve(String(options.sourceFile ?? DEFAULT_SOURCE_FILE));
+  const tier1Manifest = options.tier1Manifest ?? null;
   const placesApiKey = options.placesApiKey ?? process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY ?? "";
   const googleAnalyticsId = options.googleAnalyticsId === undefined
     ? (process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || DEFAULT_GA_MEASUREMENT_ID)
@@ -104,7 +106,7 @@ export function generateStaticSite(options = {}) {
   fs.mkdirSync(outDir, { recursive: true });
 
   const sourceCities = JSON.parse(fs.readFileSync(sourceFile, "utf8")).slice(0, limit);
-  const siteData = createSiteData(sourceCities);
+  const siteData = createSiteData(sourceCities, tier1Manifest);
 
   copyPublicAssets(outDir);
   ensureAssets(outDir, siteData, { placesApiKey });
@@ -152,6 +154,7 @@ function main() {
     outDir: args.get("out") ?? DEFAULT_OUT_DIR,
     siteUrl: args.get("site") ?? DEFAULT_SITE_URL,
     googleAnalyticsId: args.get("ga"),
+    tier1Manifest: JSON.parse(fs.readFileSync(path.resolve(args.get("tier1") ?? DEFAULT_TIER1_MANIFEST_FILE), "utf8")),
   });
 
   console.log(JSON.stringify(result, null, 2));

@@ -54,6 +54,7 @@ function cleanStaleMembers(sitemapsDir, expected) {
 /** Generate the complete sitemap tree from the renderer's canonical route identity. */
 export function generateSitemaps({
   dataPath = path.join(__dirname, "resolved_cities.json"),
+  tier1ManifestPath = null,
   outputDir = path.join(__dirname, "..", "public"),
   baseUrl = process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_BASE_URL,
   lastmod = process.env.SITEMAP_LASTMOD || new Date().toISOString().slice(0, 10),
@@ -61,7 +62,8 @@ export function generateSitemaps({
   const normalizedLastmod = validateLastmod(lastmod);
   const normalizedBaseUrl = String(baseUrl).replace(/\/$/, "");
   const sourceCities = JSON.parse(fs.readFileSync(dataPath, "utf8"));
-  const site = createSiteData(sourceCities);
+  const tier1Manifest = tier1ManifestPath ? JSON.parse(fs.readFileSync(tier1ManifestPath, "utf8")) : null;
+  const site = createSiteData(sourceCities, tier1Manifest);
   const sitemapsDir = path.join(outputDir, "sitemaps");
   fs.mkdirSync(sitemapsDir, { recursive: true });
 
@@ -109,7 +111,7 @@ export function generateSitemaps({
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    const result = generateSitemaps();
+    const result = generateSitemaps({ tier1ManifestPath: path.join(__dirname, "tier1-city-manifest.json") });
     console.log(`Generated ${result.memberCount} sitemap members for ${result.cityCount} canonical city routes.`);
   } catch (error) {
     console.error(`Sitemap generation failed: ${error.message}`);

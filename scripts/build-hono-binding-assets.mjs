@@ -5,6 +5,7 @@ import path from "node:path";
 import os from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRouteIdentityIndex } from "./probe-location-route-identity.mjs";
+import { tier1ByCanonicalPath } from "../lib/page-renderer.mjs";
 
 const GENERATOR_ID = "wetbulb35-hono-assets";
 const REPOSITORY_ROOT = fs.realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."));
@@ -41,9 +42,11 @@ function parseArgs(argv = process.argv.slice(2)) {
   }));
 }
 
-export function buildHonoBindingAssets({ sourceCities, outDir }) {
+export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = null }) {
   const root = validateOutputDirectory(outDir);
   const identity = createRouteIdentityIndex(sourceCities);
+  const tier1 = tier1ByCanonicalPath(tier1Manifest);
+  const resolvedTier1 = new Set();
   const locations = path.join(root, "locations");
   const shards = path.join(locations, "shards");
   fs.rmSync(root, { recursive: true, force: true });
@@ -62,6 +65,8 @@ export function buildHonoBindingAssets({ sourceCities, outDir }) {
     }
     const country = countries.get(row.countrySlug);
     country.states.set(row.stateSlug, row.resolvedAdmin1Code);
+    const route = `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`;
+    if (tier1.has(route)) resolvedTier1.add(route);
     country.rows.push([
       row.name,
       row.resolvedAdmin1Code,
@@ -85,7 +90,13 @@ export function buildHonoBindingAssets({ sourceCities, outDir }) {
         count: countries.get(countrySlug).rows.filter((row) => row[1] === name).length,
       })),
     }));
-  fs.writeFileSync(path.join(locations, "route-manifest.json"), JSON.stringify({ v: 1, generator: GENERATOR_ID, countries: manifest }));
+  if (tier1.size && resolvedTier1.size !== tier1.size) throw new Error("Every Tier-1 manifest path must resolve exactly once from inventory");
+  const popularCities = identity.rows
+    .map((row) => ({ row, featured: tier1.get(`/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`) }))
+    .filter(({ featured }) => featured?.popular)
+    .sort((a, b) => a.row.name.localeCompare(b.row.name) || a.featured.path.localeCompare(b.featured.path))
+    .map(({ row }) => ({ name: row.name, stateName: row.resolvedAdmin1Code, countryName: row.resolvedCountryName, path: `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/` }));
+  fs.writeFileSync(path.join(locations, "route-manifest.json"), JSON.stringify({ v: 1, generator: GENERATOR_ID, countries: manifest, popularCities }));
   for (const country of countries.values()) {
     fs.writeFileSync(
       path.join(shards, country.file),
@@ -106,7 +117,8 @@ function main() {
   const source = args.get("source") ?? "scripts/resolved_cities.json";
   const out = args.get("out") ?? "worker-assets";
   const sourceCities = JSON.parse(fs.readFileSync(source, "utf8"));
-  console.log(JSON.stringify(buildHonoBindingAssets({ sourceCities, outDir: out })));
+  const tier1Manifest = JSON.parse(fs.readFileSync("scripts/tier1-city-manifest.json", "utf8"));
+  console.log(JSON.stringify(buildHonoBindingAssets({ sourceCities, outDir: out, tier1Manifest })));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

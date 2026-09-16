@@ -155,16 +155,17 @@ function listFiles(directory) {
 }
 export function offlineInventory() {
   const cities = JSON.parse(fs.readFileSync(path.join(root, "scripts/resolved_cities.json"), "utf8"));
-  const site = createSiteData(cities);
-  assert.equal(site.cities.length, 130_684, "city inventory count");
+  const tier1Manifest = JSON.parse(fs.readFileSync(path.join(root, "scripts/tier1-city-manifest.json"), "utf8"));
+  const site = createSiteData(cities, tier1Manifest);
+  assert.equal(site.cities.length, 130_686, "city inventory count");
   const cityRoutes = new Set(site.cities.map(routePathForCity));
-  assert.equal(cityRoutes.size, 130_684, "city routes must be collision-safe and unique");
+  assert.equal(cityRoutes.size, 130_686, "city routes must be collision-safe and unique");
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), "wetbulb35-parity-assets-"));
   try {
-    buildHonoRendererAssets({ sourceCities: cities, outDir: temp, publicDir: path.join(root, "public") });
+    buildHonoRendererAssets({ sourceCities: cities, outDir: temp, publicDir: path.join(root, "public"), tier1Manifest });
     const manifest = JSON.parse(fs.readFileSync(path.join(temp, "locations/route-manifest.json"), "utf8"));
     const manifestCities = manifest.countries.reduce((sum, country) => sum + country.count, 0);
-    assert.equal(manifestCities, 130_684, "route manifest count");
+    assert.equal(manifestCities, 130_686, "route manifest count");
     const sourcePublic = listFiles(path.join(root, "public"));
     const builtPublic = listFiles(temp).filter((file) => !file.startsWith("locations/") && !file.startsWith("assets/") || ["assets/app.css", "assets/app.js", "assets/locations.json"].includes(file));
     for (const file of sourcePublic) assert.ok(fs.existsSync(path.join(temp, file)), `missing public asset ${file}`);

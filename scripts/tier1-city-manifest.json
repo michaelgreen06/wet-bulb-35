@@ -1,0 +1,1205 @@
+{
+  "schemaVersion": 1,
+  "cities": [
+    {
+      "rank": 1,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/tamil-nadu/chennai/",
+      "popular": true
+    },
+    {
+      "rank": 2,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/indonesia/jakarta/jakarta/",
+      "popular": true
+    },
+    {
+      "rank": 3,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/west-bengal/kolkata/",
+      "popular": true
+    },
+    {
+      "rank": 4,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/thailand/bangkok/bangkok/",
+      "popular": true
+    },
+    {
+      "rank": 5,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/bangladesh/dhaka-division/dhaka/",
+      "popular": true
+    },
+    {
+      "rank": 6,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/maharashtra/mumbai/",
+      "popular": true
+    },
+    {
+      "rank": 7,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/pakistan/sindh/karachi/",
+      "popular": true
+    },
+    {
+      "rank": 8,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/delhi/new-delhi/",
+      "popular": true
+    },
+    {
+      "rank": 9,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/",
+      "popular": true
+    },
+    {
+      "rank": 10,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/singapore/singapore/singapore/",
+      "popular": true
+    },
+    {
+      "rank": 11,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/united-arab-emirates/dubai/dubai/",
+      "popular": true
+    },
+    {
+      "rank": 12,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/pakistan/punjab/lahore/",
+      "popular": true
+    },
+    {
+      "rank": 13,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/philippines/metro-manila/manila/",
+      "popular": true
+    },
+    {
+      "rank": 14,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/gujarat/surat/",
+      "popular": false
+    },
+    {
+      "rank": 15,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/telangana/hyderabad/",
+      "popular": true
+    },
+    {
+      "rank": 16,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/nigeria/lagos/lagos/",
+      "popular": true
+    },
+    {
+      "rank": 17,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/vietnam/ho-chi-minh/ho-chi-minh-city/",
+      "popular": true
+    },
+    {
+      "rank": 18,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/taiwan/taiwan/taipei/",
+      "popular": false
+    },
+    {
+      "rank": 19,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/malaysia/kuala-lumpur/kuala-lumpur/",
+      "popular": true
+    },
+    {
+      "rank": 20,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/japan/tokyo/tokyo/",
+      "popular": true
+    },
+    {
+      "rank": 21,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/vietnam/hanoi/hanoi/",
+      "popular": true
+    },
+    {
+      "rank": 22,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/egypt/cairo/cairo/",
+      "popular": true
+    },
+    {
+      "rank": 23,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/andhra-pradesh/visakhapatnam/",
+      "popular": false
+    },
+    {
+      "rank": 24,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/karnataka/bengaluru/",
+      "popular": false
+    },
+    {
+      "rank": 25,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/uttar-pradesh/lucknow/",
+      "popular": false
+    },
+    {
+      "rank": 26,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/china/shanghai/shanghai/",
+      "popular": false
+    },
+    {
+      "rank": 27,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/gujarat/ahmedabad/",
+      "popular": false
+    },
+    {
+      "rank": 28,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/tanzania/dar-es-salaam-region/dar-es-salaam/",
+      "popular": false
+    },
+    {
+      "rank": 29,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/united-states/texas/houston/",
+      "popular": true
+    },
+    {
+      "rank": 30,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/angola/luanda/luanda/",
+      "popular": false
+    },
+    {
+      "rank": 31,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/saudi-arabia/mecca-region/jeddah/",
+      "popular": true
+    },
+    {
+      "rank": 32,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/dr-congo/kinshasa/kinshasa/",
+      "popular": false
+    },
+    {
+      "rank": 33,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/uttar-pradesh/varanasi/",
+      "popular": false
+    },
+    {
+      "rank": 34,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/bihar/patna/",
+      "popular": false
+    },
+    {
+      "rank": 35,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/pakistan/sindh/hyderabad/",
+      "popular": false
+    },
+    {
+      "rank": 36,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/myanmar/yangon/yangon/",
+      "popular": false
+    },
+    {
+      "rank": 37,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/china/guangdong/guangzhou/",
+      "popular": false
+    },
+    {
+      "rank": 38,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/uttar-pradesh/kanpur/",
+      "popular": false
+    },
+    {
+      "rank": 39,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/brazil/rio-de-janeiro/rio-de-janeiro/",
+      "popular": true
+    },
+    {
+      "rank": 40,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/ivory-coast/abidjan-autonomous-district/abidjan/",
+      "popular": false
+    },
+    {
+      "rank": 41,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/ghana/greater-accra/accra/",
+      "popular": false
+    },
+    {
+      "rank": 42,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/united-states/florida/miami/",
+      "popular": true
+    },
+    {
+      "rank": 43,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/qatar/baladiyat-ad-dawah/doha/",
+      "popular": false
+    },
+    {
+      "rank": 44,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/odisha/bhubaneswar/",
+      "popular": false
+    },
+    {
+      "rank": 45,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/china/guangdong/shenzhen/",
+      "popular": false
+    },
+    {
+      "rank": 46,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/japan/osaka/osaka/",
+      "popular": false
+    },
+    {
+      "rank": 47,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/kerala/kozhikode/",
+      "popular": false
+    },
+    {
+      "rank": 48,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/rajasthan/jaipur/",
+      "popular": false
+    },
+    {
+      "rank": 49,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/india/chandigarh/chandigarh/",
+      "popular": false
+    },
+    {
+      "rank": 50,
+      "tier": "1A",
+      "path": "/wetbulb-temperature/somalia/banaadir/mogadishu/",
+      "popular": false
+    },
+    {
+      "rank": 51,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/indonesia/east-java/surabaya/",
+      "popular": false
+    },
+    {
+      "rank": 52,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/sri-lanka/western-province/colombo/",
+      "popular": false
+    },
+    {
+      "rank": 53,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/maharashtra/pune/",
+      "popular": false
+    },
+    {
+      "rank": 54,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/uttar-pradesh/agra/",
+      "popular": false
+    },
+    {
+      "rank": 55,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/gujarat/vadodara/",
+      "popular": false
+    },
+    {
+      "rank": 56,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/kerala/cochin/",
+      "popular": false
+    },
+    {
+      "rank": 57,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/dominican-republic/nacional/santo-domingo/",
+      "popular": false
+    },
+    {
+      "rank": 58,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/philippines/central-visayas/cebu-city/",
+      "popular": false
+    },
+    {
+      "rank": 59,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/togo/maritime/lome/",
+      "popular": false
+    },
+    {
+      "rank": 60,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/united-arab-emirates/abu-dhabi/abu-dhabi/",
+      "popular": true
+    },
+    {
+      "rank": 61,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/bangladesh/chittagong/chattogram/",
+      "popular": false
+    },
+    {
+      "rank": 62,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/pakistan/punjab/faisalabad/",
+      "popular": false
+    },
+    {
+      "rank": 63,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/south-korea/seoul/seoul/",
+      "popular": true
+    },
+    {
+      "rank": 64,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/united-states/new-york/new-york-city/",
+      "popular": true
+    },
+    {
+      "rank": 65,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/egypt/alexandria/alexandria/",
+      "popular": false
+    },
+    {
+      "rank": 66,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/china/beijing/beijing/",
+      "popular": false
+    },
+    {
+      "rank": 67,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/china/hubei/wuhan/",
+      "popular": false
+    },
+    {
+      "rank": 68,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/benin/littoral/cotonou/",
+      "popular": false
+    },
+    {
+      "rank": 69,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/jharkhand/jamshedpur/",
+      "popular": false
+    },
+    {
+      "rank": 70,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/china/jiangsu/suzhou/",
+      "popular": false
+    },
+    {
+      "rank": 71,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/andhra-pradesh/vijayawada/",
+      "popular": false
+    },
+    {
+      "rank": 72,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/pakistan/islamabad/islamabad/",
+      "popular": false
+    },
+    {
+      "rank": 73,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/indonesia/north-sumatra/medan/",
+      "popular": false
+    },
+    {
+      "rank": 74,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/united-states/texas/austin/",
+      "popular": false
+    },
+    {
+      "rank": 75,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/cameroon/littoral/douala/",
+      "popular": false
+    },
+    {
+      "rank": 76,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/china/zhejiang/hangzhou/",
+      "popular": false
+    },
+    {
+      "rank": 77,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/china/jiangsu/nanjing/",
+      "popular": false
+    },
+    {
+      "rank": 78,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/punjab/ludhiana/",
+      "popular": false
+    },
+    {
+      "rank": 79,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/united-states/texas/dallas/",
+      "popular": true
+    },
+    {
+      "rank": 80,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/senegal/dakar/dakar/",
+      "popular": false
+    },
+    {
+      "rank": 81,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/ecuador/guayas/guayaquil/",
+      "popular": false
+    },
+    {
+      "rank": 82,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/ghana/ashanti/kumasi/",
+      "popular": false
+    },
+    {
+      "rank": 83,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/uttar-pradesh/prayagraj/",
+      "popular": false
+    },
+    {
+      "rank": 84,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/brazil/ceara/fortaleza/",
+      "popular": false
+    },
+    {
+      "rank": 85,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/pakistan/punjab/multan/",
+      "popular": false
+    },
+    {
+      "rank": 86,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/cambodia/phnom-penh/phnom-penh/",
+      "popular": false
+    },
+    {
+      "rank": 87,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/nigeria/imo-state/owerri/",
+      "popular": false
+    },
+    {
+      "rank": 88,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/madhya-pradesh/indore/",
+      "popular": false
+    },
+    {
+      "rank": 89,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/guinea/conakry/conakry/",
+      "popular": false
+    },
+    {
+      "rank": 90,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/iraq/baghdad/baghdad/",
+      "popular": false
+    },
+    {
+      "rank": 91,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/kerala/thiruvananthapuram/",
+      "popular": false
+    },
+    {
+      "rank": 92,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/assam/guwahati/",
+      "popular": false
+    },
+    {
+      "rank": 93,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/west-bengal/asansol/",
+      "popular": false
+    },
+    {
+      "rank": 94,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/indonesia/south-sumatra/palembang/",
+      "popular": false
+    },
+    {
+      "rank": 95,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/united-states/florida/jacksonville/",
+      "popular": false
+    },
+    {
+      "rank": 96,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/maharashtra/nagpur/",
+      "popular": false
+    },
+    {
+      "rank": 97,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/mali/bamako/bamako/",
+      "popular": false
+    },
+    {
+      "rank": 98,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/brazil/bahia/salvador/",
+      "popular": false
+    },
+    {
+      "rank": 99,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/uttar-pradesh/meerut/",
+      "popular": false
+    },
+    {
+      "rank": 100,
+      "tier": "1B",
+      "path": "/wetbulb-temperature/india/chhattisgarh/raipur/",
+      "popular": false
+    },
+    {
+      "rank": 101,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/united-states/district-of-columbia/washington/",
+      "popular": false
+    },
+    {
+      "rank": 102,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/united-arab-emirates/sharjah/sharjah/",
+      "popular": false
+    },
+    {
+      "rank": 103,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/india/madhya-pradesh/gwalior/",
+      "popular": false
+    },
+    {
+      "rank": 104,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/india/karnataka/mangalore/",
+      "popular": false
+    },
+    {
+      "rank": 105,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/china/chongqing/chongqing/",
+      "popular": false
+    },
+    {
+      "rank": 106,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/united-states/arizona/phoenix/",
+      "popular": true
+    },
+    {
+      "rank": 107,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/sudan/khartoum/khartoum/",
+      "popular": false
+    },
+    {
+      "rank": 108,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/nigeria/oyo-state/ibadan/",
+      "popular": false
+    },
+    {
+      "rank": 109,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/republic-of-congo/brazzaville/brazzaville/",
+      "popular": false
+    },
+    {
+      "rank": 110,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/india/tamil-nadu/coimbatore/",
+      "popular": false
+    },
+    {
+      "rank": 111,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/saudi-arabia/eastern-province/dammam/",
+      "popular": false
+    },
+    {
+      "rank": 112,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/pakistan/punjab/gujranwala/",
+      "popular": false
+    },
+    {
+      "rank": 113,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/panama/panama/panama/",
+      "popular": false
+    },
+    {
+      "rank": 114,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/cameroon/centre/yaounde/",
+      "popular": false
+    },
+    {
+      "rank": 115,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/pakistan/khyber-pakhtunkhwa/peshawar/",
+      "popular": false
+    },
+    {
+      "rank": 116,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/central-java/semarang/",
+      "popular": false
+    },
+    {
+      "rank": 117,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/colombia/atlantico/barranquilla/",
+      "popular": false
+    },
+    {
+      "rank": 118,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/argentina/buenos-aires-fd/buenos-aires/",
+      "popular": true
+    },
+    {
+      "rank": 119,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/japan/aichi/nagoya/",
+      "popular": false
+    },
+    {
+      "rank": 120,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/nigeria/rivers-state/port-harcourt/",
+      "popular": false
+    },
+    {
+      "rank": 121,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/burkina-faso/centre/ouagadougou/",
+      "popular": false
+    },
+    {
+      "rank": 122,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/brazil/para/belem/",
+      "popular": false
+    },
+    {
+      "rank": 123,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/united-kingdom/england/london/",
+      "popular": true
+    },
+    {
+      "rank": 124,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/vietnam/can-tho/can-tho/",
+      "popular": false
+    },
+    {
+      "rank": 125,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/united-states/florida/tampa/",
+      "popular": false
+    },
+    {
+      "rank": 126,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/venezuela/zulia/maracaibo/",
+      "popular": false
+    },
+    {
+      "rank": 127,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/turkey/istanbul/istanbul/",
+      "popular": true
+    },
+    {
+      "rank": 128,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/china/anhui/hefei/",
+      "popular": false
+    },
+    {
+      "rank": 129,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/mozambique/maputo-city/maputo/",
+      "popular": false
+    },
+    {
+      "rank": 130,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/united-states/texas/fort-worth/",
+      "popular": false
+    },
+    {
+      "rank": 131,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/brazil/sao-paulo/sao-paulo/",
+      "popular": true
+    },
+    {
+      "rank": 132,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/united-states/california/los-angeles/",
+      "popular": false
+    },
+    {
+      "rank": 133,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/peru/lima-province/lima/",
+      "popular": false
+    },
+    {
+      "rank": 134,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/australia/new-south-wales/sydney/",
+      "popular": true
+    },
+    {
+      "rank": 135,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/canada/ontario/toronto/",
+      "popular": true
+    },
+    {
+      "rank": 136,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/liberia/montserrado-county/monrovia/",
+      "popular": false
+    },
+    {
+      "rank": 137,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/brazil/pernambuco/recife/",
+      "popular": false
+    },
+    {
+      "rank": 138,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/china/hunan/changsha/",
+      "popular": false
+    },
+    {
+      "rank": 139,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/china/guangxi/nanning/",
+      "popular": false
+    },
+    {
+      "rank": 140,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/west-java/cirebon/",
+      "popular": false
+    },
+    {
+      "rank": 141,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/saudi-arabia/riyadh-region/riyadh/",
+      "popular": false
+    },
+    {
+      "rank": 142,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/nigeria/abia-state/aba/",
+      "popular": false
+    },
+    {
+      "rank": 143,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/yemen/al-hudaydah/al-udaydah/",
+      "popular": false
+    },
+    {
+      "rank": 144,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/bangladesh/khulna-division/khulna/",
+      "popular": false
+    },
+    {
+      "rank": 145,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/south-sulawesi/makassar/",
+      "popular": false
+    },
+    {
+      "rank": 146,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/republic-of-congo/pointe-noire/pointe-noire/",
+      "popular": false
+    },
+    {
+      "rank": 147,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/djibouti/djibouti/djibouti/",
+      "popular": false
+    },
+    {
+      "rank": 148,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/brazil/amazonas/manaus/",
+      "popular": false
+    },
+    {
+      "rank": 149,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/taiwan/takao/kaohsiung/",
+      "popular": false
+    },
+    {
+      "rank": 150,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/sierra-leone/western-area/freetown/",
+      "popular": false
+    },
+    {
+      "rank": 151,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/nigeria/delta/warri/",
+      "popular": false
+    },
+    {
+      "rank": 152,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/united-states/florida/orlando/",
+      "popular": false
+    },
+    {
+      "rank": 153,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/yogyakarta/yogyakarta/",
+      "popular": false
+    },
+    {
+      "rank": 154,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/malaysia/johor/johor-bahru/",
+      "popular": false
+    },
+    {
+      "rank": 155,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/cuba/havana/havana/",
+      "popular": false
+    },
+    {
+      "rank": 156,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/riau/pekanbaru/",
+      "popular": false
+    },
+    {
+      "rank": 157,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/bahrain/manama/manama/",
+      "popular": false
+    },
+    {
+      "rank": 158,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/philippines/davao-region/davao/",
+      "popular": false
+    },
+    {
+      "rank": 159,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/nigeria/kano-state/kano/",
+      "popular": false
+    },
+    {
+      "rank": 160,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/central-java/slawi/",
+      "popular": false
+    },
+    {
+      "rank": 161,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/france/ile-de-france/paris/",
+      "popular": true
+    },
+    {
+      "rank": 162,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/pakistan/punjab/sialkot/",
+      "popular": false
+    },
+    {
+      "rank": 163,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/italy/lazio/rome/",
+      "popular": false
+    },
+    {
+      "rank": 164,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/greece/attica/athens/",
+      "popular": false
+    },
+    {
+      "rank": 165,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/bali/denpasar/",
+      "popular": false
+    },
+    {
+      "rank": 166,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/kenya/mombasa-county/mombasa/",
+      "popular": false
+    },
+    {
+      "rank": 167,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/bangladesh/dhaka-division/kishorganj/",
+      "popular": false
+    },
+    {
+      "rank": 168,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/ghana/western/sekondi-takoradi/",
+      "popular": false
+    },
+    {
+      "rank": 169,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/chad/ndjamena/ndjamena/",
+      "popular": false
+    },
+    {
+      "rank": 170,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/australia/queensland/brisbane/",
+      "popular": false
+    },
+    {
+      "rank": 171,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/myanmar/mandalay-region/mandalay/",
+      "popular": false
+    },
+    {
+      "rank": 172,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/oman/muscat/muscat/",
+      "popular": false
+    },
+    {
+      "rank": 173,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/malaysia/penang/george-town/",
+      "popular": false
+    },
+    {
+      "rank": 174,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/riau/batam/",
+      "popular": false
+    },
+    {
+      "rank": 175,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/kuwait/al-asimah/kuwait-city/",
+      "popular": false
+    },
+    {
+      "rank": 176,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/nigeria/edo-state/benin-city/",
+      "popular": false
+    },
+    {
+      "rank": 177,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/nigeria/akwa-ibom-state/uyo/",
+      "popular": false
+    },
+    {
+      "rank": 178,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/pakistan/khyber-pakhtunkhwa/mardan/",
+      "popular": false
+    },
+    {
+      "rank": 179,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/benin/oueme/porto-novo/",
+      "popular": false
+    },
+    {
+      "rank": 180,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/united-states/louisiana/new-orleans/",
+      "popular": true
+    },
+    {
+      "rank": 181,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/east-kalimantan/samarinda/",
+      "popular": false
+    },
+    {
+      "rank": 182,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/spain/madrid/madrid/",
+      "popular": true
+    },
+    {
+      "rank": 183,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/mexico/nuevo-leon/monterrey/",
+      "popular": false
+    },
+    {
+      "rank": 184,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/haiti/ouest/port-au-prince/",
+      "popular": false
+    },
+    {
+      "rank": 185,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/angola/cabinda/cabinda/",
+      "popular": false
+    },
+    {
+      "rank": 186,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/colombia/bolivar/cartagena/",
+      "popular": false
+    },
+    {
+      "rank": 187,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/philippines/central-luzon/angeles-city/",
+      "popular": false
+    },
+    {
+      "rank": 188,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/gabon/estuaire/libreville/",
+      "popular": false
+    },
+    {
+      "rank": 189,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/indonesia/west-java/bandung/",
+      "popular": false
+    },
+    {
+      "rank": 190,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/vietnam/da-nang/da-nang/",
+      "popular": false
+    },
+    {
+      "rank": 191,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/bangladesh/sylhet-division/sylhet/",
+      "popular": false
+    },
+    {
+      "rank": 192,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/vietnam/haiphong/haiphong/",
+      "popular": false
+    },
+    {
+      "rank": 193,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/iran/hormozgan/bandar-abbas/",
+      "popular": false
+    },
+    {
+      "rank": 194,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/tanzania/zanzibar-urbanwest/zanzibar/",
+      "popular": false
+    },
+    {
+      "rank": 195,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/mexico/yucatan/merida/",
+      "popular": false
+    },
+    {
+      "rank": 196,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/mexico/quintana-roo/cancun/",
+      "popular": false
+    },
+    {
+      "rank": 197,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/puerto-rico/san-juan/san-juan/",
+      "popular": true
+    },
+    {
+      "rank": 198,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/mexico/veracruz/veracruz/",
+      "popular": false
+    },
+    {
+      "rank": 199,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/mexico/mexico-city/mexico-city/",
+      "popular": true
+    },
+    {
+      "rank": 200,
+      "tier": "1C",
+      "path": "/wetbulb-temperature/tobago/port-of-spain/port-of-spain/",
+      "popular": false
+    }
+  ]
+}

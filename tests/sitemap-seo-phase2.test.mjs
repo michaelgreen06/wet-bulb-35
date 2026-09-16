@@ -78,9 +78,9 @@ test("generator is deterministic, removes stale members, and index references ex
 test("generated city and non-city URL sets exactly match renderer route identity", () => {
   const sourceCities = JSON.parse(fs.readFileSync(path.join(root, "scripts/resolved_cities.json"), "utf8"));
   const site = createSiteData(sourceCities);
-  assert.equal(site.cities.length, 130_684);
+  assert.equal(site.cities.length, 130_686);
   const expectedCities = new Set(site.cities.map(routePathForCity));
-  assert.equal(expectedCities.size, 130_684);
+  assert.equal(expectedCities.size, 130_686);
 
   withTempOutput((outputDir) => {
     const result = generateSitemaps({ outputDir, dataPath: path.join(root, "scripts/resolved_cities.json"), baseUrl, lastmod: expectedLastmod });
@@ -94,7 +94,7 @@ test("generated city and non-city URL sets exactly match renderer route identity
       }
     }
     assert.deepEqual(cityUrls, expectedCities);
-    assert.equal(result.cityCount, 130_684);
+    assert.equal(result.cityCount, 130_686);
 
     const nonCityUrls = new Set([
       ...readLocations(output.members.get("sitemap-main.xml")),
@@ -111,5 +111,5 @@ test("committed sitemap output has date-only metadata and no orphaned members", 
   assertProtocolAndMetadata(output);
   const indexedMembers = new Set(readLocations(output.index).map((url) => path.basename(new URL(url).pathname)));
   assert.deepEqual(indexedMembers, new Set(output.members.keys()));
-  assert.equal([...output.members.values()].flatMap(readLocations).length + readLocations(output.index).length, 134_662);
+  assert.equal([...output.members.values()].flatMap(readLocations).length + readLocations(output.index).length, 134_668);
 });
