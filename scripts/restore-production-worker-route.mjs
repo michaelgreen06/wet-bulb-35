@@ -16,6 +16,7 @@ function parseArgs(argv = process.argv.slice(2)) {
 
 async function api(fetchImpl, url, token, options = {}) {
   const response = await fetchImpl(url, {
+    signal: AbortSignal.timeout(20_000),
     ...options,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json", ...(options.headers || {}) },
   });
@@ -25,11 +26,24 @@ async function api(fetchImpl, url, token, options = {}) {
 }
 
 export function selectRouteAction(routes) {
+  const unexpected = relevantRoutes(routes).filter((route) => route.pattern !== ROUTE);
+  if (unexpected.length) return { action: "refuse", reason: "unexpected_route_scope", routes: unexpected };
   const exact = routes.filter((route) => route.pattern === ROUTE);
   if (exact.length === 1 && exact[0].script === WORKER) return { action: "none", route: exact[0] };
   if (exact.length > 1) return { action: "refuse", reason: "duplicate_exact_routes", routes: exact };
   if (exact.length === 1) return { action: "refuse", reason: "exact_route_owned_by_other_script", routes: exact };
   return { action: "create", pattern: ROUTE, script: WORKER };
+}
+
+// Include overrides and exclusions affecting www, plus every route owned by
+// this Worker. Unexpected scope needs operator attention, never a takeover.
+export function relevantRoutes(routes) {
+  return routes.filter((route) => {
+    if (route.script === WORKER) return true;
+    const host = String(route.pattern).replace(/^https?:\/\//, "").split("/")[0];
+    const expression = host.split("*").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
+    return new RegExp(`^${expression}$`, "i").test("www.wetbulb35.com");
+  });
 }
 
 export async function restoreProductionRoute({
