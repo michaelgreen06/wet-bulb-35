@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 /** Build public Worker assets plus private renderer metadata shards. */
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { buildHonoBindingAssets } from "./build-hono-binding-assets.mjs";
 import { createRouteIdentityIndex } from "./probe-location-route-identity.mjs";
+import { validateLegacyRedirectArtifact } from "./generate-legacy-city-route-redirects.mjs";
 import { clientRuntimeSource } from "../lib/page-renderer.mjs";
 
-export function buildHonoRendererAssets({ sourceCities, outDir, placesApiKey = "", publicDir = "public", tier1Manifest = null }) {
+export function buildHonoRendererAssets({ sourceCities, outDir, placesApiKey = "", publicDir = "public", tier1Manifest = null, legacyArtifactPath = "scripts/legacy-city-route-redirects.v1.json" }) {
+  const legacyArtifact = legacyArtifactPath
+    ? JSON.parse(fs.readFileSync(path.resolve(legacyArtifactPath), "utf8"))
+    : null;
+  if (legacyArtifact) validateLegacyRedirectArtifact({ artifact: legacyArtifact, currentCities: sourceCities });
   const result = buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest });
   const root = path.resolve(outDir);
   const identity = createRouteIdentityIndex(sourceCities);
@@ -18,6 +24,26 @@ export function buildHonoRendererAssets({ sourceCities, outDir, placesApiKey = "
     const rows = identity.rows.filter((row) => row.countrySlug === country.countrySlug);
     country.count = rows.length;
     for (const state of country.states) state.count = rows.filter((row) => row.stateSlug === state.slug).length;
+  }
+  if (legacyArtifact) {
+    const legacyShards = new Map();
+    for (const entry of legacyArtifact.aliases) {
+      const countrySlug = entry[0].split("/")[4];
+      if (!legacyShards.has(countrySlug)) legacyShards.set(countrySlug, []);
+      legacyShards.get(countrySlug).push(entry);
+    }
+    const legacyDir = path.join(root, "locations/legacy-shards");
+    fs.mkdirSync(legacyDir, { recursive: true });
+    const legacyFiles = [];
+    const filenames = new Set();
+    for (const [countrySlug, aliases] of [...legacyShards].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+      const file = `${crypto.createHash("sha256").update(countrySlug).digest("hex").slice(0, 16)}.json`;
+      if (filenames.has(file)) throw new Error("Legacy redirect shard filename collision");
+      filenames.add(file);
+      fs.writeFileSync(path.join(legacyDir, file), JSON.stringify({ v: 1, a: aliases }));
+      legacyFiles.push([countrySlug, file]);
+    }
+    manifest.legacyRedirects = { v: 1, artifactSha256: legacyArtifact.sha256, files: legacyFiles };
   }
   fs.writeFileSync(manifestPath, JSON.stringify(manifest));
 

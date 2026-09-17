@@ -193,7 +193,7 @@ test("Hono renderer matches immutable pre-extraction golden hashes", { timeout: 
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "hono-renderer-goldens-"));
   try {
     const sourceCities = JSON.parse(fs.readFileSync(path.join(root, "scripts/resolved_cities.json"), "utf8"));
-    buildHonoRendererAssets({ sourceCities, outDir, publicDir: path.join(root, "public") });
+    buildHonoRendererAssets({ sourceCities, outDir, publicDir: path.join(root, "public"), legacyArtifactPath: null });
     const assets = { async fetch(request) {
       const diskPath = path.join(outDir, new URL(request.url).pathname);
       return fs.existsSync(diskPath) ? new Response(fs.readFileSync(diskPath)) : new Response("missing", { status: 404 });
@@ -598,7 +598,7 @@ test("Hono renderer preserves delivery headers, negotiated 404s, HEAD, and priva
 test("renderer asset build exposes only public browser assets and preserves index", () => {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "hono-renderer-assets-"));
   try {
-    const result = buildHonoRendererAssets({ sourceCities: fixtureCities, outDir, placesApiKey: "", publicDir: path.join(root, "public") });
+    const result = buildHonoRendererAssets({ sourceCities: fixtureCities, outDir, placesApiKey: "", publicDir: path.join(root, "public"), legacyArtifactPath: null });
     assert.equal(result.rows, 3);
     for (const relative of ["assets/app.css", "assets/app.js", "assets/locations.json", "favicon.svg", "logo.svg", "images/wetbulb-default.jpg", "locations/route-manifest.json"]) {
       assert.ok(fs.existsSync(path.join(outDir, relative)), relative);
@@ -612,7 +612,7 @@ test("all generated city routes resolve from metadata shards without static HTML
   const sourceCities = JSON.parse(fs.readFileSync(path.join(root, "scripts/resolved_cities.json"), "utf8"));
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "hono-renderer-inventory-"));
   try {
-    buildHonoRendererAssets({ sourceCities, outDir, placesApiKey: "", publicDir: path.join(root, "public") });
+    buildHonoRendererAssets({ sourceCities, outDir, placesApiKey: "", publicDir: path.join(root, "public"), legacyArtifactPath: null });
     const assetBinding = { async fetch(request) {
       const diskPath = path.join(outDir, new URL(request.url).pathname);
       return fs.existsSync(diskPath) ? new Response(fs.readFileSync(diskPath)) : new Response("missing", { status: 404 });
@@ -640,7 +640,7 @@ test("Wrangler serves renderer pages and public assets while hiding metadata", {
   let child;
   try {
     writeBrowserFixture(browserFixtureDir);
-    buildHonoRendererAssets({ sourceCities: fixtureCities, outDir: assetDir, publicDir: browserFixtureDir });
+    buildHonoRendererAssets({ sourceCities: fixtureCities, outDir: assetDir, publicDir: browserFixtureDir, legacyArtifactPath: null });
     fs.writeFileSync(configPath, [
       'name = "wetbulb35-hono-renderer-local-test"',
       `main = ${JSON.stringify(path.join(root, "workers/hono-page-renderer.mjs"))}`,

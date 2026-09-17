@@ -154,6 +154,18 @@ function validShard(value) {
   return value && value.v === 1 && Array.isArray(value.r) && value.r.every((row) => Array.isArray(row)
     && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string" && (row.length < 6 || row[5] === null || Number.isInteger(row[5])));
 }
+function validLegacyManifest(value) {
+  if (!(value && value.v === 1 && typeof value.artifactSha256 === "string" && /^[a-f0-9]{64}$/.test(value.artifactSha256)
+    && Array.isArray(value.files) && value.files.every((entry) => Array.isArray(entry) && entry.length === 2 && /^[a-z0-9-]+$/.test(entry[0]) && /^[a-f0-9]{16}\.json$/.test(entry[1])))) return false;
+  return new Set(value.files.map(([country]) => country)).size === value.files.length
+    && new Set(value.files.map(([, file]) => file)).size === value.files.length;
+}
+function validLegacyShard(value) {
+  if (!(value && value.v === 1 && Array.isArray(value.a) && value.a.every((entry) => Array.isArray(entry) && entry.length === 2
+    && /^\/wetbulb-temperature\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+$/.test(entry[0])
+    && /^\/wetbulb-temperature\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+\/$/.test(entry[1])))) return false;
+  return new Set(value.a.map(([alias]) => alias)).size === value.a.length;
+}
 async function readHtmlEnvelope(cache, key, version, routePath, now) {
   if (!cache) return null;
   try {
@@ -182,7 +194,9 @@ async function writeHtmlEnvelope(cache, key, version, routePath, response, now) 
 export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SHARDS } = {}) {
   let manifestPromise;
   const parsedShards = new Map();
+  const parsedLegacyShards = new Map();
   const inFlightShards = new Map();
+  const inFlightLegacyShards = new Map();
   const shardCacheLimit = Number.isSafeInteger(maxCachedShards) && maxCachedShards > 0
     ? maxCachedShards
     : DEFAULT_MAX_CACHED_SHARDS;
@@ -230,6 +244,37 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     );
     return promise;
   }
+  async function legacyAlias(request, assets, pathname) {
+    const match = pathname.match(/^\/wetbulb-temperature\/([a-z0-9-]+)\/([a-z0-9-]+)\/([a-z0-9-]+)$/);
+    if (!match) return null;
+    const index = await manifest(request, assets);
+    if (index.legacyRedirects === undefined) return null;
+    if (!validLegacyManifest(index.legacyRedirects)) throw new InternalMetadataError();
+    const file = index.legacyRedirects.files.find(([country]) => country === match[3])?.[1];
+    if (!file) return null;
+    let aliases = parsedLegacyShards.get(file);
+    if (!aliases) {
+      let promise = inFlightLegacyShards.get(file);
+      if (!promise) {
+        promise = readAssetJson(request, assets, `${LOCATION_ROOT}/legacy-shards/${file}`).then((shard) => {
+          if (!validLegacyShard(shard)) throw new InternalMetadataError();
+          const parsed = new Map(shard.a);
+          parsedLegacyShards.set(file, parsed);
+          while (parsedLegacyShards.size > shardCacheLimit) parsedLegacyShards.delete(parsedLegacyShards.keys().next().value);
+          return parsed;
+        });
+        inFlightLegacyShards.set(file, promise);
+        promise.then(
+          () => { if (inFlightLegacyShards.get(file) === promise) inFlightLegacyShards.delete(file); },
+          () => { if (inFlightLegacyShards.get(file) === promise) inFlightLegacyShards.delete(file); },
+        );
+      }
+      aliases = await promise;
+    } else {
+      parsedLegacyShards.delete(file); parsedLegacyShards.set(file, aliases);
+    }
+    return aliases.get(pathname) || null;
+  }
   const resolve = async (request, assets, parts) => {
     const index = await manifest(request, assets);
     if (!validManifest(index)) throw new InternalMetadataError();
@@ -247,7 +292,9 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     const city = state.citiesBySlug.get(parts[3]);
     return city ? { kind: "city", city } : null;
   };
-  resolve.cacheStats = () => ({ parsedShards: parsedShards.size, inFlightShards: inFlightShards.size, maxCachedShards: shardCacheLimit });
+  resolve.legacyAlias = legacyAlias;
+  resolve.cacheStats = () => ({ parsedShards: parsedShards.size, parsedLegacyShards: parsedLegacyShards.size,
+    inFlightShards: inFlightShards.size, inFlightLegacyShards: inFlightLegacyShards.size, maxCachedShards: shardCacheLimit });
   return resolve;
 }
 
@@ -269,6 +316,10 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     const url = new URL(request.url);
     const pathname = url.pathname;
     if (pathname.startsWith(`${LOCATION_ROOT}/`) || pathname === LOCATION_ROOT) return context.notFound();
+    if (pathname === "/sitemap-index.xml" || pathname === "/api/sitemap-index.xml") {
+      url.pathname = "/sitemap.xml";
+      return new Response(null, { status: 308, headers: { location: url.toString(), "strict-transport-security": STRICT_TRANSPORT_SECURITY } });
+    }
     const routePath = candidateHtmlPath(pathname);
     if (!routePath) {
       const asset = await publicAssetResponse(request, context.env.ASSETS);
@@ -282,7 +333,17 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
         const response = internalErrorResponse();
         return request.method === "HEAD" ? headResponse(response) : response;
       }
-      if (!resolved) return context.notFound();
+      if (!resolved) {
+        let target;
+        try { target = await resolve.legacyAlias(request, context.env.ASSETS, pathname); }
+        catch {
+          const response = internalErrorResponse();
+          return request.method === "HEAD" ? headResponse(response) : response;
+        }
+        if (!target) return context.notFound();
+        url.pathname = target;
+        return new Response(null, { status: 308, headers: { location: url.toString(), "strict-transport-security": STRICT_TRANSPORT_SECURITY } });
+      }
       url.pathname = `${pathname}/`;
       return new Response(null, { status: 308, headers: { location: url.toString(), "strict-transport-security": STRICT_TRANSPORT_SECURITY } });
     }
