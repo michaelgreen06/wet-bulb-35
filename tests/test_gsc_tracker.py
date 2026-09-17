@@ -244,6 +244,7 @@ class StorageAndSafetyTests(unittest.TestCase):
         self.assertIn("openssl cms -encrypt", workflow)
         self.assertIn("path: gsc-snapshot.cms", workflow)
         self.assertNotIn("path: .private", workflow)
+        self.assertIn("timeout-minutes: 45", workflow)
         self.assertIn("retention-days: 7", workflow)
         self.assertIn("Refuse a second encrypted snapshot", workflow)
         self.assertIn("cancel-in-progress: false", workflow)
