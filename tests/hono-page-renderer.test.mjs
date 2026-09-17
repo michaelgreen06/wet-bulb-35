@@ -126,12 +126,12 @@ test("Hono renderer is byte-parity with generator for representative pages", asy
   const metsamor = siteData.states.find((state) => state.countrySlug === "armenia").cities;
   const expected = new Map([
     ["/", renderHomePage(siteData, options)],
-    ["/wetbulb-temperature", renderBrowsePage(siteData, options)],
-    ["/wetbulb-temperature/andorra", renderCountryPage(andorra, options)],
-    ["/wetbulb-temperature/andorra/encamp", renderStatePage(encamp, options)],
-    ["/wetbulb-temperature/andorra/encamp/vila", pageHtml(vila, options)],
-    ["/wetbulb-temperature/armenia/armavir/metsamor-40-0723-44-2917", pageHtml(metsamor[0], options)],
-    ["/wetbulb-temperature/armenia/armavir/metsamor-40-1445-44-1167", pageHtml(metsamor[1], options)],
+    ["/wetbulb-temperature/", renderBrowsePage(siteData, options)],
+    ["/wetbulb-temperature/andorra/", renderCountryPage(andorra, options)],
+    ["/wetbulb-temperature/andorra/encamp/", renderStatePage(encamp, options)],
+    ["/wetbulb-temperature/andorra/encamp/vila/", pageHtml(vila, options)],
+    ["/wetbulb-temperature/armenia/armavir/metsamor-40-0723-44-2917/", pageHtml(metsamor[0], options)],
+    ["/wetbulb-temperature/armenia/armavir/metsamor-40-1445-44-1167/", pageHtml(metsamor[1], options)],
   ]);
   const requested = [];
   let providerCalls = 0;
@@ -141,17 +141,51 @@ test("Hono renderer is byte-parity with generator for representative pages", asy
     WEATHER_PROVIDER: { fetch() { providerCalls += 1; throw new Error("HTML must not fetch weather"); } },
   };
   for (const [pathname, expectedHtml] of expected) {
-    for (const variant of [pathname, `${pathname}/`]) {
-      const result = await html(app, variant, env);
-      assert.equal(result.response.status, 200, variant);
-      assert.equal(result.response.headers.get("content-type"), "text/html; charset=UTF-8", variant);
-      assertHtmlParity(result.body, expectedHtml, variant);
-    }
+    const result = await html(app, pathname, env);
+    assert.equal(result.response.status, 200, pathname);
+    assert.equal(result.response.headers.get("content-type"), "text/html; charset=UTF-8", pathname);
+    assertHtmlParity(result.body, expectedHtml, pathname);
   }
   assert.equal(providerCalls, 0);
   assert.ok(requested.includes("/locations/route-manifest.json"));
   assert.ok(requested.includes("/locations/shards/andorra.json"));
   assert.ok(requested.includes("/locations/shards/armenia.json"));
+});
+
+test("Hono renderer permanently redirects only recognized slashless HTML routes", async () => {
+  const app = createHonoPageRenderer();
+  const env = { ASSETS: fixtureBinding(), OBSERVABILITY_DISABLED: "true" };
+  const canonicalRoutes = [
+    ["/wetbulb-temperature?a=1&a=2+three&encoded=%2F%FF", "/wetbulb-temperature/?a=1&a=2+three&encoded=%2F%FF"],
+    ["/wetbulb-temperature/andorra?source=country", "/wetbulb-temperature/andorra/?source=country"],
+    ["/wetbulb-temperature/andorra/encamp?source=state", "/wetbulb-temperature/andorra/encamp/?source=state"],
+    ["/wetbulb-temperature/andorra/encamp/vila?source=city", "/wetbulb-temperature/andorra/encamp/vila/?source=city"],
+  ];
+  for (const [pathname, canonical] of canonicalRoutes) {
+    const expected = `${base}${canonical}`;
+    for (const method of ["GET", "HEAD"]) {
+      const response = await app.fetch(new Request(`${base}${pathname}`, { method }), env);
+      assert.equal(response.status, 308, `${method} ${pathname}`);
+      assert.equal(response.headers.get("location"), expected, `${method} ${pathname}`);
+      assert.equal(response.headers.get("strict-transport-security"), "max-age=63072000", `${method} ${pathname}`);
+      assert.equal(await response.text(), "", `${method} ${pathname}`);
+    }
+  }
+
+  const slashed = await html(app, "/wetbulb-temperature/andorra/encamp/vila/?source=canonical", env);
+  assert.equal(slashed.response.status, 200);
+  assert.equal(slashed.response.headers.get("location"), null);
+
+  for (const pathname of ["/", "/wetbulb-temperature/nope", "/not-a-real-page", "/api/weather", "/assets/app.css", "/robots.txt", "/sitemap.xml", "/sitemaps/cities-1.xml"]) {
+    const response = await app.fetch(new Request(`${base}${pathname}`), env);
+    assert.notEqual(response.status, 308, pathname);
+    assert.equal(response.headers.get("location"), null, pathname);
+  }
+  for (const pathname of ["//wetbulb-temperature/andorra", "/wetbulb-temperature//andorra", "/wetbulb-temperature/andorra//encamp", "/wetbulb-temperature/andorra/encamp/vila//"]) {
+    const response = await app.fetch(new Request(`${base}${pathname}`), env);
+    assert.notEqual(response.status, 308, pathname);
+    assert.equal(response.headers.get("location"), null, pathname);
+  }
 });
 
 test("Hono renderer matches immutable pre-extraction golden hashes", { timeout: 30_000 }, async () => {
@@ -253,7 +287,7 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
     ASSETS: fixtureBinding(), HTML_CACHE_TEST_VERSION: "deployment-a", OBSERVABILITY_DISABLED: "true",
     WEATHER_PROVIDER: { fetch() { providerCalls += 1; throw new Error("HTML must not fetch weather"); } },
   };
-  const first = await html(app, "/wetbulb-temperature/andorra/encamp/vila?utm=one", env);
+  const first = await html(app, "/wetbulb-temperature/andorra/encamp/vila/?utm=one", env);
   assert.equal(first.response.status, 200);
   assert.equal(first.response.headers.get("cache-control"), "public, max-age=0, must-revalidate");
   assert.equal(cache.puts, 1);
@@ -266,7 +300,7 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
   const slash = await html(app, "/wetbulb-temperature/andorra/encamp/vila/?utm=two", env);
   assert.equal(slash.body, first.body);
   assert.equal(cache.puts, 1, "query and parity-equivalent slash spelling share one GET entry");
-  const head = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila?head=1`, { method: "HEAD" }), env);
+  const head = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/?head=1`, { method: "HEAD" }), env);
   assert.equal(head.status, 200);
   assert.equal(head.headers.get("cache-control"), "public, max-age=0, must-revalidate");
   assert.equal(await head.text(), "");
@@ -276,8 +310,8 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
   const waits = [];
   const staleContext = { waitUntil(promise) { waits.push(promise); } };
   const staleResponses = await Promise.all([
-    app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env, staleContext),
-    app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila?again=1`), env, staleContext),
+    app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`), env, staleContext),
+    app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/?again=1`), env, staleContext),
   ]);
   assert.equal(await staleResponses[0].text(), first.body, "stale response is immediate parity HTML");
   assert.equal(await staleResponses[1].text(), first.body);
@@ -286,7 +320,7 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
 
   const headOnlyCache = new FakeCache();
   const headOnly = createHonoPageRenderer({ cache: () => headOnlyCache, now: () => clock });
-  const headMiss = await headOnly.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`, { method: "HEAD" }), env);
+  const headMiss = await headOnly.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`, { method: "HEAD" }), env);
   assert.equal(headMiss.status, 200);
   assert.equal(await headMiss.text(), "");
   assert.equal(headOnlyCache.puts, 0, "HEAD-only miss does not populate Cache API");
@@ -294,11 +328,11 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
   const writeFailureCache = new FakeCache();
   writeFailureCache.failPut = true;
   const writeFailureApp = createHonoPageRenderer({ cache: () => writeFailureCache, now: () => clock });
-  assert.equal((await html(writeFailureApp, "/wetbulb-temperature/andorra/encamp/vila", env)).response.status, 200, "cache write failure cannot break rendering");
+  assert.equal((await html(writeFailureApp, "/wetbulb-temperature/andorra/encamp/vila/", env)).response.status, 200, "cache write failure cannot break rendering");
   const readFailureCache = new FakeCache();
   readFailureCache.failMatch = true;
   const readFailureApp = createHonoPageRenderer({ cache: () => readFailureCache, now: () => clock });
-  assert.equal((await html(readFailureApp, "/wetbulb-temperature/andorra/encamp/vila", env)).response.status, 200, "cache read failure cannot break rendering");
+  assert.equal((await html(readFailureApp, "/wetbulb-temperature/andorra/encamp/vila/", env)).response.status, 200, "cache read failure cannot break rendering");
 
   const noCacheBefore = cache.puts;
   for (const pathname of ["/api/weather?lat=1&lon=2", "/not-a-real-page", "/assets/app.css", "/locations/route-manifest.json"]) {
@@ -309,19 +343,19 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
 
   const bad = { ...await cache.entries.get(cacheKey).clone().json(), schema: 0 };
   cache.entries.set(cacheKey, Response.json(bad));
-  const corrupted = await html(app, "/wetbulb-temperature/andorra/encamp/vila", env);
+  const corrupted = await html(app, "/wetbulb-temperature/andorra/encamp/vila/", env);
   assert.equal(corrupted.response.status, 200, "corrupt internal envelope is not served and rendering continues");
   assert.equal(corrupted.body, first.body);
 
   const versionBefore = cache.puts;
-  await html(app, "/wetbulb-temperature/andorra/encamp/vila", { ...env, HTML_CACHE_TEST_VERSION: "deployment-b" });
+  await html(app, "/wetbulb-temperature/andorra/encamp/vila/", { ...env, HTML_CACHE_TEST_VERSION: "deployment-b" });
   assert.equal(cache.puts, versionBefore + 1, "deployment version changes the namespace");
 
   const expired = new FakeCache();
   expired.entries.set(cacheKey, Response.json({ ...envelope, staleUntil: clock - 1 }));
   const failingAssets = { async fetch() { return new Response("metadata unavailable", { status: 500 }); } };
   const failedApp = createHonoPageRenderer({ cache: () => expired, now: () => clock });
-  const failure = await failedApp.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), { ...env, ASSETS: failingAssets });
+  const failure = await failedApp.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`), { ...env, ASSETS: failingAssets });
   assert.notEqual(failure.status, 200, "expired cache plus metadata failure never becomes an empty success");
 
   const staleFallback = new FakeCache();
@@ -332,7 +366,7 @@ test("HTML Cache API envelope has bounded fresh/stale behavior and never changes
     staleUntil: clock - 1 + 7 * 24 * 60 * 60 * 1_000,
   }));
   const fallbackApp = createHonoPageRenderer({ cache: () => staleFallback, now: () => clock, cacheVersion: (environment) => environment.HTML_CACHE_TEST_VERSION });
-  const fallback = await fallbackApp.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), { ...env, ASSETS: failingAssets }, { waitUntil() {} });
+  const fallback = await fallbackApp.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`), { ...env, ASSETS: failingAssets }, { waitUntil() {} });
   assert.equal(fallback.status, 200);
   assert.equal(await fallback.text(), first.body, "unexpired stale survives metadata/render failure");
 });
@@ -342,7 +376,7 @@ test("HTML cache uses Worker version metadata, rejects ambiguous namespaces, and
   const env = { ASSETS: fixtureBinding(), CF_VERSION_METADATA: { id: "cloudflare-version-a" } };
   const app = createHonoPageRenderer({ cache: () => cache, now: () => 1_000 });
   const [first, second] = await Promise.all([
-    html(app, "/wetbulb-temperature/andorra/encamp/vila?first=1", env),
+    html(app, "/wetbulb-temperature/andorra/encamp/vila/?first=1", env),
     html(app, "/wetbulb-temperature/andorra/encamp/vila/?second=1", env),
   ]);
   assert.equal(first.response.status, 200);
@@ -351,8 +385,8 @@ test("HTML cache uses Worker version metadata, rejects ambiguous namespaces, and
   const cacheKey = [...cache.entries.keys()][0];
   assert.match(cacheKey, /cloudflare-version-a\/wetbulb-temperature\/andorra\/encamp\/vila$/);
   assert.equal(first.response.headers.get("content-disposition"), 'inline; filename="vila"');
-  const cached = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env);
-  const cachedHead = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`, { method: "HEAD" }), env);
+  const cached = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`), env);
+  const cachedHead = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`, { method: "HEAD" }), env);
   assert.equal(cached.headers.get("content-disposition"), 'inline; filename="vila"');
   assert.deepEqual([...cachedHead.headers].sort(), [...cached.headers].sort(), "cache-hit HEAD preserves delivery headers");
   assert.equal(await cachedHead.text(), "");
@@ -361,18 +395,18 @@ test("HTML cache uses Worker version metadata, rejects ambiguous namespaces, and
   const malformedDeadline = await cache.entries.get(cacheKey).clone().json();
   deadlineCache.entries.set(cacheKey, Response.json({ ...malformedDeadline, staleUntil: malformedDeadline.staleUntil + 1 }));
   const noServePastDeadline = createHonoPageRenderer({ cache: () => deadlineCache, now: () => 1_000 });
-  const expiredByContract = await noServePastDeadline.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), { CF_VERSION_METADATA: { id: "cloudflare-version-a" }, ASSETS: { async fetch() { return new Response("missing", { status: 404 }); } } });
+  const expiredByContract = await noServePastDeadline.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`), { CF_VERSION_METADATA: { id: "cloudflare-version-a" }, ASSETS: { async fetch() { return new Response("missing", { status: 404 }); } } });
   assert.equal(expiredByContract.status, 500, "an envelope with an extended stale deadline is not served or converted to a 404");
 
   const noIdentityCache = new FakeCache();
   const noIdentity = createHonoPageRenderer({ cache: () => noIdentityCache, now: () => 1_000 });
-  const uncached = await html(noIdentity, "/wetbulb-temperature/andorra/encamp/vila", { ASSETS: fixtureBinding(), HTML_CACHE_VERSION: "old-shared-production-namespace" });
+  const uncached = await html(noIdentity, "/wetbulb-temperature/andorra/encamp/vila/", { ASSETS: fixtureBinding(), HTML_CACHE_VERSION: "old-shared-production-namespace" });
   assert.equal(uncached.response.status, 200, "missing deployment identity still renders");
   assert.equal(noIdentityCache.puts, 0, "never cache under a shared fallback production namespace");
 
   const injectedCache = new FakeCache();
   const unitOnly = createHonoPageRenderer({ cache: () => injectedCache, now: () => 1_000, cacheVersion: () => "unit-deterministic" });
-  await html(unitOnly, "/wetbulb-temperature/andorra/encamp/vila", { ASSETS: fixtureBinding() });
+  await html(unitOnly, "/wetbulb-temperature/andorra/encamp/vila/", { ASSETS: fixtureBinding() });
   assert.equal(injectedCache.puts, 1, "tests may explicitly inject a deterministic cache identity");
 });
 
@@ -382,8 +416,8 @@ test("manifest failures are retried by the same renderer instance", async () => 
     const fixtures = fixtureBinding();
     const env = { ASSETS: { async fetch(request) { return ++reads === 1 ? failedResponse() : fixtures.fetch(request); } } };
     const app = createHonoPageRenderer();
-    assert.equal((await app.fetch(new Request(`${base}/wetbulb-temperature/andorra`), env)).status, 500);
-    assert.equal((await app.fetch(new Request(`${base}/wetbulb-temperature/andorra`), env)).status, 200);
+    assert.equal((await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/`), env)).status, 500);
+    assert.equal((await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/`), env)).status, 200);
     assert.equal(reads, 2);
   }
 });
@@ -400,11 +434,17 @@ test("renderer fails closed for internal metadata failures but retains negotiate
     return Response.json({ v: 1, r: "not-an-array" });
   };
   for (const assets of [{ fetch: metadataFailure }, { fetch: malformedManifest }, { fetch: malformedShard }]) {
-    const response = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`, { headers: { accept: "application/json" } }), { ASSETS: assets });
-    assert.equal(response.status, 500);
-    const body = await response.text();
-    assert.ok(body.length > 0);
-    assert.doesNotMatch(body, /upstream details|at file:|stack trace/i);
+    for (const method of ["GET", "HEAD"]) {
+      const response = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`, { method, headers: { accept: "application/json" } }), { ASSETS: assets });
+      assert.equal(response.status, 500);
+      assert.equal(response.headers.get("strict-transport-security"), "max-age=63072000");
+      const body = await response.text();
+      if (method === "HEAD") assert.equal(body, "");
+      else {
+        assert.ok(body.length > 0);
+        assert.doesNotMatch(body, /upstream details|at file:|stack trace/i);
+      }
+    }
   }
   const unknown = await app.fetch(new Request(`${base}/wetbulb-temperature/nope`, { headers: { accept: "application/json" } }), { ASSETS: fixtureBinding() });
   assert.equal(unknown.status, 404);
@@ -421,11 +461,11 @@ test("HTML cache never converts internal regeneration failures into 404 and rele
   }};
   const env = { ASSETS: assets, CF_VERSION_METADATA: { id: "outage-test" }, OBSERVABILITY_DISABLED: "true" };
   const app = createHonoPageRenderer({ cache: () => cache, now: () => clock });
-  const cold = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env);
+  const cold = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`), env);
   assert.equal(cold.status, 500);
   assert.ok((await cold.text()).length > 0);
   fail = false;
-  const recovered = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env);
+  const recovered = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`), env);
   assert.equal(recovered.status, 200, "a rejected same-key regeneration cannot poison later requests");
 
   const [key, stored] = [...cache.entries][0];
@@ -433,7 +473,7 @@ test("HTML cache never converts internal regeneration failures into 404 and rele
   clock = envelope.freshUntil + 1;
   fail = true;
   const waits = [];
-  const stale = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env, { waitUntil(promise) { waits.push(promise); } });
+  const stale = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`), env, { waitUntil(promise) { waits.push(promise); } });
   assert.equal(stale.status, 200);
   assert.equal(await stale.text(), envelope.html);
   await Promise.all(waits);
@@ -444,7 +484,7 @@ test("HTML cache never converts internal regeneration failures into 404 and rele
   const corrupt = new FakeCache();
   corrupt.entries.set(key, Response.json({ ...envelope, schema: 0 }));
   for (const failingCache of [expired, corrupt]) {
-    const response = await createHonoPageRenderer({ cache: () => failingCache, now: () => clock }).fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila`), env);
+    const response = await createHonoPageRenderer({ cache: () => failingCache, now: () => clock }).fetch(new Request(`${base}/wetbulb-temperature/andorra/encamp/vila/`), env);
     assert.equal(response.status, 500, "expired or corrupt cache must not mask an internal failure");
     assert.ok((await response.text()).length > 0);
   }
@@ -479,11 +519,11 @@ test("public ASSETS failures remain failures and preserve GET/HEAD semantics", a
 test("Hono renderer preserves delivery headers, negotiated 404s, HEAD, and private metadata", async () => {
   const app = createHonoPageRenderer();
   const env = { ASSETS: fixtureBinding() };
-  const slashless = await html(app, "/wetbulb-temperature/andorra/encamp/vila", env);
-  assert.match(slashless.body, /https:\/\/www\.wetbulb35\.com\/wetbulb-temperature\/andorra\/encamp\/vila\//);
-  assert.equal(slashless.response.headers.get("strict-transport-security"), "max-age=63072000");
-  assert.equal(slashless.response.headers.get("access-control-allow-origin"), "*");
-  assert.equal(slashless.response.headers.get("content-disposition"), 'inline; filename="vila"');
+  const canonical = await html(app, "/wetbulb-temperature/andorra/encamp/vila/", env);
+  assert.match(canonical.body, /https:\/\/www\.wetbulb35\.com\/wetbulb-temperature\/andorra\/encamp\/vila\//);
+  assert.equal(canonical.response.headers.get("strict-transport-security"), "max-age=63072000");
+  assert.equal(canonical.response.headers.get("access-control-allow-origin"), "*");
+  assert.equal(canonical.response.headers.get("content-disposition"), 'inline; filename="vila"');
   const root = await html(app, "/", env);
   assert.equal(root.response.headers.get("content-disposition"), "inline");
 
@@ -530,8 +570,8 @@ test("Hono renderer preserves delivery headers, negotiated 404s, HEAD, and priva
     assert.equal(response.headers.get("content-type"), contentType, accept);
   }
 
-  const htmlGet = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra`), env);
-  const head = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra`, { method: "HEAD" }), env);
+  const htmlGet = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/`), env);
+  const head = await app.fetch(new Request(`${base}/wetbulb-temperature/andorra/`, { method: "HEAD" }), env);
   assert.equal(head.status, htmlGet.status);
   assert.deepEqual([...head.headers].sort(), [...htmlGet.headers].sort());
   assert.equal(await head.text(), "");
@@ -620,7 +660,16 @@ test("Wrangler serves renderer pages and public assets while hiding metadata", {
     const port = await reservePort();
     const started = await startWrangler(configPath, port, (spawned) => { child = spawned; });
     t.diagnostic(`Wrangler renderer readiness (spawn to first 404): ${started.startupMs} ms`);
-    const city = await localFetch(port, "/wetbulb-temperature/andorra/encamp/vila");
+    const slashless = "/wetbulb-temperature/andorra/encamp/vila?a=1&a=2+three&encoded=%2F%FF";
+    const canonicalPath = "/wetbulb-temperature/andorra/encamp/vila/?a=1&a=2+three&encoded=%2F%FF";
+    for (const method of ["GET", "HEAD"]) {
+      const redirect = await localFetch(port, slashless, { method, redirect: "manual" });
+      assert.equal(redirect.status, 308, method);
+      assert.equal(redirect.headers.get("location"), `http://127.0.0.1:${port}${canonicalPath}`, method);
+      assert.equal(redirect.headers.get("strict-transport-security"), "max-age=63072000", method);
+      assert.equal(await redirect.text(), "", method);
+    }
+    const city = await localFetch(port, canonicalPath);
     assert.equal(city.status, 200);
     assert.equal(city.headers.get("cache-control"), "public, max-age=0, must-revalidate");
     const cityHtml = await city.text();
@@ -629,7 +678,7 @@ test("Wrangler serves renderer pages and public assets while hiding metadata", {
     assert.equal(repeated.status, 200);
     assert.equal(repeated.headers.get("cache-control"), "public, max-age=0, must-revalidate");
     assert.equal(await repeated.text(), cityHtml, "repeated GET preserves query/slash parity browser behavior");
-    const cityHead = await localFetch(port, "/wetbulb-temperature/andorra/encamp/vila?head=1", { method: "HEAD" });
+    const cityHead = await localFetch(port, "/wetbulb-temperature/andorra/encamp/vila/?head=1", { method: "HEAD" });
     assert.equal(cityHead.status, 200);
     assert.equal(cityHead.headers.get("cache-control"), "public, max-age=0, must-revalidate");
     assert.equal(await cityHead.text(), "");

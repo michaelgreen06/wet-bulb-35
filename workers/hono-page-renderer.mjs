@@ -274,6 +274,18 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
       const asset = await publicAssetResponse(request, context.env.ASSETS);
       return asset || context.notFound();
     }
+    if (pathname !== "/" && !pathname.endsWith("/") && pathname === routePath) {
+      const parts = pathname.split("/").filter(Boolean);
+      let resolved;
+      try { resolved = await resolve(request, context.env.ASSETS, parts); }
+      catch {
+        const response = internalErrorResponse();
+        return request.method === "HEAD" ? headResponse(response) : response;
+      }
+      if (!resolved) return context.notFound();
+      url.pathname = `${pathname}/`;
+      return new Response(null, { status: 308, headers: { location: url.toString(), "strict-transport-security": STRICT_TRANSPORT_SECURITY } });
+    }
     const method = request.method;
     const version = cacheVersion(context.env, injectedCacheVersion);
     const key = version ? htmlCacheKey(version, routePath) : null;

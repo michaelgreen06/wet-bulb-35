@@ -59,6 +59,42 @@ test("full parity gate requests browser assets and rejects their byte difference
   } finally { await Promise.all(servers.map((server) => new Promise((resolve) => server.close(resolve)))); }
 });
 
+test("parity probes canonical HTML routes and staging-only slashless redirect contracts", { timeout: 30_000 }, async () => {
+  const requested = { production: [], staging: [] };
+  const servers = [];
+  const origin = async (name) => {
+    const server = http.createServer((req, res) => {
+      requested[name].push(`${req.method} ${req.url}`);
+      if (req.url === "/wetbulb-temperature/andorra/encamp/vila") {
+        res.writeHead(308, { location: `http://${req.headers.host}/wetbulb-temperature/andorra/encamp/vila/`, "strict-transport-security": "max-age=63072000" });
+        return res.end();
+      }
+      res.setHeader("content-type", "text/html");
+      res.end("<title>Fixture</title>");
+    });
+    servers.push(server);
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    return `http://127.0.0.1:${server.address().port}`;
+  };
+  try {
+    const production = await origin("production");
+    const staging = await origin("staging");
+    const report = await runGate({ production, staging });
+    assert.equal(report.summary.failed, 0);
+    assert.deepEqual(report.redirectContracts, [{
+      pathname: "/wetbulb-temperature/andorra/encamp/vila",
+      expectedLocation: `${staging}/wetbulb-temperature/andorra/encamp/vila/`,
+      methods: {
+        GET: { status: 308, location: `${staging}/wetbulb-temperature/andorra/encamp/vila/`, body: "", strictTransportSecurity: "max-age=63072000" },
+        HEAD: { status: 308, location: `${staging}/wetbulb-temperature/andorra/encamp/vila/`, body: "", strictTransportSecurity: "max-age=63072000" },
+      },
+      pass: true,
+    }]);
+    assert.equal(requested.production.some((entry) => entry.includes("/wetbulb-temperature/andorra/encamp/vila") && !entry.includes("vila/")), false);
+    assert.equal(requested.staging.filter((entry) => entry.endsWith("/wetbulb-temperature/andorra/encamp/vila")).length, 2);
+  } finally { await Promise.all(servers.map((server) => new Promise((resolve) => server.close(resolve)))); }
+});
+
 test("parity gate documents only delivery-varying headers as ignored", () => {
   for (const header of ["date", "server", "cf-ray", "x-vercel-id", "x-vercel-cache"]) assert.ok(IGNORED_HEADERS.has(header), header);
   assert.equal(IGNORED_HEADERS.has("cache-control"), false);
