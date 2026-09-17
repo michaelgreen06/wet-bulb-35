@@ -436,13 +436,18 @@ def run(argv: list[str] | None = None, environ: dict[str, str] | None = None) ->
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--analytics-days", type=int, default=28)
     parser.add_argument("--analytics-lag-days", type=int, default=3)
+    parser.add_argument("--shard-count", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--smoke-test", action="store_true")
     args = parser.parse_args(argv)
     env = os.environ if environ is None else environ
     if not 1 <= args.analytics_days <= 90 or not 0 <= args.analytics_lag_days <= 10:
         raise ValueError("invalid Search Analytics date window")
+    if not 1 <= args.shard_count <= 4 or not 0 <= args.shard_index < args.shard_count:
+        raise ValueError("invalid deterministic shard")
     cohort = build_cohort(args.tier_manifest, args.controls_manifest, args.base_url)
+    cohort = cohort[args.shard_index::args.shard_count]
     if args.dry_run:
         return {"cohort_size": len(cohort), "network": False}
 
