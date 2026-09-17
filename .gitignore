@@ -4,6 +4,7 @@
 /node_modules
 /.pnp
 .pnp.*
+/.venv-gsc/
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
@@ -26,6 +27,7 @@
 # misc
 .DS_Store
 *.pem
+!scripts/gsc-snapshot-artifact-recipient.pem
 
 # debug
 npm-debug.log*
@@ -56,3 +58,9 @@ paste.md
 .worktrees/
 .wrangler/
 __pycache__/
+
+# Local-only Google Search Console credentials, history, and reports.
+.private/
+*.sqlite3
+*.sqlite
+.gsc-*
