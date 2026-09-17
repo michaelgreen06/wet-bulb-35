@@ -100,3 +100,9 @@ test("city pages expose an ordered, accessible geographic breadcrumb and methodo
   assert.match(html, /"@type":"BreadcrumbList"/);
   assert.doesNotMatch(html, /Related cities/i);
 });
+
+test("city-page desktop centering class contract remains intact", () => {
+  const html = pageHtml(usCity);
+  assert.match(html, /<div class="max-w-4xl mx-auto space-y-8">/);
+  assert.match(html, /<div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto" data-weather-widget/);
+});

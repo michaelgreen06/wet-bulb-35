@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { JSDOM } from "jsdom";
 
 import { createSiteData, pageHtml, routePathForCity } from "../lib/page-renderer.mjs";
 import { validatePopular40Enrichment } from "../lib/popular-40-enrichment.mjs";
@@ -72,24 +73,73 @@ test("Popular-40 validator fails closed on malformed values and cohort drift", (
   assert.throws(() => validatePopular40Enrichment(ambiguousKoppen), /Köppen-Geiger/);
 });
 
-test("all Popular-40 city pages expose accessible attribution and modeled climatology caveats", () => {
+test("Popular-40 climate source references have unique paired backlinks and valid fragments", () => {
   const site = createSiteData(inventory, tier1);
   const citiesByPath = new Map(site.cities.map((city) => [routePathForCity(city), city]));
   for (const pathName of enrichment.cities.map((city) => city.path)) {
     const city = citiesByPath.get(pathName);
     assert.ok(city, pathName);
     const html = pageHtml(city);
-    assert.match(html, /aria-labelledby="city-climate-context-heading"/);
-    assert.match(html, /NASA POWER/);
-    assert.match(html, /modeled monthly means/);
-    assert.match(html, /local solar time/i);
-    assert.match(html, /coarse .*grid/i);
-    assert.match(html, /GeoNames/);
-    assert.match(html, /Köppen-Geiger/);
-    assert.match(html, /<table/);
-    assert.doesNotMatch(html, /wet-bulb/i);
+    const document = new JSDOM(html).window.document;
+    const ids = [...document.querySelectorAll("[id]")].map((element) => element.id);
+    assert.equal(new Set(ids).size, ids.length, `${pathName} has duplicate IDs`);
+    for (const anchor of document.querySelectorAll('a[href^="#"]')) {
+      assert.ok(document.getElementById(anchor.hash.slice(1)), `${pathName} has unresolved ${anchor.getAttribute("href")}`);
+    }
+    const inlineRefs = [...document.querySelectorAll("a[data-source-reference]")];
+    assert.deepEqual(inlineRefs.map((anchor) => anchor.id), [
+      "source-note-koppen-ref",
+      "source-note-geonames-timezone-ref",
+      "source-note-geonames-elevation-ref",
+      "source-note-nasa-power-peak-ref",
+      "source-note-nasa-power-table-ref",
+    ]);
+    for (const reference of inlineRefs) {
+      const backlink = document.querySelector(`[data-source-backlink="${reference.id}"]`);
+      assert.ok(backlink, `${pathName} lacks a backlink for ${reference.id}`);
+      assert.equal(backlink.hash, `#${reference.id}`);
+    }
+    assert.equal(document.querySelectorAll("a[data-source-backlink]").length, inlineRefs.length);
+    assert.match(document.querySelector("#source-note-geonames").textContent, /GeoNames.*CC BY 4\.0/s);
+    assert.match(document.querySelector("#source-note-koppen").textContent, /Beck et al\..*CC BY 4\.0.*3×3/s);
+    assert.match(document.querySelector("#source-note-nasa-power").textContent, /NASA POWER.*MERRA-2 grid.*local solar time.*modeled monthly means, not station observations or records.*neighborhood conditions/s);
+    assert.doesNotMatch(document.querySelector("[aria-labelledby='city-climate-context-heading']").textContent, /wet-bulb|wetbulb/i);
   }
   const nonPopular = site.cities.find((city) => !city.enrichment);
   assert.ok(nonPopular);
   assert.doesNotMatch(pageHtml(nonPopular), /city-climate-context-heading/);
+});
+
+test("Houston copy is exact, tied months format grammatically, and dynamic city text is escaped", () => {
+  const site = createSiteData(inventory, tier1);
+  const houston = site.cities.find((city) => routePathForCity(city) === "/wetbulb-temperature/united-states/texas/houston/");
+  assert.ok(houston);
+  const houstonHtml = pageHtml(houston);
+  assert.match(houstonHtml, /Houston and the surrounding area have a temperate, no dry season, hot summer climate classification \(Cfa\)\./);
+  assert.match(houstonHtml, /August is predicted to be the highest wet bulb month for Houston, Texas, with a mean wet bulb temperature of 25\.6 °C\./);
+  assert.match(houstonHtml, /Monthly mean wet bulb temperatures for Houston, Texas/);
+
+  const tied = structuredClone(houston);
+  tied.name = "Example City";
+  tied.outputCitySlug = "example-city";
+  tied.enrichment.nasaPower.peakMonths = [7, 8];
+  const tiedHtml = pageHtml(tied);
+  assert.match(tiedHtml, /July and August are predicted to be the highest wet bulb months for Example City, Texas, with a mean wet bulb temperature of 25\.6 °C\./);
+
+  const threeWayTie = structuredClone(houston);
+  threeWayTie.outputCitySlug = "three-way-tie";
+  threeWayTie.enrichment.nasaPower.monthlyC[5] = 25.6;
+  threeWayTie.enrichment.nasaPower.monthlyC[6] = 25.6;
+  threeWayTie.enrichment.nasaPower.peakMonths = [6, 7, 8];
+  assert.match(pageHtml(threeWayTie), /June, July, and August are predicted to be the highest wet bulb months/);
+
+  const hostile = structuredClone(houston);
+  hostile.name = '<City (A)+ & "B">';
+  hostile.resolvedAdmin1Code = 'Admin [x].* & "y"';
+  const hostileHtml = pageHtml(hostile);
+  const hostileDocument = new JSDOM(hostileHtml).window.document;
+  const climateText = hostileDocument.querySelector("[aria-labelledby='city-climate-context-heading']").textContent;
+  assert.match(climateText, /<City \(A\)\+ & "B">/);
+  assert.match(climateText, /Admin \[x\]\.\* & "y"/);
+  assert.doesNotMatch(hostileHtml, /<City \(A\)\+/);
 });

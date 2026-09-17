@@ -56,6 +56,14 @@ Committed inputs and outputs are limited to the reviewed canonical-path-to-GeoNa
 
 NASA POWER uses a coarse meteorological grid. Values may not represent local coastal, island, mountain, urban, or neighborhood conditions.
 
+## Rendered copy and attribution
+
+- Climate sentences use `wet bulb`, never `wetbulb` or `wet-bulb`.
+- Provider methodology is consolidated into accessible numbered source notes near the current calculation and OpenWeather attribution, rather than repeated in prominent climate copy.
+- The notes retain links and explicit CC BY 4.0 attribution for GeoNames and Beck et al.; they also retain the NASA POWER source and the MERRA-2 grid, local-solar-time, modeled-means-not-observations-or-records, neighborhood-limit, and 3×3 Köppen sampling qualifications.
+- OpenWeather's required provider phrase, link, and logo remain in that attribution area.
+- Desktop preview checks at 768, 1024, 1280, 1440, 1600, and 1920 px found the `max-w-4xl mx-auto` page container, `max-w-2xl mx-auto` weather card, and climate section centered with equal side gaps, zero center delta, and no document overflow. Production matched preview; no layout change is warranted. The renderer class contract is regression-tested.
+
 ## Regeneration
 
 Use Python 3.11 with `scripts/enrichment-requirements.txt`, then run:
