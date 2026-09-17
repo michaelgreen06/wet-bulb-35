@@ -329,6 +329,8 @@ def create_google_service(service_account_json: str):
     try:
         from google.oauth2 import service_account
         from googleapiclient.discovery import build
+        from google_auth_httplib2 import AuthorizedHttp
+        import httplib2
     except ImportError as error:
         raise RuntimeError("install requirements-gsc.txt before running with credentials") from error
     try:
@@ -338,7 +340,8 @@ def create_google_service(service_account_json: str):
     if info.get("type") != "service_account":
         raise RuntimeError("GSC_SERVICE_ACCOUNT_JSON is not a service-account credential")
     credentials = service_account.Credentials.from_service_account_info(info, scopes=[READONLY_SCOPE])
-    return build("searchconsole", "v1", credentials=credentials, cache_discovery=False)
+    authorized_http = AuthorizedHttp(credentials, http=httplib2.Http(timeout=30))
+    return build("searchconsole", "v1", http=authorized_http, cache_discovery=False)
 
 
 def _call(call: Callable[[], Any]) -> Any:
@@ -395,7 +398,7 @@ def collect(
     }
 
     last_attempt_at: datetime | None = None
-    for item in cohort:
+    for item_number, item in enumerate(cohort, start=1):
         def inspect() -> Any:
             nonlocal last_attempt_at
             current = now()
@@ -420,6 +423,8 @@ def collect(
             analytics_start,
             analytics_end,
         )
+        if item_number % 50 == 0 or item_number == len(cohort):
+            print(f"GSC inspection progress: {item_number}/{len(cohort)}", file=sys.stderr, flush=True)
 
 
 def run(argv: list[str] | None = None, environ: dict[str, str] | None = None) -> dict[str, Any]:
@@ -431,13 +436,18 @@ def run(argv: list[str] | None = None, environ: dict[str, str] | None = None) ->
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--analytics-days", type=int, default=28)
     parser.add_argument("--analytics-lag-days", type=int, default=3)
+    parser.add_argument("--shard-count", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--smoke-test", action="store_true")
     args = parser.parse_args(argv)
     env = os.environ if environ is None else environ
     if not 1 <= args.analytics_days <= 90 or not 0 <= args.analytics_lag_days <= 10:
         raise ValueError("invalid Search Analytics date window")
+    if not 1 <= args.shard_count <= 4 or not 0 <= args.shard_index < args.shard_count:
+        raise ValueError("invalid deterministic shard")
     cohort = build_cohort(args.tier_manifest, args.controls_manifest, args.base_url)
+    cohort = cohort[args.shard_index::args.shard_count]
     if args.dry_run:
         return {"cohort_size": len(cohort), "network": False}
 

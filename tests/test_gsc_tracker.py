@@ -115,6 +115,9 @@ class CohortTests(unittest.TestCase):
         self.assertEqual(200, sum(item["tags"] == ["control"] for item in cohort))
         self.assertEqual(400, len({item["url"] for item in cohort}))
         self.assertEqual(["top-200", "top-100", "top-50", "popular-40"], cohort[0]["tags"])
+        shards = [cohort[index::4] for index in range(4)]
+        self.assertEqual([100, 100, 100, 100], [len(shard) for shard in shards])
+        self.assertEqual(400, len({item["url"] for shard in shards for item in shard}))
 
     def test_committed_controls_are_stable_sanitized_and_outside_top_200(self):
         controls = tracker.load_controls(ROOT / "scripts/gsc-control-manifest.json")
@@ -244,6 +247,9 @@ class StorageAndSafetyTests(unittest.TestCase):
         self.assertIn("openssl cms -encrypt", workflow)
         self.assertIn("path: gsc-snapshot.cms", workflow)
         self.assertNotIn("path: .private", workflow)
+        self.assertIn("timeout-minutes: 45", workflow)
+        self.assertIn("--shard-count 4", workflow)
+        self.assertIn('then 1200', workflow)
         self.assertIn("retention-days: 7", workflow)
         self.assertIn("Refuse a second encrypted snapshot", workflow)
         self.assertIn("cancel-in-progress: false", workflow)
