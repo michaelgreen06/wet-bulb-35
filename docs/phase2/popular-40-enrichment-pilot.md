@@ -78,7 +78,7 @@ python scripts/generate-popular-40-enrichment.py \
   --out=data/popular-40-enrichment.v1.json
 ```
 
-The generator fails closed on cohort drift, source hash changes, identity-coordinate mismatches, NASA request-coordinate mismatches, response hash changes, source metadata changes, fill values, invalid units, invalid ranges, raster NoData, or ambiguous Köppen neighborhoods.
+The generator fails closed on cohort drift, source hash changes, identity-coordinate mismatches, NASA request-coordinate mismatches, response hash changes, source metadata changes, fill values, invalid units, invalid ranges, a NoData center cell, or ambiguous Köppen neighborhoods (NoData neighbor cells are ignored when computing the modal share).
 
 A second run from identical private inputs must produce byte-identical output.
 
