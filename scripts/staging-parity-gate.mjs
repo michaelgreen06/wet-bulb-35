@@ -34,14 +34,12 @@ export const INTERNAL_HTML_CACHE_POLICY = Object.freeze({ schema: 1, freshSecond
 
 const ROUTES = [
   ["home", "/", "html"],
-  ["browse", "/wetbulb-temperature", "html"],
-  ["country", "/wetbulb-temperature/andorra", "html"],
-  ["state", "/wetbulb-temperature/andorra/encamp", "html"],
-  ["unique-city", "/wetbulb-temperature/andorra/encamp/vila", "html"],
-  ["colliding-city", "/wetbulb-temperature/armenia/armavir/metsamor-40-0723-44-2917", "html"],
-  ["slash", "/wetbulb-temperature/andorra/encamp/vila/", "html"],
-  ["slashless", "/wetbulb-temperature/andorra/encamp/vila", "html"],
-  ["head", "/wetbulb-temperature/andorra/encamp/vila", "head", "text/html"],
+  ["browse", "/wetbulb-temperature/", "html"],
+  ["country", "/wetbulb-temperature/andorra/", "html"],
+  ["state", "/wetbulb-temperature/andorra/encamp/", "html"],
+  ["unique-city", "/wetbulb-temperature/andorra/encamp/vila/", "html"],
+  ["colliding-city", "/wetbulb-temperature/armenia/armavir/metsamor-40-0723-44-2917/", "html"],
+  ["head", "/wetbulb-temperature/andorra/encamp/vila/", "head", "text/html"],
   ["404-html", "/not-a-real-page-9b1e3d", "not-found", "text/html"],
   ["404-json", "/not-a-real-page-9b1e3d", "not-found", "application/json"],
   ["404-plain", "/not-a-real-page-9b1e3d", "not-found", "text/plain"],
@@ -53,6 +51,8 @@ const ROUTES = [
   ["browser-js", "/assets/app.js", "asset"],
   ["browser-search-index", "/assets/locations.json", "asset"],
 ];
+
+const REDIRECT_CONTRACT_PATHS = ["/wetbulb-temperature/andorra/encamp/vila"];
 
 function arg(name, fallback) {
   const value = process.argv.find((entry) => entry.startsWith(`--${name}=`));
@@ -128,7 +128,7 @@ export async function request(base, pathname, method = "GET", accept = "text/htm
     headers: { "user-agent": "wetbulb35-staging-parity-gate/1.0", accept },
   });
   const body = method === "HEAD" ? "" : await response.text();
-  return { status: response.status, contentType: normalizeContentType(response.headers.get("content-type")), headers: stableHeaders(response.headers), body, latencyMs: Number((performance.now() - started).toFixed(2)) };
+  return { status: response.status, location: response.headers.get("location"), contentType: normalizeContentType(response.headers.get("content-type")), headers: stableHeaders(response.headers), body, latencyMs: Number((performance.now() - started).toFixed(2)) };
 }
 function isExpectedZoneManagedDifference(name, difference, production, staging) {
   if (difference !== "bodyHash") return false;
@@ -183,6 +183,21 @@ async function latency(base, pathname) {
   for (let index = 0; index < LATENCY_SAMPLES; index += 1) values.push((await request(base, pathname)).latencyMs);
   return { samples: values, medianMs: [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)] };
 }
+async function redirectContract(staging, pathname) {
+  const expectedLocation = new URL(`${pathname}/`, staging).toString();
+  const methods = {};
+  for (const method of ["GET", "HEAD"]) {
+    const response = await request(staging, pathname, method);
+    methods[method] = {
+      status: response.status,
+      location: response.location,
+      body: response.body,
+      strictTransportSecurity: response.headers["strict-transport-security"],
+    };
+  }
+  const pass = Object.values(methods).every((response) => response.status === 308 && response.location === expectedLocation && response.body === "" && response.strictTransportSecurity === "max-age=63072000");
+  return { pathname, expectedLocation, methods, pass };
+}
 export async function runGate({ production = DEFAULT_PRODUCTION, staging = DEFAULT_STAGING } = {}) {
   const records = [];
   for (const route of ROUTES) {
@@ -191,14 +206,15 @@ export async function runGate({ production = DEFAULT_PRODUCTION, staging = DEFAU
     const [productionResult, stagingResult] = await Promise.all([request(production, pathname, method, accept), request(staging, pathname, method, accept)]);
     records.push(compareRoute(route, productionResult, stagingResult));
   }
+  const redirectContracts = await Promise.all(REDIRECT_CONTRACT_PATHS.map((pathname) => redirectContract(staging, pathname)));
   const result = {
     schema: 1, production, staging, weatherApiRequested: false,
     documentedHeaderNormalization: [...IGNORED_HEADERS].sort(), footerYearNormalized: true,
     internalHtmlCachePolicy: INTERNAL_HTML_CACHE_POLICY,
-    routes: records, offlineInventory: offlineInventory(),
-    latency: { pathname: "/wetbulb-temperature/andorra/encamp/vila", production: await latency(production, "/wetbulb-temperature/andorra/encamp/vila"), staging: await latency(staging, "/wetbulb-temperature/andorra/encamp/vila") },
+    routes: records, redirectContracts, offlineInventory: offlineInventory(),
+    latency: { pathname: "/wetbulb-temperature/andorra/encamp/vila/", production: await latency(production, "/wetbulb-temperature/andorra/encamp/vila/"), staging: await latency(staging, "/wetbulb-temperature/andorra/encamp/vila/") },
   };
-  result.summary = { total: records.length, passed: records.filter((record) => record.pass).length, failed: records.filter((record) => !record.pass).length };
+  result.summary = { total: records.length + redirectContracts.length, passed: records.filter((record) => record.pass).length + redirectContracts.filter((contract) => contract.pass).length, failed: records.filter((record) => !record.pass).length + redirectContracts.filter((contract) => !contract.pass).length };
   return result;
 }
 async function main() {
