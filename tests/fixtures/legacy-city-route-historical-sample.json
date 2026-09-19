@@ -1,0 +1,5 @@
+[
+  {"name":"Same","resolvedCountryName":"Example","resolvedAdmin1Code":"Region","latitude":1,"longitude":2},
+  {"name":"Same","resolvedCountryName":"Example","resolvedAdmin1Code":"Region","latitude":3,"longitude":4},
+  {"name":"Other","resolvedCountryName":"Example","resolvedAdmin1Code":"Region","latitude":5,"longitude":6}
+]
