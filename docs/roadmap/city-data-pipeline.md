@@ -35,6 +35,16 @@ A comparison against a current GeoNames snapshot found:
 
 The unmatched totals are audit leads, not automatic additions or removals, because the legacy inventory discarded stable IDs.
 
+The current route inventory also contains 1,419 country/admin1/name collision groups covering 3,014 rows. A reconciliation against the pinned September 16, 2026 `cities1000` snapshot found:
+
+- 1,238 groups reconcile exactly by name and coordinates;
+- every reconciled row in those groups has a distinct GeoNames ID;
+- 963 reconciled groups span different admin2 areas;
+- 1,114 reconciled groups have their closest two places more than 25 km apart; and
+- only three reconciled groups contain places within 1 km of each other.
+
+Therefore, most route collisions are distinct namesake localities, not duplicate source records. Shared country, admin1, and display name are not sufficient grounds to merge or delete an entity.
+
 ## Target source inputs
 
 Use one dated GeoNames release containing:
@@ -69,6 +79,24 @@ Preserve at least:
 
 Country and administrative identity must come from codes, never free-text cleanup. Missing admin1 is valid input and must receive an explicit fallback policy rather than deletion.
 
+## Namesakes, duplicates, and primary localities
+
+Classify records before making a route decision:
+
+- **Namesakes** are distinct entities with different stable IDs. Retain each eligible locality.
+- **True duplicates** are multiple source records for the same real entity. Merge or retire one only after reviewed evidence based on stable source IDs, feature type, admin codes, aliases, coordinates, and authoritative cross-references.
+- **Ambiguous matches** remain separate and held for review. Never deduplicate automatically from display-name or proximity matching alone.
+
+For each country/admin1/name collision group:
+
+1. choose at most one reviewed primary locality for the unsuffixed human-readable route;
+2. rank primary candidates using explicit, versioned evidence such as settlement status, feature code, population, admin level, and manual overrides;
+3. give every retained secondary namesake a stable-ID suffix, never a coordinate suffix;
+4. display admin2/county or another useful disambiguator in search results, directories, headings, and metadata; and
+5. preserve the decision in the immutable route registry so later source changes cannot silently select a different winner.
+
+Wilson, Oklahoma illustrates the policy. GeoNames contains distinct populated-place records `4555790` in Carter County and `4555791` in Okmulgee County. The Carter County place is the historical first-row winner and the candidate primary for `/united-states/oklahoma/wilson/`; the retained Okmulgee County namesake needs a stable secondary route such as `wilson-4555791/` and a visible county label. This is a primary-route decision, not evidence that either record should be deleted.
+
 ## URL and rename policy
 
 Create an immutable route registry:
@@ -79,7 +107,15 @@ Existing canonical paths remain unchanged when a source changes a display name, 
 
 Only an explicitly approved legal/correctness migration may change a canonical path. It must have a one-hop permanent redirect tied to the same stable entity ID. Never infer redirects by fuzzy matching or proximity.
 
-For new route collisions, suffix with a stable ID, not coordinates.
+For new route collisions, preserve the existing claimant of an unsuffixed path. Allocate a stable-ID suffix to the new entity. Never rename every member of a group merely because a collision appeared or disappeared.
+
+The one-time migration must account for all previously advertised route forms:
+
+- unsuffixed country/admin1/city paths that formerly collapsed multiple records;
+- current coordinate-suffixed paths; and
+- older city/admin1/country paths.
+
+Each former URL must redirect in one hop to the reviewed stable entity route. Where an old ambiguous path historically rendered the first matching row, preserve that identity unless an explicit reviewed primary-locality decision changes it.
 
 ## Required tests
 
@@ -89,6 +125,9 @@ For new route collisions, suffix with a stable ID, not coordinates.
 - Every source/reference file has a pinned hash.
 - Generation from identical inputs is byte-for-byte deterministic.
 - IDs, paths, and active records are unique.
+- Every collision group is classified as namesakes, true duplicates, or unresolved review items.
+- Every retained namesake has one stable route and enough admin metadata to distinguish it from peers.
+- Every primary-route decision is deterministic, reviewable, and preserved across source refreshes.
 - Coordinates, country codes, dates, feature codes, and population values validate.
 
 ### Independent coverage
@@ -150,11 +189,13 @@ The first migration is high risk because the current inventory discarded GeoName
 
 1. Freeze and hash the existing inventory and full canonical route set.
 2. Reconcile legacy rows to a pinned GeoNames snapshot using names, aliases, source codes where recoverable, coordinates, feature type, and population.
-3. Carry every confirmed route forward verbatim.
-4. Retain unmatched legacy routes under stable temporary legacy IDs; do not delete them.
-5. Allocate routes only for reviewed new entities.
-6. Require every existing route to be matched or explicitly retained, with zero unexplained route loss.
-7. Stage and verify the exact candidate artifact before requesting production approval.
+3. Classify every route-collision group and review all possible true duplicates.
+4. Assign primary unsuffixed and secondary stable-ID routes without deleting legitimate namesakes.
+5. Carry every confirmed stable route forward and create one-hop redirects from superseded unsuffixed and coordinate-suffixed forms.
+6. Retain unmatched legacy routes under stable temporary legacy IDs; do not delete them.
+7. Allocate routes only for reviewed new entities.
+8. Require every existing route to be matched or explicitly retained, with zero unexplained route loss.
+9. Stage and verify the exact candidate artifact before requesting production approval.
 
 ## Implementation sequence
 
