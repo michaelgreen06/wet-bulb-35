@@ -5,6 +5,7 @@ const FORCE_BUILD_VALUES = new Set(["1", "true", "yes"]);
 
 export const DEPLOYMENT_INPUTS = [
   { kind: "file", path: "lib/page-renderer.mjs" },
+  { kind: "file", path: "lib/popular-40-enrichment.mjs" },
   { kind: "file", path: ".vercelignore" },
   { kind: "file", path: "package-lock.json" },
   { kind: "file", path: "package.json" },
@@ -13,6 +14,8 @@ export const DEPLOYMENT_INPUTS = [
   { kind: "file", path: "scripts/prototype-static-generator.mjs" },
   { kind: "file", path: "scripts/resolved_cities.json" },
   { kind: "file", path: "scripts/tier1-city-manifest.json" },
+  { kind: "file", path: "scripts/popular-40-geonames-map.json" },
+  { kind: "file", path: "data/popular-40-enrichment.v1.json" },
   { kind: "file", path: "scripts/static-tailwind.css" },
   { kind: "file", path: "tailwind.config.ts" },
   { kind: "file", path: "vercel.json" },

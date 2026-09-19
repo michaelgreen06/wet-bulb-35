@@ -10,6 +10,9 @@ test("detects files that affect the Vercel build output", () => {
   assert.equal(affectsDeployment("scripts/prototype-static-generator.mjs"), true);
   assert.equal(affectsDeployment("./scripts/resolved_cities.json"), true);
   assert.equal(affectsDeployment("scripts/tier1-city-manifest.json"), true);
+  assert.equal(affectsDeployment("scripts/popular-40-geonames-map.json"), true);
+  assert.equal(affectsDeployment("lib/popular-40-enrichment.mjs"), true);
+  assert.equal(affectsDeployment("data/popular-40-enrichment.v1.json"), true);
   assert.equal(affectsDeployment("public/logo.svg"), true);
   assert.equal(affectsDeployment("tailwind.config.ts"), true);
   assert.equal(affectsDeployment("components/Header.tsx"), false);

@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "reviewCohort": [
+    "/wetbulb-temperature/bangladesh/dhaka-division/dhaka/",
+    "/wetbulb-temperature/united-arab-emirates/dubai/dubai/",
+    "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/",
+    "/wetbulb-temperature/united-states/texas/houston/",
+    "/wetbulb-temperature/nigeria/lagos/lagos/",
+    "/wetbulb-temperature/mexico/mexico-city/mexico-city/",
+    "/wetbulb-temperature/india/delhi/new-delhi/",
+    "/wetbulb-temperature/united-states/arizona/phoenix/",
+    "/wetbulb-temperature/singapore/singapore/singapore/",
+    "/wetbulb-temperature/japan/tokyo/tokyo/"
+  ],
+  "cities": [
+    {
+      "path": "/wetbulb-temperature/united-arab-emirates/abu-dhabi/abu-dhabi/",
+      "geonameId": 292968,
+      "latitude": 24.45118,
+      "longitude": 54.39696
+    },
+    {
+      "path": "/wetbulb-temperature/thailand/bangkok/bangkok/",
+      "geonameId": 1609350,
+      "latitude": 13.75398,
+      "longitude": 100.50144
+    },
+    {
+      "path": "/wetbulb-temperature/argentina/buenos-aires-fd/buenos-aires/",
+      "geonameId": 3435910,
+      "latitude": -34.61315,
+      "longitude": -58.37723
+    },
+    {
+      "path": "/wetbulb-temperature/egypt/cairo/cairo/",
+      "geonameId": 360630,
+      "latitude": 30.06263,
+      "longitude": 31.24967
+    },
+    {
+      "path": "/wetbulb-temperature/india/tamil-nadu/chennai/",
+      "geonameId": 1264527,
+      "latitude": 13.08784,
+      "longitude": 80.27847
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/texas/dallas/",
+      "geonameId": 4684888,
+      "latitude": 32.78306,
+      "longitude": -96.80667
+    },
+    {
+      "path": "/wetbulb-temperature/bangladesh/dhaka-division/dhaka/",
+      "geonameId": 1185241,
+      "latitude": 23.7104,
+      "longitude": 90.40744
+    },
+    {
+      "path": "/wetbulb-temperature/united-arab-emirates/dubai/dubai/",
+      "geonameId": 292223,
+      "latitude": 25.07725,
+      "longitude": 55.30927
+    },
+    {
+      "path": "/wetbulb-temperature/vietnam/hanoi/hanoi/",
+      "geonameId": 1581130,
+      "latitude": 21.0245,
+      "longitude": 105.84117
+    },
+    {
+      "path": "/wetbulb-temperature/vietnam/ho-chi-minh/ho-chi-minh-city/",
+      "geonameId": 1566083,
+      "latitude": 10.82302,
+      "longitude": 106.62965
+    },
+    {
+      "path": "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/",
+      "geonameId": 1819729,
+      "latitude": 22.27832,
+      "longitude": 114.17469
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/texas/houston/",
+      "geonameId": 4699066,
+      "latitude": 29.76328,
+      "longitude": -95.36327
+    },
+    {
+      "path": "/wetbulb-temperature/india/telangana/hyderabad/",
+      "geonameId": 1269843,
+      "latitude": 17.38405,
+      "longitude": 78.45636
+    },
+    {
+      "path": "/wetbulb-temperature/turkey/istanbul/istanbul/",
+      "geonameId": 745044,
+      "latitude": 41.01384,
+      "longitude": 28.94966
+    },
+    {
+      "path": "/wetbulb-temperature/indonesia/jakarta/jakarta/",
+      "geonameId": 1642911,
+      "latitude": -6.21462,
+      "longitude": 106.84513
+    },
+    {
+      "path": "/wetbulb-temperature/saudi-arabia/mecca-region/jeddah/",
+      "geonameId": 105343,
+      "latitude": 21.49012,
+      "longitude": 39.18624
+    },
+    {
+      "path": "/wetbulb-temperature/pakistan/sindh/karachi/",
+      "geonameId": 1174872,
+      "latitude": 24.8608,
+      "longitude": 67.0104
+    },
+    {
+      "path": "/wetbulb-temperature/india/west-bengal/kolkata/",
+      "geonameId": 1275004,
+      "latitude": 22.56263,
+      "longitude": 88.36304
+    },
+    {
+      "path": "/wetbulb-temperature/malaysia/kuala-lumpur/kuala-lumpur/",
+      "geonameId": 1735161,
+      "latitude": 3.1412,
+      "longitude": 101.68653
+    },
+    {
+      "path": "/wetbulb-temperature/nigeria/lagos/lagos/",
+      "geonameId": 2332459,
+      "latitude": 6.45407,
+      "longitude": 3.39467
+    },
+    {
+      "path": "/wetbulb-temperature/pakistan/punjab/lahore/",
+      "geonameId": 1172451,
+      "latitude": 31.558,
+      "longitude": 74.35071
+    },
+    {
+      "path": "/wetbulb-temperature/united-kingdom/england/london/",
+      "geonameId": 2643743,
+      "latitude": 51.50853,
+      "longitude": -0.12574
+    },
+    {
+      "path": "/wetbulb-temperature/spain/madrid/madrid/",
+      "geonameId": 3117735,
+      "latitude": 40.4165,
+      "longitude": -3.70256
+    },
+    {
+      "path": "/wetbulb-temperature/philippines/metro-manila/manila/",
+      "geonameId": 1701668,
+      "latitude": 14.6042,
+      "longitude": 120.9822
+    },
+    {
+      "path": "/wetbulb-temperature/mexico/mexico-city/mexico-city/",
+      "geonameId": 3530597,
+      "latitude": 19.42847,
+      "longitude": -99.12766
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/florida/miami/",
+      "geonameId": 4164138,
+      "latitude": 25.77427,
+      "longitude": -80.19366
+    },
+    {
+      "path": "/wetbulb-temperature/india/maharashtra/mumbai/",
+      "geonameId": 1275339,
+      "latitude": 19.07283,
+      "longitude": 72.88261
+    },
+    {
+      "path": "/wetbulb-temperature/india/delhi/new-delhi/",
+      "geonameId": 1261481,
+      "latitude": 28.62137,
+      "longitude": 77.2148
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/louisiana/new-orleans/",
+      "geonameId": 4335045,
+      "latitude": 29.95465,
+      "longitude": -90.07507
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/new-york/new-york-city/",
+      "geonameId": 5128581,
+      "latitude": 40.71427,
+      "longitude": -74.00597
+    },
+    {
+      "path": "/wetbulb-temperature/france/ile-de-france/paris/",
+      "geonameId": 2988507,
+      "latitude": 48.85341,
+      "longitude": 2.3488
+    },
+    {
+      "path": "/wetbulb-temperature/united-states/arizona/phoenix/",
+      "geonameId": 5308655,
+      "latitude": 33.44838,
+      "longitude": -112.07404
+    },
+    {
+      "path": "/wetbulb-temperature/brazil/rio-de-janeiro/rio-de-janeiro/",
+      "geonameId": 3451190,
+      "latitude": -22.90642,
+      "longitude": -43.18223
+    },
+    {
+      "path": "/wetbulb-temperature/puerto-rico/san-juan/san-juan/",
+      "geonameId": 4568127,
+      "latitude": 18.46633,
+      "longitude": -66.10572
+    },
+    {
+      "path": "/wetbulb-temperature/brazil/sao-paulo/sao-paulo/",
+      "geonameId": 3448439,
+      "latitude": -23.5475,
+      "longitude": -46.63611
+    },
+    {
+      "path": "/wetbulb-temperature/south-korea/seoul/seoul/",
+      "geonameId": 1835848,
+      "latitude": 37.566,
+      "longitude": 126.9784
+    },
+    {
+      "path": "/wetbulb-temperature/singapore/singapore/singapore/",
+      "geonameId": 1880252,
+      "latitude": 1.28967,
+      "longitude": 103.85007
+    },
+    {
+      "path": "/wetbulb-temperature/australia/new-south-wales/sydney/",
+      "geonameId": 2147714,
+      "latitude": -33.86785,
+      "longitude": 151.20732
+    },
+    {
+      "path": "/wetbulb-temperature/japan/tokyo/tokyo/",
+      "geonameId": 1850147,
+      "latitude": 35.6895,
+      "longitude": 139.69171
+    },
+    {
+      "path": "/wetbulb-temperature/canada/ontario/toronto/",
+      "geonameId": 6167865,
+      "latitude": 43.70643,
+      "longitude": -79.39864
+    }
+  ]
+}
