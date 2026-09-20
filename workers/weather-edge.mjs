@@ -1,3 +1,5 @@
+import { refreshForecast, validForecastGateRequest } from "./forecast-edge.ts";
+
 export const BROWSER_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-revalidate";
 export const BOT_PATTERN = /(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|bytespider|crawler|spider|bot)/i;
 const CACHE_ENVELOPE_VERSION = 1;
@@ -62,6 +64,24 @@ export function createObservability({
       default: return null;
     }
   };
+  const forecastEvent = (input) => {
+    switch (input?.event) {
+      case "forecast_budget_exhausted": return {
+        event: "forecast_budget_exhausted", deployment_version,
+        cache_state: input.cache_state === "stale_refresh" ? "stale_refresh" : "miss",
+        reserved_budget_used: integer(input.reserved_budget_used), reserved_budget_limit: integer(input.reserved_budget_limit),
+      };
+      case "forecast_provider_call": return {
+        event: "forecast_provider_call", deployment_version,
+        outcome: providerOutcome.has(input.outcome) ? input.outcome : "exception",
+        upstream_status: Number.isSafeInteger(input.upstream_status) && input.upstream_status >= 100 && input.upstream_status <= 599 ? input.upstream_status : null,
+        latency_ms: integer(input.latency_ms),
+        cache_state: input.cache_state === "stale_refresh" ? "stale_refresh" : "miss",
+        reserved_budget_used: integer(input.reserved_budget_used), reserved_budget_limit: integer(input.reserved_budget_limit),
+      };
+      default: return null;
+    }
+  };
   const keyed = (input, key, executionContext) => {
     const event = weatherEvent(input);
     if (!event) return Promise.resolve();
@@ -75,6 +95,7 @@ export function createObservability({
   return {
     weather(event, key, executionContext) { return keyed(event, key, executionContext); },
     weatherUnkeyed(event) { const safe = weatherEvent(event); if (safe) emit(safe); },
+    forecast(event) { const safe = forecastEvent(event); if (safe) emit(safe); },
     html(outcome) {
       if (Math.random() >= htmlSampleRate || !new Set(["hit", "miss", "stale"]).has(outcome)) return;
       emit({ event: "html_cache_outcome", deployment_version, outcome, cache_state: outcome, route_class: "html" });
@@ -281,11 +302,31 @@ export class WeatherGate {
   }
 
   async fetch(request) {
-    if (request.method !== "POST" || new URL(request.url).pathname !== "/refresh") return new Response("Not found", { status: 404 });
+    if (request.method !== "POST") return new Response("Not found", { status: 404 });
+    const pathname = new URL(request.url).pathname;
+    if (pathname !== "/refresh" && pathname !== "/forecast") return new Response("Not found", { status: 404 });
     let body;
     try { body = await request.json(); } catch { return json(ERROR_INVALID, 400); }
-    if (!this.validRequest(body)) return json(ERROR_INVALID, 400);
 
+    if (pathname === "/forecast") {
+      if (!validForecastGateRequest(body)) return json(ERROR_INVALID, 400);
+      if (!this.inFlight.has(body.key)) {
+        const observer = observabilityFor(this.env);
+        this.inFlight.set(body.key, refreshForecast(
+          this.state.storage,
+          this.env,
+          body,
+          (event) => observer.forecast?.(event),
+        ).finally(() => this.inFlight.delete(body.key)));
+      }
+      try {
+        return json(await this.inFlight.get(body.key));
+      } catch {
+        return json({ error: "Forecast is temporarily unavailable." }, 500);
+      }
+    }
+
+    if (!this.validRequest(body)) return json(ERROR_INVALID, 400);
     if (!this.inFlight.has(body.key)) {
       this.inFlight.set(body.key, this.refresh(body).finally(() => this.inFlight.delete(body.key)));
     }

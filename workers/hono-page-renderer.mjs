@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { pageHtml, renderBrowsePage, renderCountryPage, renderHomePage, renderStatePage } from "../lib/page-renderer.mjs";
+import { popular40EnrichmentByPath } from "../lib/popular-40-enrichment.mjs";
+import { forecastResponse } from "./forecast-edge.ts";
 import { createObservability, weatherResponse } from "./weather-edge.mjs";
 export { WeatherGate } from "./weather-edge.mjs";
 
@@ -24,7 +26,7 @@ async function readAssetJson(request, assets, pathname) {
   if (!response?.ok) throw new InternalMetadataError();
   try { return await response.json(); } catch { throw new InternalMetadataError(); }
 }
-function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID || DEFAULT_GA_MEASUREMENT_ID }; }
+function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID || DEFAULT_GA_MEASUREMENT_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial" }; }
 function indexCountryShard(country, rows) {
   const states = new Map();
   for (const row of rows) {
@@ -311,6 +313,25 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     return weatherResponse(context.req.raw, context.env, executionContext);
   });
   app.all("/api/weather/", (context) => context.notFound());
+  app.all("/api/forecast", (context) => {
+    if (context.env.OPEN_METEO_API_MODE !== "public-noncommercial" && context.env.OPEN_METEO_API_MODE !== "customer-commercial") return context.notFound();
+    let executionContext;
+    try { executionContext = context.executionCtx; } catch {}
+    const resolveForecastLocation = async (path) => {
+      if (!popular40EnrichmentByPath.has(path)) return null;
+      const parts = path.split("/").filter(Boolean);
+      const result = await resolve(context.req.raw, context.env.ASSETS, parts);
+      if (result?.kind !== "city") return null;
+      return {
+        path,
+        name: `${result.city.name}, ${result.city.resolvedAdmin1Code}, ${result.city.resolvedCountryName}`,
+        latitude: Number(result.city.latitude),
+        longitude: Number(result.city.longitude),
+      };
+    };
+    return forecastResponse(context.req.raw, context.env, executionContext, resolveForecastLocation);
+  });
+  app.all("/api/forecast/", (context) => context.notFound());
   app.get("*", async (context) => {
     const request = context.req.raw;
     const url = new URL(request.url);

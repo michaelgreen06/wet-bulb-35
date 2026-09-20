@@ -38,5 +38,11 @@ WEATHER_STALE_SECONDS = "600"
 WEATHER_TIMEOUT_MS = "5000"
 # Matches the OpenWeather subscription cap (2,000 calls/day); attempts are reserved before provider fetches.
 WEATHER_DAILY_ATTEMPT_LIMIT = "2000"
+# Five-day forecasts use one Open-Meteo call per Popular-40 location and cache miss.
+FORECAST_FRESH_SECONDS = "10800"
+FORECAST_STALE_SECONDS = "43200"
+FORECAST_TIMEOUT_MS = "5000"
+FORECAST_DAILY_ATTEMPT_LIMIT = "500"
+OPEN_METEO_API_MODE = "public-noncommercial"
 # Disabled by default; enable only as a reviewed [0,1] staging fraction.
 HTML_CACHE_EVENT_SAMPLE_RATE = "0"
