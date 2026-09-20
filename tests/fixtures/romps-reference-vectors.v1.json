@@ -1,0 +1,3013 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "package": "heatindex",
+    "version": "0.0.2",
+    "commit": "ebe4a831c1c01de071c8debf27863f1ad92b5782",
+    "sourceArchiveSha256": "14f9bcdb26d758458d7187503a90647764e02cb1f79315470d890aacb561ec2b"
+  },
+  "seed": 20260920,
+  "points": 500,
+  "vectors": [
+    {
+      "pressurePa": 82252.12331699557,
+      "airTemperatureK": 300.3339321823579,
+      "relativeHumidity": 0.12772541085430866,
+      "wetBulbK": 284.17526996989994
+    },
+    {
+      "pressurePa": 99552.24539911753,
+      "airTemperatureK": 274.8483945016841,
+      "relativeHumidity": 0.24125207928980863,
+      "wetBulbK": 269.9163314398274
+    },
+    {
+      "pressurePa": 74098.81460724614,
+      "airTemperatureK": 241.79758418910836,
+      "relativeHumidity": 0.7227532587381137,
+      "wetBulbK": 241.38414780498988
+    },
+    {
+      "pressurePa": 78102.65887687463,
+      "airTemperatureK": 279.98965702819424,
+      "relativeHumidity": 0.96172021192794,
+      "wetBulbK": 279.6673593187262
+    },
+    {
+      "pressurePa": 97674.84323415947,
+      "airTemperatureK": 250.57500929261852,
+      "relativeHumidity": 0.18761555292601262,
+      "wetBulbK": 249.36096086204154
+    },
+    {
+      "pressurePa": 73616.02817632032,
+      "airTemperatureK": 255.72735694915735,
+      "relativeHumidity": 0.4932519862205623,
+      "wetBulbK": 254.18382453684777
+    },
+    {
+      "pressurePa": 76277.52278599115,
+      "airTemperatureK": 316.39562847999804,
+      "relativeHumidity": 0.3229978359768759,
+      "wetBulbK": 300.33881352531733
+    },
+    {
+      "pressurePa": 85960.5273513206,
+      "airTemperatureK": 284.47068560489026,
+      "relativeHumidity": 0.499881672530897,
+      "wetBulbK": 279.3947554303271
+    },
+    {
+      "pressurePa": 75674.77481483719,
+      "airTemperatureK": 286.53051428942246,
+      "relativeHumidity": 0.6200943232840804,
+      "wetBulbK": 282.2864828541339
+    },
+    {
+      "pressurePa": 51883.73236466669,
+      "airTemperatureK": 270.3424709492621,
+      "relativeHumidity": 0.563912068875716,
+      "wetBulbK": 266.9544241766811
+    },
+    {
+      "pressurePa": 79234.3552231087,
+      "airTemperatureK": 291.41184297604514,
+      "relativeHumidity": 0.6742223896752004,
+      "wetBulbK": 287.365375769069
+    },
+    {
+      "pressurePa": 64732.96899280029,
+      "airTemperatureK": 256.55315133703596,
+      "relativeHumidity": 0.29434795818679105,
+      "wetBulbK": 254.22304642117126
+    },
+    {
+      "pressurePa": 87529.85506186642,
+      "airTemperatureK": 247.23447352102252,
+      "relativeHumidity": 0.21947955085479898,
+      "wetBulbK": 246.23392692035563
+    },
+    {
+      "pressurePa": 103770.87815649132,
+      "airTemperatureK": 262.8381324040418,
+      "relativeHumidity": 0.7024560547822083,
+      "wetBulbK": 261.6733864460039
+    },
+    {
+      "pressurePa": 99316.66098830733,
+      "airTemperatureK": 246.30613116519066,
+      "relativeHumidity": 0.008113693309297898,
+      "wetBulbK": 245.31578204886722
+    },
+    {
+      "pressurePa": 64898.48903518761,
+      "airTemperatureK": 278.1393018525729,
+      "relativeHumidity": 0.08489793964470627,
+      "wetBulbK": 269.0489109050433
+    },
+    {
+      "pressurePa": 87671.69665085236,
+      "airTemperatureK": 287.1229702431282,
+      "relativeHumidity": 0.29274626796361514,
+      "wetBulbK": 278.9987383437053
+    },
+    {
+      "pressurePa": 85132.36411908575,
+      "airTemperatureK": 257.2737745964838,
+      "relativeHumidity": 0.7095125228974996,
+      "wetBulbK": 256.2527961079674
+    },
+    {
+      "pressurePa": 53500.02956892328,
+      "airTemperatureK": 302.17707802475024,
+      "relativeHumidity": 0.024732164251034416,
+      "wetBulbK": 278.64793701369115
+    },
+    {
+      "pressurePa": 92937.47100458774,
+      "airTemperatureK": 280.68453923335653,
+      "relativeHumidity": 0.49691000066007984,
+      "wetBulbK": 276.40984812676203
+    },
+    {
+      "pressurePa": 74268.74532767734,
+      "airTemperatureK": 292.4276527439557,
+      "relativeHumidity": 0.4861927259458164,
+      "wetBulbK": 285.3770709985439
+    },
+    {
+      "pressurePa": 96539.82468051926,
+      "airTemperatureK": 311.47080800468075,
+      "relativeHumidity": 0.1515290423355986,
+      "wetBulbK": 292.27357032423413
+    },
+    {
+      "pressurePa": 84279.27916218097,
+      "airTemperatureK": 314.2451336097113,
+      "relativeHumidity": 0.08465632128884715,
+      "wetBulbK": 290.3062284413447
+    },
+    {
+      "pressurePa": 73728.06850924017,
+      "airTemperatureK": 266.45138979658674,
+      "relativeHumidity": 0.9433791047603738,
+      "wetBulbK": 265.8780816576878
+    },
+    {
+      "pressurePa": 78639.7145489847,
+      "airTemperatureK": 247.1925839635535,
+      "relativeHumidity": 0.9756070447779508,
+      "wetBulbK": 246.87305270709336
+    },
+    {
+      "pressurePa": 61749.06537244488,
+      "airTemperatureK": 263.7184388355107,
+      "relativeHumidity": 0.4568789070100798,
+      "wetBulbK": 260.8375174585676
+    },
+    {
+      "pressurePa": 64323.203305996365,
+      "airTemperatureK": 271.25222351644925,
+      "relativeHumidity": 0.9304320453068055,
+      "wetBulbK": 270.67429262431307
+    },
+    {
+      "pressurePa": 100475.45098335526,
+      "airTemperatureK": 306.6405438035159,
+      "relativeHumidity": 0.8433450031204813,
+      "wetBulbK": 304.23746702554433
+    },
+    {
+      "pressurePa": 68090.80341100387,
+      "airTemperatureK": 293.90674919091856,
+      "relativeHumidity": 0.4871619292296018,
+      "wetBulbK": 286.3951946479002
+    },
+    {
+      "pressurePa": 50733.51569581157,
+      "airTemperatureK": 298.8366740351944,
+      "relativeHumidity": 0.3220228846056987,
+      "wetBulbK": 285.9606530836937
+    },
+    {
+      "pressurePa": 53128.82588726342,
+      "airTemperatureK": 246.57875332967131,
+      "relativeHumidity": 0.3731591009452453,
+      "wetBulbK": 245.31674899966544
+    },
+    {
+      "pressurePa": 54327.59515611509,
+      "airTemperatureK": 241.39145302050576,
+      "relativeHumidity": 0.5449786043534544,
+      "wetBulbK": 240.71181267336863
+    },
+    {
+      "pressurePa": 83582.95884501842,
+      "airTemperatureK": 259.1340178855067,
+      "relativeHumidity": 0.3379763718153348,
+      "wetBulbK": 257.0095380298208
+    },
+    {
+      "pressurePa": 71430.53542518278,
+      "airTemperatureK": 258.14971149018413,
+      "relativeHumidity": 0.7430307777045885,
+      "wetBulbK": 257.01853810092837
+    },
+    {
+      "pressurePa": 64143.08522591111,
+      "airTemperatureK": 249.16147282200592,
+      "relativeHumidity": 0.4138438212807265,
+      "wetBulbK": 247.92197789090804
+    },
+    {
+      "pressurePa": 101661.29176584119,
+      "airTemperatureK": 290.9951167188767,
+      "relativeHumidity": 0.021440074592865566,
+      "wetBulbK": 278.2433673863692
+    },
+    {
+      "pressurePa": 78860.72911840353,
+      "airTemperatureK": 285.5638761496225,
+      "relativeHumidity": 0.05273749456562504,
+      "wetBulbK": 274.1138592941701
+    },
+    {
+      "pressurePa": 78905.46568522647,
+      "airTemperatureK": 295.26735816884263,
+      "relativeHumidity": 0.8892533824568609,
+      "wetBulbK": 293.8417488909798
+    },
+    {
+      "pressurePa": 89274.99680711361,
+      "airTemperatureK": 256.45644503636487,
+      "relativeHumidity": 0.8255989364607135,
+      "wetBulbK": 255.75084233006496
+    },
+    {
+      "pressurePa": 60670.05058868738,
+      "airTemperatureK": 256.84738238980106,
+      "relativeHumidity": 0.6268100951836273,
+      "wetBulbK": 255.31200692774664
+    },
+    {
+      "pressurePa": 82533.23144171463,
+      "airTemperatureK": 267.91615517162995,
+      "relativeHumidity": 0.2523404622795763,
+      "wetBulbK": 263.994178893428
+    },
+    {
+      "pressurePa": 97605.2441100206,
+      "airTemperatureK": 306.2888337913758,
+      "relativeHumidity": 0.20619546095192975,
+      "wetBulbK": 290.8033024403382
+    },
+    {
+      "pressurePa": 97830.2269455128,
+      "airTemperatureK": 290.51790575090166,
+      "relativeHumidity": 0.9174996755547998,
+      "wetBulbK": 289.63589434351366
+    },
+    {
+      "pressurePa": 53436.36611740319,
+      "airTemperatureK": 277.3531107280321,
+      "relativeHumidity": 0.359620335422539,
+      "wetBulbK": 270.886838676631
+    },
+    {
+      "pressurePa": 84105.62302371456,
+      "airTemperatureK": 260.54151044343,
+      "relativeHumidity": 0.03871129684617014,
+      "wetBulbK": 257.344132240694
+    },
+    {
+      "pressurePa": 96844.21763746566,
+      "airTemperatureK": 281.8607039180672,
+      "relativeHumidity": 0.8014271043966845,
+      "wetBulbK": 280.2045999253684
+    },
+    {
+      "pressurePa": 78133.2450634891,
+      "airTemperatureK": 291.5470809807972,
+      "relativeHumidity": 0.4304523454642857,
+      "wetBulbK": 283.9309408022538
+    },
+    {
+      "pressurePa": 64914.55729731781,
+      "airTemperatureK": 320.08838146607155,
+      "relativeHumidity": 0.4092310988060892,
+      "wetBulbK": 305.71980983750717
+    },
+    {
+      "pressurePa": 69295.42168864784,
+      "airTemperatureK": 302.4541842503252,
+      "relativeHumidity": 0.8516446387111468,
+      "wetBulbK": 300.1816873644127
+    },
+    {
+      "pressurePa": 100492.20304816685,
+      "airTemperatureK": 253.45008312131324,
+      "relativeHumidity": 0.805535542470475,
+      "wetBulbK": 252.87088945288724
+    },
+    {
+      "pressurePa": 86535.17646307772,
+      "airTemperatureK": 265.57975896228487,
+      "relativeHumidity": 0.6588228323132088,
+      "wetBulbK": 263.9127353950986
+    },
+    {
+      "pressurePa": 104623.46839268616,
+      "airTemperatureK": 288.26065320242407,
+      "relativeHumidity": 0.29684549749003275,
+      "wetBulbK": 280.5513659734965
+    },
+    {
+      "pressurePa": 80213.31071022448,
+      "airTemperatureK": 283.70232982143864,
+      "relativeHumidity": 0.2069883453667073,
+      "wetBulbK": 275.1336934768985
+    },
+    {
+      "pressurePa": 80370.14883563685,
+      "airTemperatureK": 265.7855653301875,
+      "relativeHumidity": 0.7540296916121618,
+      "wetBulbK": 264.42859000085855
+    },
+    {
+      "pressurePa": 74823.56327191021,
+      "airTemperatureK": 243.06584930867052,
+      "relativeHumidity": 0.582668195258603,
+      "wetBulbK": 242.51244509717637
+    },
+    {
+      "pressurePa": 91376.57320254523,
+      "airTemperatureK": 302.8885257159738,
+      "relativeHumidity": 0.9574976425958517,
+      "wetBulbK": 302.28667889774357
+    },
+    {
+      "pressurePa": 70789.5256922282,
+      "airTemperatureK": 255.5094448287442,
+      "relativeHumidity": 0.8596274207612334,
+      "wetBulbK": 254.7726667741199
+    },
+    {
+      "pressurePa": 60591.73938319829,
+      "airTemperatureK": 306.00799054536776,
+      "relativeHumidity": 0.26599330851897307,
+      "wetBulbK": 290.1701624252239
+    },
+    {
+      "pressurePa": 81295.9508460527,
+      "airTemperatureK": 323.0483306071345,
+      "relativeHumidity": 0.3579868120196975,
+      "wetBulbK": 306.82260706743597
+    },
+    {
+      "pressurePa": 56530.5292082559,
+      "airTemperatureK": 274.5257952651608,
+      "relativeHumidity": 0.9368267264762842,
+      "wetBulbK": 274.0177703078714
+    },
+    {
+      "pressurePa": 76909.79680867454,
+      "airTemperatureK": 286.0070751882063,
+      "relativeHumidity": 0.34481796228372485,
+      "wetBulbK": 278.398657215963
+    },
+    {
+      "pressurePa": 58553.461827311854,
+      "airTemperatureK": 254.52080898630672,
+      "relativeHumidity": 0.44549626611538184,
+      "wetBulbK": 252.68392596632157
+    },
+    {
+      "pressurePa": 55347.53867748592,
+      "airTemperatureK": 290.9746663322015,
+      "relativeHumidity": 0.4818552000938142,
+      "wetBulbK": 283.4274558817078
+    },
+    {
+      "pressurePa": 56026.68152391449,
+      "airTemperatureK": 254.31094222486703,
+      "relativeHumidity": 0.059010952430661456,
+      "wetBulbK": 251.44835191067102
+    },
+    {
+      "pressurePa": 80866.20080227518,
+      "airTemperatureK": 308.7417375191807,
+      "relativeHumidity": 0.8297772807123327,
+      "wetBulbK": 305.9174223052605
+    },
+    {
+      "pressurePa": 88778.82400961069,
+      "airTemperatureK": 303.6198656015084,
+      "relativeHumidity": 0.8965373850110724,
+      "wetBulbK": 302.1001633195255
+    },
+    {
+      "pressurePa": 103408.87717307574,
+      "airTemperatureK": 246.3397667983712,
+      "relativeHumidity": 0.006253767438496816,
+      "wetBulbK": 245.38138123131043
+    },
+    {
+      "pressurePa": 56201.581219912754,
+      "airTemperatureK": 251.24668011445294,
+      "relativeHumidity": 0.12069734251808617,
+      "wetBulbK": 249.06727662409025
+    },
+    {
+      "pressurePa": 80967.43371231134,
+      "airTemperatureK": 306.3887702599201,
+      "relativeHumidity": 0.922216801104019,
+      "wetBulbK": 305.18193255021464
+    },
+    {
+      "pressurePa": 62232.76428819052,
+      "airTemperatureK": 245.77020201734828,
+      "relativeHumidity": 0.07616002256122167,
+      "wetBulbK": 244.40325331851065
+    },
+    {
+      "pressurePa": 100650.68984118343,
+      "airTemperatureK": 251.49904743507102,
+      "relativeHumidity": 0.5487656169772928,
+      "wetBulbK": 250.67008482841808
+    },
+    {
+      "pressurePa": 61539.87406420066,
+      "airTemperatureK": 302.5558135045448,
+      "relativeHumidity": 0.9009272093062619,
+      "wetBulbK": 301.03013612368403
+    },
+    {
+      "pressurePa": 85779.6076205348,
+      "airTemperatureK": 298.70632049244665,
+      "relativeHumidity": 0.4663564271284335,
+      "wetBulbK": 290.49551427192233
+    },
+    {
+      "pressurePa": 96991.77583420448,
+      "airTemperatureK": 323.4760295816867,
+      "relativeHumidity": 0.4712128400054031,
+      "wetBulbK": 311.2304578749786
+    },
+    {
+      "pressurePa": 91078.86230315219,
+      "airTemperatureK": 318.1123726079891,
+      "relativeHumidity": 0.50576075271665,
+      "wetBulbK": 307.56836822059927
+    },
+    {
+      "pressurePa": 90558.27444480296,
+      "airTemperatureK": 303.7933555004269,
+      "relativeHumidity": 0.2638423375040292,
+      "wetBulbK": 290.25712653333534
+    },
+    {
+      "pressurePa": 79576.43918313184,
+      "airTemperatureK": 256.71448875081626,
+      "relativeHumidity": 0.9964536693468005,
+      "wetBulbK": 256.317247700517
+    },
+    {
+      "pressurePa": 52074.85713948928,
+      "airTemperatureK": 293.99176548703656,
+      "relativeHumidity": 0.8775815104948298,
+      "wetBulbK": 292.29668866525714
+    },
+    {
+      "pressurePa": 99529.24511177735,
+      "airTemperatureK": 254.7936307321782,
+      "relativeHumidity": 0.4327854169658488,
+      "wetBulbK": 253.56193648693193
+    },
+    {
+      "pressurePa": 75883.11953798452,
+      "airTemperatureK": 305.52266571339726,
+      "relativeHumidity": 0.2686746698824699,
+      "wetBulbK": 290.81453165904077
+    },
+    {
+      "pressurePa": 69465.0146548158,
+      "airTemperatureK": 257.1021239052015,
+      "relativeHumidity": 0.4753893038067214,
+      "wetBulbK": 255.29981689975554
+    },
+    {
+      "pressurePa": 99902.62154504698,
+      "airTemperatureK": 250.64616481607257,
+      "relativeHumidity": 0.7758382996806154,
+      "wetBulbK": 250.1170372398602
+    },
+    {
+      "pressurePa": 63517.941833494755,
+      "airTemperatureK": 306.5190699088025,
+      "relativeHumidity": 0.4100927690821953,
+      "wetBulbK": 294.7609243459608
+    },
+    {
+      "pressurePa": 64147.350200319095,
+      "airTemperatureK": 306.4571223814274,
+      "relativeHumidity": 0.048769936682978465,
+      "wetBulbK": 282.97631620739276
+    },
+    {
+      "pressurePa": 77578.6072383046,
+      "airTemperatureK": 255.28254717711852,
+      "relativeHumidity": 0.36463390949845353,
+      "wetBulbK": 253.57403162136563
+    },
+    {
+      "pressurePa": 81061.1414036303,
+      "airTemperatureK": 278.6890187882433,
+      "relativeHumidity": 0.9123885893166725,
+      "wetBulbK": 277.99125472068664
+    },
+    {
+      "pressurePa": 89822.25746925539,
+      "airTemperatureK": 240.4886283074158,
+      "relativeHumidity": 0.019934446300514774,
+      "wetBulbK": 239.83937987206042
+    },
+    {
+      "pressurePa": 85231.57836456344,
+      "airTemperatureK": 292.3466919262113,
+      "relativeHumidity": 0.454332247714723,
+      "wetBulbK": 285.17196868041134
+    },
+    {
+      "pressurePa": 72631.50759701122,
+      "airTemperatureK": 242.6732821242862,
+      "relativeHumidity": 0.636887132520791,
+      "wetBulbK": 242.16120267203243
+    },
+    {
+      "pressurePa": 101612.56405923341,
+      "airTemperatureK": 316.626010941103,
+      "relativeHumidity": 0.801516162930301,
+      "wetBulbK": 313.02920186611004
+    },
+    {
+      "pressurePa": 61466.79656541401,
+      "airTemperatureK": 278.094406777842,
+      "relativeHumidity": 0.18354181301789985,
+      "wetBulbK": 269.9087531470882
+    },
+    {
+      "pressurePa": 71170.38041581347,
+      "airTemperatureK": 293.27577960356354,
+      "relativeHumidity": 0.6184528987765621,
+      "wetBulbK": 288.06276524258
+    },
+    {
+      "pressurePa": 67205.27755826621,
+      "airTemperatureK": 249.13543187472598,
+      "relativeHumidity": 0.6679430097958621,
+      "wetBulbK": 248.30401782970574
+    },
+    {
+      "pressurePa": 83686.3783602526,
+      "airTemperatureK": 249.5811641101298,
+      "relativeHumidity": 0.8894749015160601,
+      "wetBulbK": 249.13919270901022
+    },
+    {
+      "pressurePa": 98509.26151886472,
+      "airTemperatureK": 243.77641359654254,
+      "relativeHumidity": 0.32913926686348083,
+      "wetBulbK": 243.16784523039954
+    },
+    {
+      "pressurePa": 51234.091046962305,
+      "airTemperatureK": 251.9813221734165,
+      "relativeHumidity": 0.2472531108360525,
+      "wetBulbK": 249.79474855727645
+    },
+    {
+      "pressurePa": 66312.38167536244,
+      "airTemperatureK": 317.5552068868938,
+      "relativeHumidity": 0.11633262300995295,
+      "wetBulbK": 291.9166920848666
+    },
+    {
+      "pressurePa": 58273.85387005714,
+      "airTemperatureK": 269.4262682825696,
+      "relativeHumidity": 0.4498425519091396,
+      "wetBulbK": 265.55093731913183
+    },
+    {
+      "pressurePa": 77540.17142136571,
+      "airTemperatureK": 252.86027853133254,
+      "relativeHumidity": 0.06179824207615148,
+      "wetBulbK": 250.886012312847
+    },
+    {
+      "pressurePa": 52409.840902995806,
+      "airTemperatureK": 256.8175679668907,
+      "relativeHumidity": 0.8904548469757336,
+      "wetBulbK": 255.94281449731574
+    },
+    {
+      "pressurePa": 59561.38321402473,
+      "airTemperatureK": 260.9191311453284,
+      "relativeHumidity": 0.38686634002557774,
+      "wetBulbK": 258.0732048382742
+    },
+    {
+      "pressurePa": 76229.38066817031,
+      "airTemperatureK": 306.99620786039736,
+      "relativeHumidity": 0.767200803135403,
+      "wetBulbK": 303.112839674061
+    },
+    {
+      "pressurePa": 82230.23786804838,
+      "airTemperatureK": 269.5252217606052,
+      "relativeHumidity": 0.634596980185832,
+      "wetBulbK": 267.4007347643666
+    },
+    {
+      "pressurePa": 62335.934458104486,
+      "airTemperatureK": 243.70657957122677,
+      "relativeHumidity": 0.11416625756591825,
+      "wetBulbK": 242.589705829193
+    },
+    {
+      "pressurePa": 58809.35855222223,
+      "airTemperatureK": 297.4031700380383,
+      "relativeHumidity": 0.785191114747019,
+      "wetBulbK": 294.2218581172008
+    },
+    {
+      "pressurePa": 98603.89670032184,
+      "airTemperatureK": 324.24276679051354,
+      "relativeHumidity": 0.8606983716453628,
+      "wetBulbK": 321.51561603700964
+    },
+    {
+      "pressurePa": 64915.688135168064,
+      "airTemperatureK": 259.29195774407884,
+      "relativeHumidity": 0.30982883393059,
+      "wetBulbK": 256.5942474553003
+    },
+    {
+      "pressurePa": 104759.5665899486,
+      "airTemperatureK": 253.68478774137716,
+      "relativeHumidity": 0.8568600896860723,
+      "wetBulbK": 253.19096680464702
+    },
+    {
+      "pressurePa": 59627.75245220524,
+      "airTemperatureK": 280.47445043466917,
+      "relativeHumidity": 0.3144744876197111,
+      "wetBulbK": 273.03682788305804
+    },
+    {
+      "pressurePa": 68284.71157432186,
+      "airTemperatureK": 309.79467703291823,
+      "relativeHumidity": 0.2810666715558471,
+      "wetBulbK": 293.7654505613598
+    },
+    {
+      "pressurePa": 73386.16253242793,
+      "airTemperatureK": 243.0776083502687,
+      "relativeHumidity": 0.12846726507516004,
+      "wetBulbK": 242.17459759857607
+    },
+    {
+      "pressurePa": 62438.01637744058,
+      "airTemperatureK": 264.4397119414162,
+      "relativeHumidity": 0.44704048846721023,
+      "wetBulbK": 261.43243938125386
+    },
+    {
+      "pressurePa": 57199.360896590064,
+      "airTemperatureK": 262.22306365811363,
+      "relativeHumidity": 0.3159196199369829,
+      "wetBulbK": 258.7677181103165
+    },
+    {
+      "pressurePa": 62440.96448221768,
+      "airTemperatureK": 313.0096936590307,
+      "relativeHumidity": 0.8522311990197368,
+      "wetBulbK": 310.34232023584906
+    },
+    {
+      "pressurePa": 61332.040883894006,
+      "airTemperatureK": 324.54949650624104,
+      "relativeHumidity": 0.5712287018530089,
+      "wetBulbK": 314.4862206577506
+    },
+    {
+      "pressurePa": 103774.25024507771,
+      "airTemperatureK": 276.5768390295345,
+      "relativeHumidity": 0.35942141328321786,
+      "wetBulbK": 272.2220660945889
+    },
+    {
+      "pressurePa": 94007.85389444698,
+      "airTemperatureK": 303.70867650305314,
+      "relativeHumidity": 0.18666168566266483,
+      "wetBulbK": 288.4696754842596
+    },
+    {
+      "pressurePa": 53771.80555186032,
+      "airTemperatureK": 240.33402649726062,
+      "relativeHumidity": 0.9290558117306461,
+      "wetBulbK": 239.99526314464973
+    },
+    {
+      "pressurePa": 102775.84381240484,
+      "airTemperatureK": 280.123066202889,
+      "relativeHumidity": 0.9243713805250343,
+      "wetBulbK": 279.5576968364425
+    },
+    {
+      "pressurePa": 89618.7465480399,
+      "airTemperatureK": 270.73586303484785,
+      "relativeHumidity": 0.39641919972845363,
+      "wetBulbK": 267.30042792311707
+    },
+    {
+      "pressurePa": 88074.98109570408,
+      "airTemperatureK": 264.93272470607934,
+      "relativeHumidity": 0.6557556703940647,
+      "wetBulbK": 263.3179067563552
+    },
+    {
+      "pressurePa": 102568.04843986343,
+      "airTemperatureK": 311.520318114489,
+      "relativeHumidity": 0.15953495800349582,
+      "wetBulbK": 292.9311487829223
+    },
+    {
+      "pressurePa": 103941.82979248796,
+      "airTemperatureK": 257.5279430954213,
+      "relativeHumidity": 0.0845659396688282,
+      "wetBulbK": 255.42062121576782
+    },
+    {
+      "pressurePa": 72503.14654471855,
+      "airTemperatureK": 291.99385008022364,
+      "relativeHumidity": 0.9104608455989254,
+      "wetBulbK": 290.90241626116784
+    },
+    {
+      "pressurePa": 69863.43262011425,
+      "airTemperatureK": 307.8670282962526,
+      "relativeHumidity": 0.023081412583412897,
+      "wetBulbK": 283.19911682164
+    },
+    {
+      "pressurePa": 69711.98092148136,
+      "airTemperatureK": 293.89721731290103,
+      "relativeHumidity": 0.3502954552168448,
+      "wetBulbK": 284.00875439947504
+    },
+    {
+      "pressurePa": 70607.94595690908,
+      "airTemperatureK": 254.41237357044932,
+      "relativeHumidity": 0.1755275296565061,
+      "wetBulbK": 252.26888997549665
+    },
+    {
+      "pressurePa": 90444.47917699243,
+      "airTemperatureK": 319.0352290710049,
+      "relativeHumidity": 0.40912030911830777,
+      "wetBulbK": 305.5888273571276
+    },
+    {
+      "pressurePa": 85191.0997597794,
+      "airTemperatureK": 322.99165250713895,
+      "relativeHumidity": 0.905234237625622,
+      "wetBulbK": 321.1669364506009
+    },
+    {
+      "pressurePa": 56173.206789062846,
+      "airTemperatureK": 247.75057779204658,
+      "relativeHumidity": 0.80731893031491,
+      "wetBulbK": 247.06886365712165
+    },
+    {
+      "pressurePa": 71399.97321845783,
+      "airTemperatureK": 245.71056180042126,
+      "relativeHumidity": 0.38445345788854335,
+      "wetBulbK": 244.8096436303735
+    },
+    {
+      "pressurePa": 56135.902625106224,
+      "airTemperatureK": 262.1677779878562,
+      "relativeHumidity": 0.4377161080165005,
+      "wetBulbK": 259.23150569073044
+    },
+    {
+      "pressurePa": 54520.867243323664,
+      "airTemperatureK": 309.8696477192519,
+      "relativeHumidity": 0.4408922069434307,
+      "wetBulbK": 297.9677774558189
+    },
+    {
+      "pressurePa": 87863.56282703512,
+      "airTemperatureK": 274.6009322480126,
+      "relativeHumidity": 0.5433327050239827,
+      "wetBulbK": 271.52049802228964
+    },
+    {
+      "pressurePa": 59405.034835795515,
+      "airTemperatureK": 312.40805484491136,
+      "relativeHumidity": 0.8996072752864603,
+      "wetBulbK": 310.63205246960575
+    },
+    {
+      "pressurePa": 73861.41247639434,
+      "airTemperatureK": 293.2348608652468,
+      "relativeHumidity": 0.258654070600435,
+      "wetBulbK": 282.0374104858953
+    },
+    {
+      "pressurePa": 93059.72240172868,
+      "airTemperatureK": 242.13846001310606,
+      "relativeHumidity": 0.09739718336842695,
+      "wetBulbK": 241.45295507280724
+    },
+    {
+      "pressurePa": 73096.00643588582,
+      "airTemperatureK": 308.9829709593897,
+      "relativeHumidity": 0.15420999511117284,
+      "wetBulbK": 289.2652587637904
+    },
+    {
+      "pressurePa": 76829.80415211013,
+      "airTemperatureK": 252.92580669970658,
+      "relativeHumidity": 0.9223454313761792,
+      "wetBulbK": 252.42030689456203
+    },
+    {
+      "pressurePa": 51901.75560039323,
+      "airTemperatureK": 243.69576520614459,
+      "relativeHumidity": 0.24988293106524317,
+      "wetBulbK": 242.5299029089206
+    },
+    {
+      "pressurePa": 101069.42288479603,
+      "airTemperatureK": 270.9552626566628,
+      "relativeHumidity": 0.21238427810120397,
+      "wetBulbK": 266.7633645131213
+    },
+    {
+      "pressurePa": 78099.36120918982,
+      "airTemperatureK": 304.5807860139049,
+      "relativeHumidity": 0.14586414486925892,
+      "wetBulbK": 286.80609702147876
+    },
+    {
+      "pressurePa": 64447.26162541362,
+      "airTemperatureK": 315.206781038862,
+      "relativeHumidity": 0.7019364935748377,
+      "wetBulbK": 309.3452210626724
+    },
+    {
+      "pressurePa": 64326.49721513577,
+      "airTemperatureK": 268.2046671692708,
+      "relativeHumidity": 0.6147642620821695,
+      "wetBulbK": 265.72091423910007
+    },
+    {
+      "pressurePa": 91561.41588182776,
+      "airTemperatureK": 256.8374560464609,
+      "relativeHumidity": 0.2930513827725437,
+      "wetBulbK": 255.03830851706655
+    },
+    {
+      "pressurePa": 68527.28583290451,
+      "airTemperatureK": 318.6280501727779,
+      "relativeHumidity": 0.1994544631330657,
+      "wetBulbK": 296.74412322917874
+    },
+    {
+      "pressurePa": 80783.07897499902,
+      "airTemperatureK": 324.2966078527315,
+      "relativeHumidity": 0.9987811945380215,
+      "wetBulbK": 324.27351374498676
+    },
+    {
+      "pressurePa": 83118.53219266859,
+      "airTemperatureK": 277.42596590185,
+      "relativeHumidity": 0.8762759508442304,
+      "wetBulbK": 276.4931164405156
+    },
+    {
+      "pressurePa": 104668.68363003628,
+      "airTemperatureK": 260.3292760877654,
+      "relativeHumidity": 0.3354918856505348,
+      "wetBulbK": 258.4118020333016
+    },
+    {
+      "pressurePa": 96682.42774192078,
+      "airTemperatureK": 274.2256257097473,
+      "relativeHumidity": 0.7205117234395132,
+      "wetBulbK": 272.50288271571
+    },
+    {
+      "pressurePa": 95171.04257654978,
+      "airTemperatureK": 318.2488322259411,
+      "relativeHumidity": 0.8891122487476327,
+      "wetBulbK": 316.2424882459585
+    },
+    {
+      "pressurePa": 80725.67846779144,
+      "airTemperatureK": 269.56401910047555,
+      "relativeHumidity": 0.08418100653116956,
+      "wetBulbK": 264.2476075385158
+    },
+    {
+      "pressurePa": 102775.82392456557,
+      "airTemperatureK": 317.78212183783444,
+      "relativeHumidity": 0.49659702456984756,
+      "wetBulbK": 307.2759095651593
+    },
+    {
+      "pressurePa": 56955.37751625556,
+      "airTemperatureK": 322.8523337157259,
+      "relativeHumidity": 0.28538081594686326,
+      "wetBulbK": 302.87361559719596
+    },
+    {
+      "pressurePa": 72009.62808151839,
+      "airTemperatureK": 250.53283662109985,
+      "relativeHumidity": 0.48762342020457106,
+      "wetBulbK": 249.40489740202756
+    },
+    {
+      "pressurePa": 93244.59220305744,
+      "airTemperatureK": 264.31377961674923,
+      "relativeHumidity": 0.9110998826787862,
+      "wetBulbK": 263.69829017189466
+    },
+    {
+      "pressurePa": 99358.50662198677,
+      "airTemperatureK": 318.76695272706354,
+      "relativeHumidity": 0.310171026370501,
+      "wetBulbK": 302.5472803235601
+    },
+    {
+      "pressurePa": 59266.06411831683,
+      "airTemperatureK": 285.6740006316678,
+      "relativeHumidity": 0.072420493619752,
+      "wetBulbK": 272.7694054078788
+    },
+    {
+      "pressurePa": 59494.51026670296,
+      "airTemperatureK": 315.8243177526552,
+      "relativeHumidity": 0.47081327396018047,
+      "wetBulbK": 303.9418895585498
+    },
+    {
+      "pressurePa": 77776.78411515248,
+      "airTemperatureK": 280.2054029297663,
+      "relativeHumidity": 0.05609221384670737,
+      "wetBulbK": 270.9226207011719
+    },
+    {
+      "pressurePa": 81803.54095108133,
+      "airTemperatureK": 252.09196429643802,
+      "relativeHumidity": 0.04531636122269267,
+      "wetBulbK": 250.28440863115293
+    },
+    {
+      "pressurePa": 93815.14472318326,
+      "airTemperatureK": 262.42332130632946,
+      "relativeHumidity": 0.12439648876404197,
+      "wetBulbK": 259.3871308162053
+    },
+    {
+      "pressurePa": 87344.25814766223,
+      "airTemperatureK": 290.90831892350565,
+      "relativeHumidity": 0.5217100709142659,
+      "wetBulbK": 285.0296357147575
+    },
+    {
+      "pressurePa": 74488.55692760165,
+      "airTemperatureK": 244.6389996904214,
+      "relativeHumidity": 0.15351043778280282,
+      "wetBulbK": 243.64459354155127
+    },
+    {
+      "pressurePa": 103303.58057604713,
+      "airTemperatureK": 258.4568698644945,
+      "relativeHumidity": 0.7476386414826568,
+      "wetBulbK": 257.6081189273022
+    },
+    {
+      "pressurePa": 57519.75302708128,
+      "airTemperatureK": 285.67365467976487,
+      "relativeHumidity": 0.7569217663454328,
+      "wetBulbK": 282.84499769558556
+    },
+    {
+      "pressurePa": 85201.72433268328,
+      "airTemperatureK": 310.1096948990047,
+      "relativeHumidity": 0.6791808971186134,
+      "wetBulbK": 304.41532841486315
+    },
+    {
+      "pressurePa": 69743.78559222004,
+      "airTemperatureK": 298.1801212464745,
+      "relativeHumidity": 0.5820873749711678,
+      "wetBulbK": 291.7032290117703
+    },
+    {
+      "pressurePa": 50447.47544179636,
+      "airTemperatureK": 299.1153356764154,
+      "relativeHumidity": 0.5515546772105745,
+      "wetBulbK": 291.4058422922737
+    },
+    {
+      "pressurePa": 67327.82640306841,
+      "airTemperatureK": 305.6637318836511,
+      "relativeHumidity": 0.5984557733935927,
+      "wetBulbK": 298.50656801297526
+    },
+    {
+      "pressurePa": 81600.12675109864,
+      "airTemperatureK": 279.53762303393285,
+      "relativeHumidity": 0.43781049210275524,
+      "wetBulbK": 274.60736152192305
+    },
+    {
+      "pressurePa": 62783.42763450258,
+      "airTemperatureK": 309.368424879805,
+      "relativeHumidity": 0.30975429339029714,
+      "wetBulbK": 294.0672745868627
+    },
+    {
+      "pressurePa": 68829.21884545153,
+      "airTemperatureK": 282.9693075366121,
+      "relativeHumidity": 0.6570581358281494,
+      "wetBulbK": 279.43120843916404
+    },
+    {
+      "pressurePa": 59945.31129414752,
+      "airTemperatureK": 303.4059897780591,
+      "relativeHumidity": 0.2753243140550793,
+      "wetBulbK": 288.5830165094888
+    },
+    {
+      "pressurePa": 64987.99935493384,
+      "airTemperatureK": 304.3750189046857,
+      "relativeHumidity": 0.5445011289089942,
+      "wetBulbK": 296.1920013103661
+    },
+    {
+      "pressurePa": 69147.05606105737,
+      "airTemperatureK": 281.8689082293747,
+      "relativeHumidity": 0.9978872620053298,
+      "wetBulbK": 281.8491828685175
+    },
+    {
+      "pressurePa": 50475.92482777971,
+      "airTemperatureK": 262.59648774949255,
+      "relativeHumidity": 0.31997960561237904,
+      "wetBulbK": 258.7826804876091
+    },
+    {
+      "pressurePa": 51103.94390713655,
+      "airTemperatureK": 303.0877981786445,
+      "relativeHumidity": 0.773049393598611,
+      "wetBulbK": 299.2939328078562
+    },
+    {
+      "pressurePa": 80069.11643388796,
+      "airTemperatureK": 313.40411834062104,
+      "relativeHumidity": 0.3609823991919323,
+      "wetBulbK": 299.4107092521504
+    },
+    {
+      "pressurePa": 93767.31526499873,
+      "airTemperatureK": 265.0788400508027,
+      "relativeHumidity": 0.8028084242922358,
+      "wetBulbK": 264.06754974877146
+    },
+    {
+      "pressurePa": 67059.31372982214,
+      "airTemperatureK": 265.9815876240678,
+      "relativeHumidity": 0.6258302851183211,
+      "wetBulbK": 263.8066576841239
+    },
+    {
+      "pressurePa": 54133.887475707175,
+      "airTemperatureK": 317.3366348535197,
+      "relativeHumidity": 0.43543890556946097,
+      "wetBulbK": 303.97758767201753
+    },
+    {
+      "pressurePa": 83668.63716619747,
+      "airTemperatureK": 272.242038247768,
+      "relativeHumidity": 0.4788773128342362,
+      "wetBulbK": 268.94989286820646
+    },
+    {
+      "pressurePa": 91185.7411431438,
+      "airTemperatureK": 298.974241420105,
+      "relativeHumidity": 0.5971400016402704,
+      "wetBulbK": 293.10330075929596
+    },
+    {
+      "pressurePa": 73489.85917934473,
+      "airTemperatureK": 284.34362587202736,
+      "relativeHumidity": 0.4046445861331208,
+      "wetBulbK": 277.7585794949802
+    },
+    {
+      "pressurePa": 70751.04283378193,
+      "airTemperatureK": 315.96403832063965,
+      "relativeHumidity": 0.14260696803276374,
+      "wetBulbK": 292.6879649665239
+    },
+    {
+      "pressurePa": 61824.23571869616,
+      "airTemperatureK": 255.61215876358142,
+      "relativeHumidity": 0.0387074499815524,
+      "wetBulbK": 252.6667275393694
+    },
+    {
+      "pressurePa": 64894.05241291738,
+      "airTemperatureK": 302.6156788367551,
+      "relativeHumidity": 0.4465780608518426,
+      "wetBulbK": 292.5627053715353
+    },
+    {
+      "pressurePa": 59502.3050616923,
+      "airTemperatureK": 272.5051953839684,
+      "relativeHumidity": 0.05340335095335447,
+      "wetBulbK": 264.75937238827913
+    },
+    {
+      "pressurePa": 55222.410943735464,
+      "airTemperatureK": 318.71871364568887,
+      "relativeHumidity": 0.42455360069925807,
+      "wetBulbK": 304.80631267691615
+    },
+    {
+      "pressurePa": 74188.49949175761,
+      "airTemperatureK": 249.05680173486562,
+      "relativeHumidity": 0.759246825257557,
+      "wetBulbK": 248.4137838602375
+    },
+    {
+      "pressurePa": 50409.76493326809,
+      "airTemperatureK": 242.46843861588076,
+      "relativeHumidity": 0.5476466035409138,
+      "wetBulbK": 241.68045603749175
+    },
+    {
+      "pressurePa": 84962.33954851587,
+      "airTemperatureK": 272.94376384014697,
+      "relativeHumidity": 0.04527081758114293,
+      "wetBulbK": 266.567079597864
+    },
+    {
+      "pressurePa": 78790.22940849891,
+      "airTemperatureK": 305.2219888510279,
+      "relativeHumidity": 0.008261322777445623,
+      "wetBulbK": 282.60082424325503
+    },
+    {
+      "pressurePa": 62005.39224506813,
+      "airTemperatureK": 277.72049259830294,
+      "relativeHumidity": 0.351058775484569,
+      "wetBulbK": 271.53182986279694
+    },
+    {
+      "pressurePa": 62288.059424569234,
+      "airTemperatureK": 248.66559076727307,
+      "relativeHumidity": 0.49659602594350527,
+      "wetBulbK": 247.55879284805474
+    },
+    {
+      "pressurePa": 60992.98750806029,
+      "airTemperatureK": 302.9296839013331,
+      "relativeHumidity": 0.1892590913203296,
+      "wetBulbK": 285.78319636510395
+    },
+    {
+      "pressurePa": 96458.05497858988,
+      "airTemperatureK": 276.1318046817271,
+      "relativeHumidity": 0.17655819860502486,
+      "wetBulbK": 270.2888614272127
+    },
+    {
+      "pressurePa": 58779.68538689308,
+      "airTemperatureK": 291.86182722476184,
+      "relativeHumidity": 0.40348615380680486,
+      "wetBulbK": 282.9060991055149
+    },
+    {
+      "pressurePa": 70791.22314214926,
+      "airTemperatureK": 258.0772796053394,
+      "relativeHumidity": 0.43511579389189914,
+      "wetBulbK": 256.08370105873496
+    },
+    {
+      "pressurePa": 60838.07768783486,
+      "airTemperatureK": 288.87996475791795,
+      "relativeHumidity": 0.23936082132758307,
+      "wetBulbK": 277.8845204312991
+    },
+    {
+      "pressurePa": 70715.95356706345,
+      "airTemperatureK": 243.05930756135777,
+      "relativeHumidity": 0.727167955593254,
+      "wetBulbK": 242.5882105391687
+    },
+    {
+      "pressurePa": 90823.58023194136,
+      "airTemperatureK": 276.1318366231951,
+      "relativeHumidity": 0.4018103632137363,
+      "wetBulbK": 271.8303859967177
+    },
+    {
+      "pressurePa": 66957.01636182374,
+      "airTemperatureK": 293.71068551024223,
+      "relativeHumidity": 0.4400588056932634,
+      "wetBulbK": 285.37485377035455
+    },
+    {
+      "pressurePa": 56817.733806687786,
+      "airTemperatureK": 324.02384016929454,
+      "relativeHumidity": 0.5831373637146569,
+      "wetBulbK": 314.2926281653852
+    },
+    {
+      "pressurePa": 67710.19412127629,
+      "airTemperatureK": 318.2194374766383,
+      "relativeHumidity": 0.12561998187882495,
+      "wetBulbK": 292.8948074968046
+    },
+    {
+      "pressurePa": 65271.35651207692,
+      "airTemperatureK": 291.26822401794806,
+      "relativeHumidity": 0.9315348878312607,
+      "wetBulbK": 290.4282855157942
+    },
+    {
+      "pressurePa": 78328.2717014095,
+      "airTemperatureK": 289.57633281878617,
+      "relativeHumidity": 0.48378628861752504,
+      "wetBulbK": 283.14852297050066
+    },
+    {
+      "pressurePa": 64151.751437349114,
+      "airTemperatureK": 306.904073894195,
+      "relativeHumidity": 0.3713884951765989,
+      "wetBulbK": 294.06451619136067
+    },
+    {
+      "pressurePa": 77132.0686797372,
+      "airTemperatureK": 262.44526440074605,
+      "relativeHumidity": 0.6169894313871389,
+      "wetBulbK": 260.7124337826321
+    },
+    {
+      "pressurePa": 58307.542761865036,
+      "airTemperatureK": 319.03054702572143,
+      "relativeHumidity": 0.8123909847996553,
+      "wetBulbK": 315.31762086335743
+    },
+    {
+      "pressurePa": 75803.3652483557,
+      "airTemperatureK": 252.67805104418255,
+      "relativeHumidity": 0.8662279160752928,
+      "wetBulbK": 252.0766284978619
+    },
+    {
+      "pressurePa": 68342.16198517948,
+      "airTemperatureK": 320.9894792709294,
+      "relativeHumidity": 0.8896931451424231,
+      "wetBulbK": 318.8576414554528
+    },
+    {
+      "pressurePa": 89958.00632304381,
+      "airTemperatureK": 310.2298887948403,
+      "relativeHumidity": 0.4095907565903071,
+      "wetBulbK": 298.59429614494525
+    },
+    {
+      "pressurePa": 67911.17739382607,
+      "airTemperatureK": 287.76175499832345,
+      "relativeHumidity": 0.4456460006838354,
+      "wetBulbK": 280.77605061079163
+    },
+    {
+      "pressurePa": 83951.67364746256,
+      "airTemperatureK": 287.1538595444753,
+      "relativeHumidity": 0.5459741479317172,
+      "wetBulbK": 282.1152438908632
+    },
+    {
+      "pressurePa": 75738.77385534931,
+      "airTemperatureK": 309.3336880173486,
+      "relativeHumidity": 0.5900613994242543,
+      "wetBulbK": 301.7211266554306
+    },
+    {
+      "pressurePa": 76184.06341911733,
+      "airTemperatureK": 308.29244554201875,
+      "relativeHumidity": 0.17346142585379853,
+      "wetBulbK": 289.75101254026015
+    },
+    {
+      "pressurePa": 92119.90761957812,
+      "airTemperatureK": 313.496202086303,
+      "relativeHumidity": 0.3538276190101314,
+      "wetBulbK": 299.700733345285
+    },
+    {
+      "pressurePa": 90118.85503191952,
+      "airTemperatureK": 279.93530421520313,
+      "relativeHumidity": 0.22751868053386037,
+      "wetBulbK": 273.21028575305075
+    },
+    {
+      "pressurePa": 70936.64360571187,
+      "airTemperatureK": 300.6883685350389,
+      "relativeHumidity": 0.15960667300142706,
+      "wetBulbK": 284.3557800901176
+    },
+    {
+      "pressurePa": 80959.21762053506,
+      "airTemperatureK": 313.9267178746021,
+      "relativeHumidity": 0.05503396659469373,
+      "wetBulbK": 288.498569188679
+    },
+    {
+      "pressurePa": 96316.00665246637,
+      "airTemperatureK": 257.4450602164357,
+      "relativeHumidity": 0.3913793995339394,
+      "wetBulbK": 255.8537381673497
+    },
+    {
+      "pressurePa": 61682.25088181466,
+      "airTemperatureK": 269.52683196492586,
+      "relativeHumidity": 0.6729761095617327,
+      "wetBulbK": 267.24803282577346
+    },
+    {
+      "pressurePa": 89847.57997693267,
+      "airTemperatureK": 313.0316074649593,
+      "relativeHumidity": 0.5050132962759944,
+      "wetBulbK": 303.2314956877835
+    },
+    {
+      "pressurePa": 95228.36236723221,
+      "airTemperatureK": 317.6730098081864,
+      "relativeHumidity": 0.3165014279616807,
+      "wetBulbK": 301.80124520353354
+    },
+    {
+      "pressurePa": 83450.63262160815,
+      "airTemperatureK": 277.9139515394372,
+      "relativeHumidity": 0.3764268142371001,
+      "wetBulbK": 272.8125853812656
+    },
+    {
+      "pressurePa": 63920.71220606893,
+      "airTemperatureK": 321.0406062604202,
+      "relativeHumidity": 0.2813463099011573,
+      "wetBulbK": 301.6895748354634
+    },
+    {
+      "pressurePa": 103957.02925632184,
+      "airTemperatureK": 271.2897101543596,
+      "relativeHumidity": 0.49035717037571935,
+      "wetBulbK": 268.5978126951476
+    },
+    {
+      "pressurePa": 103343.4831431314,
+      "airTemperatureK": 303.97138808629,
+      "relativeHumidity": 0.41076517360274944,
+      "wetBulbK": 294.12587977986794
+    },
+    {
+      "pressurePa": 58362.7692463776,
+      "airTemperatureK": 287.05357442677877,
+      "relativeHumidity": 0.8449791343105394,
+      "wetBulbK": 285.23434891654233
+    },
+    {
+      "pressurePa": 85945.30010370343,
+      "airTemperatureK": 247.24367002207794,
+      "relativeHumidity": 0.42100823792606357,
+      "wetBulbK": 246.41871513287828
+    },
+    {
+      "pressurePa": 66487.32746679425,
+      "airTemperatureK": 317.600803634221,
+      "relativeHumidity": 0.5055549767274249,
+      "wetBulbK": 306.6181679172106
+    },
+    {
+      "pressurePa": 82651.16531674434,
+      "airTemperatureK": 302.1746306421435,
+      "relativeHumidity": 0.9828442855170737,
+      "wetBulbK": 301.9315925988506
+    },
+    {
+      "pressurePa": 52179.87341470614,
+      "airTemperatureK": 251.47426039675165,
+      "relativeHumidity": 0.8649899526005602,
+      "wetBulbK": 250.7034398263307
+    },
+    {
+      "pressurePa": 84574.96802674333,
+      "airTemperatureK": 309.3674930539407,
+      "relativeHumidity": 0.6894759835779135,
+      "wetBulbK": 303.93426256690907
+    },
+    {
+      "pressurePa": 74586.58258451667,
+      "airTemperatureK": 268.2932495695654,
+      "relativeHumidity": 0.4499358207434254,
+      "wetBulbK": 265.1195216224397
+    },
+    {
+      "pressurePa": 88040.96395924408,
+      "airTemperatureK": 301.53765886169873,
+      "relativeHumidity": 0.8440670647094218,
+      "wetBulbK": 299.2935259465618
+    },
+    {
+      "pressurePa": 73629.28118908437,
+      "airTemperatureK": 268.6386114427505,
+      "relativeHumidity": 0.3623619212305552,
+      "wetBulbK": 264.88685424679994
+    },
+    {
+      "pressurePa": 66459.51872989527,
+      "airTemperatureK": 243.64236158748827,
+      "relativeHumidity": 0.11713010747121444,
+      "wetBulbK": 242.59623701677933
+    },
+    {
+      "pressurePa": 63371.80272904626,
+      "airTemperatureK": 301.88527061635244,
+      "relativeHumidity": 0.364325352848881,
+      "wetBulbK": 289.99832414306945
+    },
+    {
+      "pressurePa": 78954.21424683504,
+      "airTemperatureK": 318.6953993148601,
+      "relativeHumidity": 0.519975059608976,
+      "wetBulbK": 308.21312663697023
+    },
+    {
+      "pressurePa": 50054.534478807036,
+      "airTemperatureK": 247.58063247074682,
+      "relativeHumidity": 0.7987212035022936,
+      "wetBulbK": 246.82394163207204
+    },
+    {
+      "pressurePa": 93261.22237902318,
+      "airTemperatureK": 280.1710606238039,
+      "relativeHumidity": 0.24764211087743404,
+      "wetBulbK": 273.702059940485
+    },
+    {
+      "pressurePa": 55850.47194600162,
+      "airTemperatureK": 254.3818353732285,
+      "relativeHumidity": 0.16788111019895036,
+      "wetBulbK": 251.7800752547355
+    },
+    {
+      "pressurePa": 69204.23794868831,
+      "airTemperatureK": 281.56428276928995,
+      "relativeHumidity": 0.9183647468224808,
+      "wetBulbK": 280.79869397536385
+    },
+    {
+      "pressurePa": 77303.36827178691,
+      "airTemperatureK": 262.8670737298762,
+      "relativeHumidity": 0.45221470256979523,
+      "wetBulbK": 260.49170443470194
+    },
+    {
+      "pressurePa": 60488.79351062722,
+      "airTemperatureK": 270.8623014241976,
+      "relativeHumidity": 0.39850902824563617,
+      "wetBulbK": 266.47171997340666
+    },
+    {
+      "pressurePa": 65446.78119934762,
+      "airTemperatureK": 287.21184495081786,
+      "relativeHumidity": 0.3406677427151572,
+      "wetBulbK": 278.67793090205754
+    },
+    {
+      "pressurePa": 53745.471101673626,
+      "airTemperatureK": 249.99648132105366,
+      "relativeHumidity": 0.55905022092859,
+      "wetBulbK": 248.7387621516851
+    },
+    {
+      "pressurePa": 74814.85013068019,
+      "airTemperatureK": 259.5003976130318,
+      "relativeHumidity": 0.4086805929932714,
+      "wetBulbK": 257.3452884394969
+    },
+    {
+      "pressurePa": 96789.73908373842,
+      "airTemperatureK": 314.9665624606673,
+      "relativeHumidity": 0.6483524485597643,
+      "wetBulbK": 308.3121396988349
+    },
+    {
+      "pressurePa": 57051.54862036893,
+      "airTemperatureK": 247.9954006268566,
+      "relativeHumidity": 0.9518497032030834,
+      "wetBulbK": 247.5230065963809
+    },
+    {
+      "pressurePa": 76415.30551382681,
+      "airTemperatureK": 281.0431324947249,
+      "relativeHumidity": 0.39901747664079523,
+      "wetBulbK": 275.2326898134513
+    },
+    {
+      "pressurePa": 65870.13027311128,
+      "airTemperatureK": 291.6165226739893,
+      "relativeHumidity": 0.632467940126976,
+      "wetBulbK": 286.69671357455985
+    },
+    {
+      "pressurePa": 103205.91681403201,
+      "airTemperatureK": 280.4467836221899,
+      "relativeHumidity": 0.7433321355878063,
+      "wetBulbK": 278.4659114835409
+    },
+    {
+      "pressurePa": 65654.83507025256,
+      "airTemperatureK": 304.2765148187344,
+      "relativeHumidity": 0.31513198371740614,
+      "wetBulbK": 290.6410253493102
+    },
+    {
+      "pressurePa": 89139.2834369864,
+      "airTemperatureK": 308.47684524123207,
+      "relativeHumidity": 0.7409497327899154,
+      "wetBulbK": 304.13507687165213
+    },
+    {
+      "pressurePa": 91090.22458838018,
+      "airTemperatureK": 262.53090772684106,
+      "relativeHumidity": 0.1783223017991482,
+      "wetBulbK": 259.5799496435529
+    },
+    {
+      "pressurePa": 88098.84526460375,
+      "airTemperatureK": 265.31644433594846,
+      "relativeHumidity": 0.25302856372532023,
+      "wetBulbK": 262.0592306238201
+    },
+    {
+      "pressurePa": 54062.94719006272,
+      "airTemperatureK": 248.8718542138872,
+      "relativeHumidity": 0.5310197241474935,
+      "wetBulbK": 247.6638587006638
+    },
+    {
+      "pressurePa": 52624.902645122,
+      "airTemperatureK": 302.37908615270413,
+      "relativeHumidity": 0.7059833659707163,
+      "wetBulbK": 297.4093160502325
+    },
+    {
+      "pressurePa": 89961.4811104045,
+      "airTemperatureK": 307.82543043237735,
+      "relativeHumidity": 0.6847908989975166,
+      "wetBulbK": 302.50247202656016
+    },
+    {
+      "pressurePa": 53284.031192327544,
+      "airTemperatureK": 304.0832419168383,
+      "relativeHumidity": 0.1410197779926704,
+      "wetBulbK": 284.12094752817495
+    },
+    {
+      "pressurePa": 65213.835284637695,
+      "airTemperatureK": 318.2534210755876,
+      "relativeHumidity": 0.26523933245288733,
+      "wetBulbK": 299.07356839838485
+    },
+    {
+      "pressurePa": 60562.84854596329,
+      "airTemperatureK": 312.40186526063223,
+      "relativeHumidity": 0.264948832273586,
+      "wetBulbK": 294.63143425065783
+    },
+    {
+      "pressurePa": 77327.24764234194,
+      "airTemperatureK": 258.2131754810148,
+      "relativeHumidity": 0.05639853719717969,
+      "wetBulbK": 255.32585051727557
+    },
+    {
+      "pressurePa": 83519.17623542887,
+      "airTemperatureK": 271.4387061066454,
+      "relativeHumidity": 0.3104556288865151,
+      "wetBulbK": 267.1865599884564
+    },
+    {
+      "pressurePa": 82934.71614187752,
+      "airTemperatureK": 287.6355062618515,
+      "relativeHumidity": 0.5077941265206666,
+      "wetBulbK": 282.01595057455313
+    },
+    {
+      "pressurePa": 81796.68861539537,
+      "airTemperatureK": 251.37432476388844,
+      "relativeHumidity": 0.796275663026348,
+      "wetBulbK": 250.74588424743683
+    },
+    {
+      "pressurePa": 58812.787244401654,
+      "airTemperatureK": 290.4726318796277,
+      "relativeHumidity": 0.530973874580785,
+      "wetBulbK": 283.9542770545288
+    },
+    {
+      "pressurePa": 68631.57235005412,
+      "airTemperatureK": 308.21084848203276,
+      "relativeHumidity": 0.08350379150261666,
+      "wetBulbK": 285.7474716008546
+    },
+    {
+      "pressurePa": 78089.27552332505,
+      "airTemperatureK": 255.49667681105785,
+      "relativeHumidity": 0.5543472645938038,
+      "wetBulbK": 254.17483994062903
+    },
+    {
+      "pressurePa": 55455.82941781343,
+      "airTemperatureK": 272.0318168707485,
+      "relativeHumidity": 0.07896526283129301,
+      "wetBulbK": 264.364473730714
+    },
+    {
+      "pressurePa": 56963.05830934764,
+      "airTemperatureK": 310.15660412167784,
+      "relativeHumidity": 0.9039421405028573,
+      "wetBulbK": 308.498824456577
+    },
+    {
+      "pressurePa": 66641.37470346999,
+      "airTemperatureK": 284.64917368258335,
+      "relativeHumidity": 0.8322915080717116,
+      "wetBulbK": 282.8730435109989
+    },
+    {
+      "pressurePa": 96210.22436696765,
+      "airTemperatureK": 310.6025835996835,
+      "relativeHumidity": 0.5755400188628519,
+      "wetBulbK": 302.87735571445864
+    },
+    {
+      "pressurePa": 90539.23922014283,
+      "airTemperatureK": 254.60953616321203,
+      "relativeHumidity": 0.9348956260998632,
+      "wetBulbK": 254.1591001669858
+    },
+    {
+      "pressurePa": 56858.83107598833,
+      "airTemperatureK": 263.19776147328895,
+      "relativeHumidity": 0.19733914021366006,
+      "wetBulbK": 258.9648915470081
+    },
+    {
+      "pressurePa": 84165.2061098012,
+      "airTemperatureK": 261.65677460357716,
+      "relativeHumidity": 0.05086003106776105,
+      "wetBulbK": 258.2662261822041
+    },
+    {
+      "pressurePa": 68271.33886675363,
+      "airTemperatureK": 256.42582742000457,
+      "relativeHumidity": 0.5259403219106232,
+      "wetBulbK": 254.79952115332136
+    },
+    {
+      "pressurePa": 59056.33441944547,
+      "airTemperatureK": 321.9190774853245,
+      "relativeHumidity": 0.15760914383000135,
+      "wetBulbK": 296.0594804088378
+    },
+    {
+      "pressurePa": 78898.87475749198,
+      "airTemperatureK": 324.44773141846554,
+      "relativeHumidity": 0.9626366385361063,
+      "wetBulbK": 323.72780566162567
+    },
+    {
+      "pressurePa": 101182.254295917,
+      "airTemperatureK": 309.323529021166,
+      "relativeHumidity": 0.41411937853405445,
+      "wetBulbK": 298.32119451077193
+    },
+    {
+      "pressurePa": 89231.90776892341,
+      "airTemperatureK": 277.2165503531403,
+      "relativeHumidity": 0.35077337765062777,
+      "wetBulbK": 272.2386019092449
+    },
+    {
+      "pressurePa": 50110.44965717952,
+      "airTemperatureK": 272.8683829426214,
+      "relativeHumidity": 0.8478434507346179,
+      "wetBulbK": 271.61677359872255
+    },
+    {
+      "pressurePa": 83320.67611070244,
+      "airTemperatureK": 245.46515240552185,
+      "relativeHumidity": 0.4067841204604328,
+      "wetBulbK": 244.71470875204943
+    },
+    {
+      "pressurePa": 96087.11879216944,
+      "airTemperatureK": 274.02649604412653,
+      "relativeHumidity": 0.08180230774057129,
+      "wetBulbK": 268.07790978707044
+    },
+    {
+      "pressurePa": 80299.87404160472,
+      "airTemperatureK": 314.53287597728865,
+      "relativeHumidity": 0.5591589501228533,
+      "wetBulbK": 305.6431833704362
+    },
+    {
+      "pressurePa": 87283.16081253013,
+      "airTemperatureK": 324.7893464086578,
+      "relativeHumidity": 0.442401914666409,
+      "wetBulbK": 311.2340753116092
+    },
+    {
+      "pressurePa": 78175.82037435926,
+      "airTemperatureK": 289.15103089927686,
+      "relativeHumidity": 0.21708544408517505,
+      "wetBulbK": 278.81694637776184
+    },
+    {
+      "pressurePa": 93890.84569181286,
+      "airTemperatureK": 255.86595305529212,
+      "relativeHumidity": 0.8369583746767749,
+      "wetBulbK": 255.22836470318316
+    },
+    {
+      "pressurePa": 69917.08110905509,
+      "airTemperatureK": 267.3540316157286,
+      "relativeHumidity": 0.413840761526009,
+      "wetBulbK": 263.98146575776593
+    },
+    {
+      "pressurePa": 51247.82207909133,
+      "airTemperatureK": 252.58923589056786,
+      "relativeHumidity": 0.2502908568167803,
+      "wetBulbK": 250.31867028690894
+    },
+    {
+      "pressurePa": 61203.73122349279,
+      "airTemperatureK": 324.49526254913326,
+      "relativeHumidity": 0.28061888260550216,
+      "wetBulbK": 304.087176915487
+    },
+    {
+      "pressurePa": 74275.40612834391,
+      "airTemperatureK": 248.9312931499612,
+      "relativeHumidity": 0.6150483999302354,
+      "wetBulbK": 248.11181939783717
+    },
+    {
+      "pressurePa": 102134.98314540533,
+      "airTemperatureK": 251.10904229458308,
+      "relativeHumidity": 0.4053264080083012,
+      "wetBulbK": 250.14638337603577
+    },
+    {
+      "pressurePa": 96285.11446019937,
+      "airTemperatureK": 297.42626910296866,
+      "relativeHumidity": 0.32471170373851177,
+      "wetBulbK": 287.2986990661638
+    },
+    {
+      "pressurePa": 73506.95802210462,
+      "airTemperatureK": 307.2274545274883,
+      "relativeHumidity": 0.03711010707708562,
+      "wetBulbK": 283.9516561214404
+    },
+    {
+      "pressurePa": 61153.02553219507,
+      "airTemperatureK": 319.16418760800923,
+      "relativeHumidity": 0.3666543761372718,
+      "wetBulbK": 303.3948151465316
+    },
+    {
+      "pressurePa": 96805.31452633104,
+      "airTemperatureK": 302.84439434296104,
+      "relativeHumidity": 0.6815398238847948,
+      "wetBulbK": 298.0155518104474
+    },
+    {
+      "pressurePa": 100120.28805366828,
+      "airTemperatureK": 296.66437382211,
+      "relativeHumidity": 0.3585896082854819,
+      "wetBulbK": 287.4774784877325
+    },
+    {
+      "pressurePa": 60019.60168364966,
+      "airTemperatureK": 281.09835529517414,
+      "relativeHumidity": 0.7829933617302167,
+      "wetBulbK": 278.92474107303326
+    },
+    {
+      "pressurePa": 70079.55679875684,
+      "airTemperatureK": 243.34317818760283,
+      "relativeHumidity": 0.5184586122333245,
+      "wetBulbK": 242.6917168263329
+    },
+    {
+      "pressurePa": 62230.3612778206,
+      "airTemperatureK": 324.76564898144625,
+      "relativeHumidity": 0.47979590440095055,
+      "wetBulbK": 311.88794826187205
+    },
+    {
+      "pressurePa": 95118.32428474937,
+      "airTemperatureK": 308.6431697185269,
+      "relativeHumidity": 0.6806503424635,
+      "wetBulbK": 303.22862940363456
+    },
+    {
+      "pressurePa": 70200.8991356631,
+      "airTemperatureK": 316.8283427703862,
+      "relativeHumidity": 0.655481041612154,
+      "wetBulbK": 309.8406305795145
+    },
+    {
+      "pressurePa": 99692.17939931998,
+      "airTemperatureK": 283.0465630132147,
+      "relativeHumidity": 0.5262436514220691,
+      "wetBulbK": 278.81361817466683
+    },
+    {
+      "pressurePa": 63964.54337816091,
+      "airTemperatureK": 240.2704364449826,
+      "relativeHumidity": 0.5605286959007597,
+      "wetBulbK": 239.74546343217182
+    },
+    {
+      "pressurePa": 80517.67319718278,
+      "airTemperatureK": 243.55968792716428,
+      "relativeHumidity": 0.6011402967180383,
+      "wetBulbK": 243.0349818361847
+    },
+    {
+      "pressurePa": 56383.659942587044,
+      "airTemperatureK": 267.9893645452816,
+      "relativeHumidity": 0.9068566484718742,
+      "wetBulbK": 267.13051458195747
+    },
+    {
+      "pressurePa": 99065.81508500976,
+      "airTemperatureK": 268.98750367468256,
+      "relativeHumidity": 0.8471360942913132,
+      "wetBulbK": 268.1177359677494
+    },
+    {
+      "pressurePa": 75120.23340686654,
+      "airTemperatureK": 306.5986358800146,
+      "relativeHumidity": 0.37997802099164724,
+      "wetBulbK": 294.50526139494804
+    },
+    {
+      "pressurePa": 77811.20755746104,
+      "airTemperatureK": 291.37066835806877,
+      "relativeHumidity": 0.9479218872294409,
+      "wetBulbK": 290.76267107622357
+    },
+    {
+      "pressurePa": 52473.58494384367,
+      "airTemperatureK": 260.47565277006066,
+      "relativeHumidity": 0.5087250819168228,
+      "wetBulbK": 257.9512073872436
+    },
+    {
+      "pressurePa": 57076.49969206515,
+      "airTemperatureK": 260.70156128936395,
+      "relativeHumidity": 0.877374914895745,
+      "wetBulbK": 259.74193954158073
+    },
+    {
+      "pressurePa": 73282.64091819072,
+      "airTemperatureK": 249.84158011233902,
+      "relativeHumidity": 0.9876146757445701,
+      "wetBulbK": 249.47425684169048
+    },
+    {
+      "pressurePa": 57669.18473053259,
+      "airTemperatureK": 261.939392984656,
+      "relativeHumidity": 0.7111907934447929,
+      "wetBulbK": 260.26455361487984
+    },
+    {
+      "pressurePa": 57483.20307896376,
+      "airTemperatureK": 290.28739137094607,
+      "relativeHumidity": 0.6798144770920764,
+      "wetBulbK": 286.0258985359334
+    },
+    {
+      "pressurePa": 51649.52173528671,
+      "airTemperatureK": 243.21901471888728,
+      "relativeHumidity": 0.5319382523628587,
+      "wetBulbK": 242.38564298316285
+    },
+    {
+      "pressurePa": 53298.01091004435,
+      "airTemperatureK": 260.90114572788775,
+      "relativeHumidity": 0.14133954139788973,
+      "wetBulbK": 256.75375414697106
+    },
+    {
+      "pressurePa": 102501.70998080139,
+      "airTemperatureK": 268.6437520691871,
+      "relativeHumidity": 0.046014177781136034,
+      "wetBulbK": 264.19258602653855
+    },
+    {
+      "pressurePa": 76897.37223889286,
+      "airTemperatureK": 267.64756927079003,
+      "relativeHumidity": 0.11516751281134252,
+      "wetBulbK": 262.85004607523393
+    },
+    {
+      "pressurePa": 96927.50887796997,
+      "airTemperatureK": 285.3055222058461,
+      "relativeHumidity": 0.1781235571792803,
+      "wetBulbK": 276.7082202018375
+    },
+    {
+      "pressurePa": 92047.05750323838,
+      "airTemperatureK": 286.88346981812003,
+      "relativeHumidity": 0.6766790438812598,
+      "wetBulbK": 283.5483796544384
+    },
+    {
+      "pressurePa": 102396.18749246789,
+      "airTemperatureK": 287.6945991307095,
+      "relativeHumidity": 0.2975061743541656,
+      "wetBulbK": 280.0656886629631
+    },
+    {
+      "pressurePa": 88820.177589442,
+      "airTemperatureK": 253.26788036697576,
+      "relativeHumidity": 0.3843158278643367,
+      "wetBulbK": 251.9676252732037
+    },
+    {
+      "pressurePa": 78549.39267809845,
+      "airTemperatureK": 273.53740230697514,
+      "relativeHumidity": 0.7062271273667285,
+      "wetBulbK": 271.55460339069117
+    },
+    {
+      "pressurePa": 74896.80050071307,
+      "airTemperatureK": 261.6465141117677,
+      "relativeHumidity": 0.16902998829058125,
+      "wetBulbK": 258.3657237283261
+    },
+    {
+      "pressurePa": 64265.07863225024,
+      "airTemperatureK": 285.493340272738,
+      "relativeHumidity": 0.40886115721084126,
+      "wetBulbK": 278.31460918936926
+    },
+    {
+      "pressurePa": 98514.56607888665,
+      "airTemperatureK": 299.93832971112005,
+      "relativeHumidity": 0.7094094971609283,
+      "wetBulbK": 295.8455753948095
+    },
+    {
+      "pressurePa": 104135.78169370965,
+      "airTemperatureK": 288.8976022587119,
+      "relativeHumidity": 0.6431463151228882,
+      "wetBulbK": 285.1514124857943
+    },
+    {
+      "pressurePa": 75844.86584099471,
+      "airTemperatureK": 278.93633404692855,
+      "relativeHumidity": 0.6825405056150514,
+      "wetBulbK": 276.21584862709915
+    },
+    {
+      "pressurePa": 79686.1065694275,
+      "airTemperatureK": 280.42641058579636,
+      "relativeHumidity": 0.2503632503760791,
+      "wetBulbK": 273.3232894463661
+    },
+    {
+      "pressurePa": 54173.94126532746,
+      "airTemperatureK": 240.42650607108322,
+      "relativeHumidity": 0.3733031338520607,
+      "wetBulbK": 239.66519953081232
+    },
+    {
+      "pressurePa": 77889.54482800895,
+      "airTemperatureK": 307.70304369438685,
+      "relativeHumidity": 0.7699685712387733,
+      "wetBulbK": 303.84154769214797
+    },
+    {
+      "pressurePa": 53149.34781709284,
+      "airTemperatureK": 264.97920063139804,
+      "relativeHumidity": 0.5432315068609153,
+      "wetBulbK": 262.09682831127543
+    },
+    {
+      "pressurePa": 68533.0259414403,
+      "airTemperatureK": 267.1304967529915,
+      "relativeHumidity": 0.7235928939185569,
+      "wetBulbK": 265.40728946768377
+    },
+    {
+      "pressurePa": 95009.23458459081,
+      "airTemperatureK": 276.7189384504771,
+      "relativeHumidity": 0.6932983415005766,
+      "wetBulbK": 274.58128007834813
+    },
+    {
+      "pressurePa": 60036.57935465101,
+      "airTemperatureK": 314.5513709234204,
+      "relativeHumidity": 0.5455367098167201,
+      "wetBulbK": 304.9216204772275
+    },
+    {
+      "pressurePa": 104873.75564821617,
+      "airTemperatureK": 240.9353918636705,
+      "relativeHumidity": 0.5449832111873972,
+      "wetBulbK": 240.57888534678779
+    },
+    {
+      "pressurePa": 101724.07768062083,
+      "airTemperatureK": 314.81851638647703,
+      "relativeHumidity": 0.11055482927204674,
+      "wetBulbK": 293.01495659272155
+    },
+    {
+      "pressurePa": 73718.90189369541,
+      "airTemperatureK": 319.8339720462358,
+      "relativeHumidity": 0.15040621799281406,
+      "wetBulbK": 295.5658146061232
+    },
+    {
+      "pressurePa": 54807.74770273667,
+      "airTemperatureK": 292.7358351971053,
+      "relativeHumidity": 0.73493364610526,
+      "wetBulbK": 289.03168486391473
+    },
+    {
+      "pressurePa": 57640.05367539409,
+      "airTemperatureK": 302.559410801822,
+      "relativeHumidity": 0.6391919992772752,
+      "wetBulbK": 296.3745645241399
+    },
+    {
+      "pressurePa": 93036.84001061117,
+      "airTemperatureK": 300.3050767419176,
+      "relativeHumidity": 0.4449154516159364,
+      "wetBulbK": 291.5988679546177
+    },
+    {
+      "pressurePa": 58662.115436234366,
+      "airTemperatureK": 275.0755459633895,
+      "relativeHumidity": 0.06343350670988801,
+      "wetBulbK": 266.40688623368794
+    },
+    {
+      "pressurePa": 82825.77772205556,
+      "airTemperatureK": 284.0997767507172,
+      "relativeHumidity": 0.35006865149418,
+      "wetBulbK": 277.2822766720425
+    },
+    {
+      "pressurePa": 74302.70290111224,
+      "airTemperatureK": 266.3831085355759,
+      "relativeHumidity": 0.11586699903381603,
+      "wetBulbK": 261.79721730371676
+    },
+    {
+      "pressurePa": 56665.89971106891,
+      "airTemperatureK": 262.50683375112317,
+      "relativeHumidity": 0.6165464339848769,
+      "wetBulbK": 260.35259817080106
+    },
+    {
+      "pressurePa": 88312.52678526953,
+      "airTemperatureK": 300.2109460272443,
+      "relativeHumidity": 0.7254921560517872,
+      "wetBulbK": 296.2256036143808
+    },
+    {
+      "pressurePa": 95508.7057109519,
+      "airTemperatureK": 262.52647374379984,
+      "relativeHumidity": 0.9098382051110021,
+      "wetBulbK": 261.93073403380413
+    },
+    {
+      "pressurePa": 59511.36199839076,
+      "airTemperatureK": 258.00389537138807,
+      "relativeHumidity": 0.7465217663849395,
+      "wetBulbK": 256.7274421083459
+    },
+    {
+      "pressurePa": 52708.72462696516,
+      "airTemperatureK": 316.7615429979436,
+      "relativeHumidity": 0.08863843087295309,
+      "wetBulbK": 288.4538191513309
+    },
+    {
+      "pressurePa": 65600.76082561069,
+      "airTemperatureK": 280.5185967762198,
+      "relativeHumidity": 0.03426549062187967,
+      "wetBulbK": 269.89740660600717
+    },
+    {
+      "pressurePa": 62621.69376640605,
+      "airTemperatureK": 260.24139805390803,
+      "relativeHumidity": 0.4062559028010644,
+      "wetBulbK": 257.66653746680123
+    },
+    {
+      "pressurePa": 72393.09044191253,
+      "airTemperatureK": 310.1114274475998,
+      "relativeHumidity": 0.7320828490227823,
+      "wetBulbK": 305.3257771196193
+    },
+    {
+      "pressurePa": 95931.69659719465,
+      "airTemperatureK": 293.4946326091859,
+      "relativeHumidity": 0.8094719963769904,
+      "wetBulbK": 291.22699894254515
+    },
+    {
+      "pressurePa": 76939.98261729603,
+      "airTemperatureK": 284.35015199515584,
+      "relativeHumidity": 0.7356653512365058,
+      "wetBulbK": 281.66942506207806
+    },
+    {
+      "pressurePa": 87398.20562475758,
+      "airTemperatureK": 246.54370076862233,
+      "relativeHumidity": 0.21397901937538177,
+      "wetBulbK": 245.59096066767017
+    },
+    {
+      "pressurePa": 51102.343293582926,
+      "airTemperatureK": 257.2292376747578,
+      "relativeHumidity": 0.17286203303852576,
+      "wetBulbK": 253.90420661565827
+    },
+    {
+      "pressurePa": 87648.02523194024,
+      "airTemperatureK": 249.46590038575982,
+      "relativeHumidity": 0.9389347506585312,
+      "wetBulbK": 249.10057070618856
+    },
+    {
+      "pressurePa": 69390.13241969878,
+      "airTemperatureK": 241.3053082206997,
+      "relativeHumidity": 0.16727354308124198,
+      "wetBulbK": 240.5149403950596
+    },
+    {
+      "pressurePa": 59429.0634265424,
+      "airTemperatureK": 270.194752317433,
+      "relativeHumidity": 0.7816659437093992,
+      "wetBulbK": 268.5683993729951
+    },
+    {
+      "pressurePa": 98564.31068468367,
+      "airTemperatureK": 253.61673903023146,
+      "relativeHumidity": 0.7595081215190891,
+      "wetBulbK": 252.95449862562805
+    },
+    {
+      "pressurePa": 51453.24175709345,
+      "airTemperatureK": 317.47250337429716,
+      "relativeHumidity": 0.9796424024348278,
+      "wetBulbK": 317.0982949532122
+    },
+    {
+      "pressurePa": 64098.88345986439,
+      "airTemperatureK": 324.61948754965607,
+      "relativeHumidity": 0.044519440368606444,
+      "wetBulbK": 290.51586208020996
+    },
+    {
+      "pressurePa": 59178.69103905519,
+      "airTemperatureK": 267.61484063155024,
+      "relativeHumidity": 0.32683965090776024,
+      "wetBulbK": 263.2734670731234
+    },
+    {
+      "pressurePa": 92344.53916183836,
+      "airTemperatureK": 305.3474975474426,
+      "relativeHumidity": 0.5664948489630868,
+      "wetBulbK": 298.0820699250296
+    },
+    {
+      "pressurePa": 53326.80253492126,
+      "airTemperatureK": 288.5079407545951,
+      "relativeHumidity": 0.4937611391152279,
+      "wetBulbK": 281.51945510245685
+    },
+    {
+      "pressurePa": 98264.6786214776,
+      "airTemperatureK": 250.91109390737404,
+      "relativeHumidity": 0.6825511011176069,
+      "wetBulbK": 250.25579741225332
+    },
+    {
+      "pressurePa": 103064.67398195216,
+      "airTemperatureK": 262.4055435898658,
+      "relativeHumidity": 0.3997752104259169,
+      "wetBulbK": 260.3896114766825
+    },
+    {
+      "pressurePa": 101293.20718593267,
+      "airTemperatureK": 298.2920418624134,
+      "relativeHumidity": 0.4213912988388583,
+      "wetBulbK": 289.8347768586022
+    },
+    {
+      "pressurePa": 78018.61010058431,
+      "airTemperatureK": 256.90655468447153,
+      "relativeHumidity": 0.5719867765319937,
+      "wetBulbK": 255.5093787883635
+    },
+    {
+      "pressurePa": 73251.67292775528,
+      "airTemperatureK": 266.4709585687356,
+      "relativeHumidity": 0.7529348824494199,
+      "wetBulbK": 264.9929837018603
+    },
+    {
+      "pressurePa": 79120.29729904557,
+      "airTemperatureK": 252.33598584602822,
+      "relativeHumidity": 0.6761302325531414,
+      "wetBulbK": 251.46104924537207
+    },
+    {
+      "pressurePa": 92436.0164165466,
+      "airTemperatureK": 306.80156286535475,
+      "relativeHumidity": 0.4031179368694252,
+      "wetBulbK": 295.82942966338254
+    },
+    {
+      "pressurePa": 79864.34214351776,
+      "airTemperatureK": 281.2289895416415,
+      "relativeHumidity": 0.6955679930600197,
+      "wetBulbK": 278.4687914135692
+    },
+    {
+      "pressurePa": 62564.33502772608,
+      "airTemperatureK": 248.26305298309464,
+      "relativeHumidity": 0.7895543871815073,
+      "wetBulbK": 247.5968199581346
+    },
+    {
+      "pressurePa": 56228.61661794545,
+      "airTemperatureK": 299.01459538489394,
+      "relativeHumidity": 0.9841183227764676,
+      "wetBulbK": 298.7860328102971
+    },
+    {
+      "pressurePa": 75668.6556883988,
+      "airTemperatureK": 283.24248186692387,
+      "relativeHumidity": 0.39530056313116624,
+      "wetBulbK": 276.8760274964353
+    },
+    {
+      "pressurePa": 101743.6261453674,
+      "airTemperatureK": 265.26850176681677,
+      "relativeHumidity": 0.5227512237488627,
+      "wetBulbK": 263.32081307922704
+    },
+    {
+      "pressurePa": 75994.89480557467,
+      "airTemperatureK": 286.46730414548415,
+      "relativeHumidity": 0.2555718087151716,
+      "wetBulbK": 277.45181060252963
+    },
+    {
+      "pressurePa": 75948.08142694691,
+      "airTemperatureK": 305.41124748561947,
+      "relativeHumidity": 0.29203235447987863,
+      "wetBulbK": 291.37398170723145
+    },
+    {
+      "pressurePa": 56725.01156824493,
+      "airTemperatureK": 317.73403376809813,
+      "relativeHumidity": 0.9442434239616116,
+      "wetBulbK": 316.69980006968285
+    },
+    {
+      "pressurePa": 75770.80049467942,
+      "airTemperatureK": 272.61537905420397,
+      "relativeHumidity": 0.5732458606244454,
+      "wetBulbK": 269.73354148759455
+    },
+    {
+      "pressurePa": 53852.05971504116,
+      "airTemperatureK": 281.89032855718904,
+      "relativeHumidity": 0.20903462189394895,
+      "wetBulbK": 272.1904568520394
+    },
+    {
+      "pressurePa": 73066.09019567618,
+      "airTemperatureK": 250.5823742022591,
+      "relativeHumidity": 0.6772034665441373,
+      "wetBulbK": 249.74554519300779
+    },
+    {
+      "pressurePa": 100396.19303591296,
+      "airTemperatureK": 317.1191253888211,
+      "relativeHumidity": 0.7674521628146321,
+      "wetBulbK": 312.8140570741204
+    },
+    {
+      "pressurePa": 101467.36022434867,
+      "airTemperatureK": 262.32364013391566,
+      "relativeHumidity": 0.7795717299494118,
+      "wetBulbK": 261.386239842257
+    },
+    {
+      "pressurePa": 61504.70657671724,
+      "airTemperatureK": 267.3199918318723,
+      "relativeHumidity": 0.7318455869549303,
+      "wetBulbK": 265.51570738224086
+    },
+    {
+      "pressurePa": 55999.069561147015,
+      "airTemperatureK": 256.5001598222416,
+      "relativeHumidity": 0.42292838598288995,
+      "wetBulbK": 254.2912211926198
+    },
+    {
+      "pressurePa": 86234.95469012816,
+      "airTemperatureK": 322.433780339469,
+      "relativeHumidity": 0.05107228561834587,
+      "wetBulbK": 292.5859953607568
+    },
+    {
+      "pressurePa": 50860.310309037224,
+      "airTemperatureK": 320.9383891272579,
+      "relativeHumidity": 0.32249444793043813,
+      "wetBulbK": 302.69983022734584
+    },
+    {
+      "pressurePa": 98996.46303162057,
+      "airTemperatureK": 244.86386413469933,
+      "relativeHumidity": 0.05112189760295427,
+      "wetBulbK": 244.01376606750543
+    },
+    {
+      "pressurePa": 73499.76379878618,
+      "airTemperatureK": 298.65375179197036,
+      "relativeHumidity": 0.6483503927066547,
+      "wetBulbK": 293.34460475987936
+    },
+    {
+      "pressurePa": 55834.69810411497,
+      "airTemperatureK": 308.59461587647684,
+      "relativeHumidity": 0.21655504598383635,
+      "wetBulbK": 289.9355931150741
+    },
+    {
+      "pressurePa": 57404.95590300907,
+      "airTemperatureK": 243.92523802365167,
+      "relativeHumidity": 0.4777394610893303,
+      "wetBulbK": 243.06910314173209
+    },
+    {
+      "pressurePa": 54970.34775858474,
+      "airTemperatureK": 295.7546784409817,
+      "relativeHumidity": 0.20585604821245707,
+      "wetBulbK": 281.199719210042
+    },
+    {
+      "pressurePa": 57041.965503149084,
+      "airTemperatureK": 281.7449965875943,
+      "relativeHumidity": 0.7510886843277343,
+      "wetBulbK": 279.1369132318909
+    },
+    {
+      "pressurePa": 69209.45749484812,
+      "airTemperatureK": 272.5011845434972,
+      "relativeHumidity": 0.19779755884370698,
+      "wetBulbK": 266.61254237786864
+    },
+    {
+      "pressurePa": 81837.99053397067,
+      "airTemperatureK": 271.9409517242325,
+      "relativeHumidity": 0.02836618765678023,
+      "wetBulbK": 265.60606819121216
+    },
+    {
+      "pressurePa": 103752.19850319249,
+      "airTemperatureK": 257.0609462826433,
+      "relativeHumidity": 0.6147911721035686,
+      "wetBulbK": 256.02369801035206
+    },
+    {
+      "pressurePa": 54444.51529565456,
+      "airTemperatureK": 245.19366051226712,
+      "relativeHumidity": 0.530758828802463,
+      "wetBulbK": 244.26874252899648
+    },
+    {
+      "pressurePa": 94089.91810354151,
+      "airTemperatureK": 293.12648316553407,
+      "relativeHumidity": 0.45411714049097196,
+      "wetBulbK": 286.0614255135755
+    },
+    {
+      "pressurePa": 83135.82651579507,
+      "airTemperatureK": 255.6368936267648,
+      "relativeHumidity": 0.2415999434189342,
+      "wetBulbK": 253.73339496086356
+    },
+    {
+      "pressurePa": 103731.68773848689,
+      "airTemperatureK": 278.1551062631764,
+      "relativeHumidity": 0.32176696965927143,
+      "wetBulbK": 273.18069844598534
+    },
+    {
+      "pressurePa": 58163.00827173943,
+      "airTemperatureK": 262.4470335214628,
+      "relativeHumidity": 0.17420766389536058,
+      "wetBulbK": 258.34121162449185
+    },
+    {
+      "pressurePa": 53581.43187138173,
+      "airTemperatureK": 264.0854849614868,
+      "relativeHumidity": 0.6989319123020179,
+      "wetBulbK": 262.12808537125096
+    },
+    {
+      "pressurePa": 76007.07049961484,
+      "airTemperatureK": 300.0572780074495,
+      "relativeHumidity": 0.5102328844920706,
+      "wetBulbK": 292.13830116699864
+    },
+    {
+      "pressurePa": 60029.529003908065,
+      "airTemperatureK": 277.4754597876791,
+      "relativeHumidity": 0.023725073307199862,
+      "wetBulbK": 267.51220591444763
+    },
+    {
+      "pressurePa": 74149.36359761731,
+      "airTemperatureK": 315.0096081297444,
+      "relativeHumidity": 0.04205031578693219,
+      "wetBulbK": 287.5896214896077
+    },
+    {
+      "pressurePa": 62002.53251519335,
+      "airTemperatureK": 247.06717280916155,
+      "relativeHumidity": 0.7478498652699619,
+      "wetBulbK": 246.39176343762048
+    },
+    {
+      "pressurePa": 90381.4235448109,
+      "airTemperatureK": 272.8927117697325,
+      "relativeHumidity": 0.7316079682397533,
+      "wetBulbK": 271.26283937688066
+    },
+    {
+      "pressurePa": 58174.30408020943,
+      "airTemperatureK": 305.9251965847626,
+      "relativeHumidity": 0.9140037440455826,
+      "wetBulbK": 304.5294710214361
+    },
+    {
+      "pressurePa": 73815.04901558883,
+      "airTemperatureK": 263.9716327557486,
+      "relativeHumidity": 0.977084459999355,
+      "wetBulbK": 263.5118556375945
+    },
+    {
+      "pressurePa": 86293.84764403195,
+      "airTemperatureK": 299.64079077385793,
+      "relativeHumidity": 0.8062392231223193,
+      "wetBulbK": 296.91011703164224
+    },
+    {
+      "pressurePa": 64707.52290677989,
+      "airTemperatureK": 313.13467251305156,
+      "relativeHumidity": 0.9338423231261909,
+      "wetBulbK": 311.9792027569662
+    },
+    {
+      "pressurePa": 55203.90962299221,
+      "airTemperatureK": 306.4273854165335,
+      "relativeHumidity": 0.7890970148896106,
+      "wetBulbK": 302.79234514472193
+    },
+    {
+      "pressurePa": 53831.50873231449,
+      "airTemperatureK": 246.9239134252046,
+      "relativeHumidity": 0.5288434233377918,
+      "wetBulbK": 245.86224822628088
+    },
+    {
+      "pressurePa": 53853.55266648456,
+      "airTemperatureK": 281.01082746613685,
+      "relativeHumidity": 0.30590034410100253,
+      "wetBulbK": 272.9557191182179
+    },
+    {
+      "pressurePa": 70122.6104295931,
+      "airTemperatureK": 306.75019274352985,
+      "relativeHumidity": 0.5733879807631908,
+      "wetBulbK": 298.9871945606097
+    },
+    {
+      "pressurePa": 85975.61970381904,
+      "airTemperatureK": 262.41771976177534,
+      "relativeHumidity": 0.9230904269503801,
+      "wetBulbK": 261.8177299335698
+    },
+    {
+      "pressurePa": 63378.23361469687,
+      "airTemperatureK": 259.29372042391213,
+      "relativeHumidity": 0.8471070801642133,
+      "wetBulbK": 258.3339006189859
+    },
+    {
+      "pressurePa": 52120.68433107202,
+      "airTemperatureK": 312.17577486249064,
+      "relativeHumidity": 0.5598723162933769,
+      "wetBulbK": 303.03574195262365
+    },
+    {
+      "pressurePa": 89980.998462132,
+      "airTemperatureK": 316.8036666789907,
+      "relativeHumidity": 0.9431340513315365,
+      "wetBulbK": 315.8056910019566
+    },
+    {
+      "pressurePa": 84388.46152502045,
+      "airTemperatureK": 245.3318531752453,
+      "relativeHumidity": 0.40864158373663795,
+      "wetBulbK": 244.59935291333528
+    },
+    {
+      "pressurePa": 82469.2799265456,
+      "airTemperatureK": 260.2506081455624,
+      "relativeHumidity": 0.6160520044614366,
+      "wetBulbK": 258.76756368847725
+    },
+    {
+      "pressurePa": 77826.96494154255,
+      "airTemperatureK": 280.13568680187024,
+      "relativeHumidity": 0.44890121520164883,
+      "wetBulbK": 275.0765812044447
+    },
+    {
+      "pressurePa": 100361.7704596029,
+      "airTemperatureK": 287.06946408101146,
+      "relativeHumidity": 0.03261718261792712,
+      "wetBulbK": 276.13887701228794
+    },
+    {
+      "pressurePa": 90192.7415423056,
+      "airTemperatureK": 289.59902270783886,
+      "relativeHumidity": 0.0744755586396344,
+      "wetBulbK": 277.5625000606749
+    },
+    {
+      "pressurePa": 67040.82625721596,
+      "airTemperatureK": 263.71260037115104,
+      "relativeHumidity": 0.7873125877451856,
+      "wetBulbK": 262.4198800959368
+    },
+    {
+      "pressurePa": 63966.15039361845,
+      "airTemperatureK": 320.70556845513863,
+      "relativeHumidity": 0.08547450453604633,
+      "wetBulbK": 291.57615788779754
+    },
+    {
+      "pressurePa": 66188.79523869466,
+      "airTemperatureK": 297.63150012292135,
+      "relativeHumidity": 0.22076114533572255,
+      "wetBulbK": 283.6642582916407
+    },
+    {
+      "pressurePa": 59664.06240627753,
+      "airTemperatureK": 249.93410702407138,
+      "relativeHumidity": 0.8470765295457674,
+      "wetBulbK": 249.26377977356265
+    },
+    {
+      "pressurePa": 75037.98680655367,
+      "airTemperatureK": 281.40250637911396,
+      "relativeHumidity": 0.4608160332694441,
+      "wetBulbK": 276.1313622731639
+    },
+    {
+      "pressurePa": 59421.75237184169,
+      "airTemperatureK": 256.777872143647,
+      "relativeHumidity": 0.3783980685733931,
+      "wetBulbK": 254.50045289172584
+    },
+    {
+      "pressurePa": 99509.107030405,
+      "airTemperatureK": 313.73838626941415,
+      "relativeHumidity": 0.24589130605594833,
+      "wetBulbK": 296.93862155187793
+    },
+    {
+      "pressurePa": 103148.3682748877,
+      "airTemperatureK": 320.3550501497248,
+      "relativeHumidity": 0.7731851269781863,
+      "wetBulbK": 315.9973489131508
+    },
+    {
+      "pressurePa": 69681.87179191754,
+      "airTemperatureK": 294.26640006372463,
+      "relativeHumidity": 0.6974339651429027,
+      "wetBulbK": 290.110339678822
+    },
+    {
+      "pressurePa": 89742.56628452006,
+      "airTemperatureK": 292.5669849225068,
+      "relativeHumidity": 0.5285297522138637,
+      "wetBulbK": 286.5671707404003
+    },
+    {
+      "pressurePa": 101111.12024389653,
+      "airTemperatureK": 304.70772544433123,
+      "relativeHumidity": 0.019037983383822343,
+      "wetBulbK": 284.89209177594245
+    },
+    {
+      "pressurePa": 77242.21963786875,
+      "airTemperatureK": 303.7754614682083,
+      "relativeHumidity": 0.877228010963436,
+      "wetBulbK": 301.90669534842635
+    },
+    {
+      "pressurePa": 102541.80559375767,
+      "airTemperatureK": 265.4462716734272,
+      "relativeHumidity": 0.35732748592795205,
+      "wetBulbK": 262.8954435802719
+    },
+    {
+      "pressurePa": 55606.796797174466,
+      "airTemperatureK": 257.8262829347839,
+      "relativeHumidity": 0.21228197379476288,
+      "wetBulbK": 254.72080624550597
+    },
+    {
+      "pressurePa": 103013.90925012648,
+      "airTemperatureK": 296.8761301823184,
+      "relativeHumidity": 0.2167951179423494,
+      "wetBulbK": 285.23250795550564
+    },
+    {
+      "pressurePa": 98568.75660191601,
+      "airTemperatureK": 270.36358968075524,
+      "relativeHumidity": 0.9272668937512503,
+      "wetBulbK": 269.8762680591787
+    },
+    {
+      "pressurePa": 59238.38967335534,
+      "airTemperatureK": 292.558538354689,
+      "relativeHumidity": 0.8211101695969897,
+      "wetBulbK": 290.1769813421907
+    },
+    {
+      "pressurePa": 78016.01851573028,
+      "airTemperatureK": 254.21289715778693,
+      "relativeHumidity": 0.3281390798031265,
+      "wetBulbK": 252.55898528446667
+    },
+    {
+      "pressurePa": 69962.6005334874,
+      "airTemperatureK": 281.2912656313049,
+      "relativeHumidity": 0.8775918601147228,
+      "wetBulbK": 280.1497863687943
+    },
+    {
+      "pressurePa": 83293.34388894966,
+      "airTemperatureK": 313.1177247639829,
+      "relativeHumidity": 0.9720485735651867,
+      "wetBulbK": 312.65005802758463
+    },
+    {
+      "pressurePa": 55833.41302161008,
+      "airTemperatureK": 269.6936591516553,
+      "relativeHumidity": 0.7057645688543521,
+      "wetBulbK": 267.501542920406
+    },
+    {
+      "pressurePa": 60180.11143134936,
+      "airTemperatureK": 283.7108649493557,
+      "relativeHumidity": 0.943197023390161,
+      "wetBulbK": 283.1180955352513
+    },
+    {
+      "pressurePa": 73464.32882921843,
+      "airTemperatureK": 287.35208231066474,
+      "relativeHumidity": 0.017033074802666137,
+      "wetBulbK": 274.0687849178431
+    },
+    {
+      "pressurePa": 59006.8870487345,
+      "airTemperatureK": 323.0825705825715,
+      "relativeHumidity": 0.6487638767478383,
+      "wetBulbK": 315.262803304272
+    },
+    {
+      "pressurePa": 56743.76093520744,
+      "airTemperatureK": 286.30441774059057,
+      "relativeHumidity": 0.6258449309512006,
+      "wetBulbK": 281.7054161788772
+    },
+    {
+      "pressurePa": 51037.425162500906,
+      "airTemperatureK": 257.71818055718154,
+      "relativeHumidity": 0.5823620274066875,
+      "wetBulbK": 255.74153340119435
+    },
+    {
+      "pressurePa": 89399.89828819674,
+      "airTemperatureK": 288.7959329940563,
+      "relativeHumidity": 0.5324124653864569,
+      "wetBulbK": 283.461007083093
+    },
+    {
+      "pressurePa": 60553.090003131365,
+      "airTemperatureK": 261.01735816361605,
+      "relativeHumidity": 0.24951846666088828,
+      "wetBulbK": 257.6426918022467
+    },
+    {
+      "pressurePa": 91532.63496632557,
+      "airTemperatureK": 262.2942852004097,
+      "relativeHumidity": 0.6954835682764162,
+      "wetBulbK": 261.02221224905134
+    },
+    {
+      "pressurePa": 84704.39203743498,
+      "airTemperatureK": 298.537255347031,
+      "relativeHumidity": 0.8179640218952337,
+      "wetBulbK": 296.02522554099335
+    },
+    {
+      "pressurePa": 71005.51847341431,
+      "airTemperatureK": 247.5379515347668,
+      "relativeHumidity": 0.9135176744611968,
+      "wetBulbK": 247.11065729914665
+    },
+    {
+      "pressurePa": 67267.5339949583,
+      "airTemperatureK": 300.04983187445055,
+      "relativeHumidity": 0.5066416042702863,
+      "wetBulbK": 291.8073257888877
+    },
+    {
+      "pressurePa": 102735.08762769453,
+      "airTemperatureK": 267.95947104831413,
+      "relativeHumidity": 0.9758360678584719,
+      "wetBulbK": 267.65010317455256
+    },
+    {
+      "pressurePa": 51779.896271422454,
+      "airTemperatureK": 297.03958869839136,
+      "relativeHumidity": 0.435034663522457,
+      "wetBulbK": 287.27885036782936
+    },
+    {
+      "pressurePa": 72778.10768567676,
+      "airTemperatureK": 241.91742594603724,
+      "relativeHumidity": 0.39482075062103017,
+      "wetBulbK": 241.27296472772287
+    },
+    {
+      "pressurePa": 58089.72728128237,
+      "airTemperatureK": 260.3562173822829,
+      "relativeHumidity": 0.5674382322945618,
+      "wetBulbK": 258.24374859151845
+    },
+    {
+      "pressurePa": 72070.17940302285,
+      "airTemperatureK": 256.6755809270189,
+      "relativeHumidity": 0.1908864016295163,
+      "wetBulbK": 254.2583083532889
+    },
+    {
+      "pressurePa": 83061.16466308598,
+      "airTemperatureK": 309.85277433035003,
+      "relativeHumidity": 0.9531415238068305,
+      "wetBulbK": 309.0980141145713
+    },
+    {
+      "pressurePa": 88927.75079206338,
+      "airTemperatureK": 277.8859318646319,
+      "relativeHumidity": 0.0829915222801888,
+      "wetBulbK": 270.38516442971854
+    },
+    {
+      "pressurePa": 77350.6703446737,
+      "airTemperatureK": 262.7754062349548,
+      "relativeHumidity": 0.22230759992661642,
+      "wetBulbK": 259.55265432417445
+    },
+    {
+      "pressurePa": 75823.41828890861,
+      "airTemperatureK": 241.91242854843694,
+      "relativeHumidity": 0.7265907940120361,
+      "wetBulbK": 241.50655759547465
+    },
+    {
+      "pressurePa": 57137.593392015166,
+      "airTemperatureK": 272.18927419482185,
+      "relativeHumidity": 0.441588530498746,
+      "wetBulbK": 267.78288417237803
+    },
+    {
+      "pressurePa": 80494.59243637975,
+      "airTemperatureK": 287.240830786375,
+      "relativeHumidity": 0.9539508764786537,
+      "wetBulbK": 286.7622392038534
+    },
+    {
+      "pressurePa": 73127.17722012552,
+      "airTemperatureK": 302.3069101546707,
+      "relativeHumidity": 0.8469865536070024,
+      "wetBulbK": 299.9885135132421
+    },
+    {
+      "pressurePa": 56575.05635040969,
+      "airTemperatureK": 266.58128477942915,
+      "relativeHumidity": 0.6744629692458074,
+      "wetBulbK": 264.39146953808466
+    },
+    {
+      "pressurePa": 52522.07070923809,
+      "airTemperatureK": 259.8349079943152,
+      "relativeHumidity": 0.39884141508830717,
+      "wetBulbK": 256.9493597928284
+    },
+    {
+      "pressurePa": 94282.39473656644,
+      "airTemperatureK": 241.54953408630297,
+      "relativeHumidity": 0.9568679601537895,
+      "wetBulbK": 241.3442763609208
+    },
+    {
+      "pressurePa": 77858.07445007408,
+      "airTemperatureK": 248.55433923925074,
+      "relativeHumidity": 0.22844015567719822,
+      "wetBulbK": 247.33317780247648
+    },
+    {
+      "pressurePa": 78108.40194870546,
+      "airTemperatureK": 303.3887515018326,
+      "relativeHumidity": 0.5210713004237223,
+      "wetBulbK": 295.19795212296816
+    },
+    {
+      "pressurePa": 53773.90751868746,
+      "airTemperatureK": 307.924506785293,
+      "relativeHumidity": 0.7618454863061492,
+      "wetBulbK": 303.6751628869732
+    },
+    {
+      "pressurePa": 86444.12941394604,
+      "airTemperatureK": 323.5276709188639,
+      "relativeHumidity": 0.7571373414410126,
+      "wetBulbK": 318.5419307155214
+    },
+    {
+      "pressurePa": 96555.52707803773,
+      "airTemperatureK": 284.78348797979413,
+      "relativeHumidity": 0.819271803113603,
+      "wetBulbK": 283.1181573920898
+    },
+    {
+      "pressurePa": 58845.309907588744,
+      "airTemperatureK": 307.71581920502103,
+      "relativeHumidity": 0.6256974256238547,
+      "wetBulbK": 300.7494257554513
+    },
+    {
+      "pressurePa": 99437.98866837483,
+      "airTemperatureK": 243.38611945142358,
+      "relativeHumidity": 0.6179608499207728,
+      "wetBulbK": 242.9698935453117
+    },
+    {
+      "pressurePa": 65528.68503108226,
+      "airTemperatureK": 267.8590947002392,
+      "relativeHumidity": 0.49871287796699093,
+      "wetBulbK": 264.7611314646688
+    },
+    {
+      "pressurePa": 102786.52982886668,
+      "airTemperatureK": 246.47838255069996,
+      "relativeHumidity": 0.9373811527591586,
+      "wetBulbK": 246.2075632962636
+    },
+    {
+      "pressurePa": 67484.82107328309,
+      "airTemperatureK": 260.931285491622,
+      "relativeHumidity": 0.9809718804164674,
+      "wetBulbK": 260.431538599576
+    },
+    {
+      "pressurePa": 83087.21202714897,
+      "airTemperatureK": 276.3518930767204,
+      "relativeHumidity": 0.9171259438591791,
+      "wetBulbK": 275.75551381783055
+    },
+    {
+      "pressurePa": 54738.34167560583,
+      "airTemperatureK": 242.80810248679197,
+      "relativeHumidity": 0.9537759978667414,
+      "wetBulbK": 242.4402457652097
+    },
+    {
+      "pressurePa": 67986.77867876689,
+      "airTemperatureK": 317.2830663214891,
+      "relativeHumidity": 0.47316512824109136,
+      "wetBulbK": 305.4594809014311
+    },
+    {
+      "pressurePa": 98916.86975882013,
+      "airTemperatureK": 281.5262783061448,
+      "relativeHumidity": 0.2769482079031642,
+      "wetBulbK": 275.1901108679909
+    },
+    {
+      "pressurePa": 53192.44032457094,
+      "airTemperatureK": 310.2560117772394,
+      "relativeHumidity": 0.7807065417972282,
+      "wetBulbK": 306.2492483254591
+    },
+    {
+      "pressurePa": 95798.23068424265,
+      "airTemperatureK": 309.456141242658,
+      "relativeHumidity": 0.460977572356421,
+      "wetBulbK": 299.37049543829283
+    },
+    {
+      "pressurePa": 88410.76993306914,
+      "airTemperatureK": 250.00230324745078,
+      "relativeHumidity": 0.8860768499538155,
+      "wetBulbK": 249.5672800860174
+    },
+    {
+      "pressurePa": 52523.46560186131,
+      "airTemperatureK": 308.464830488348,
+      "relativeHumidity": 0.598410255443378,
+      "wetBulbK": 300.6872955282371
+    },
+    {
+      "pressurePa": 75525.81459495006,
+      "airTemperatureK": 277.2528519380796,
+      "relativeHumidity": 0.5875157543857278,
+      "wetBulbK": 273.88599016582236
+    },
+    {
+      "pressurePa": 70434.01732090369,
+      "airTemperatureK": 259.06831274800027,
+      "relativeHumidity": 0.6831663863138955,
+      "wetBulbK": 257.69731045788745
+    },
+    {
+      "pressurePa": 72817.94931693736,
+      "airTemperatureK": 321.3532732639575,
+      "relativeHumidity": 0.22666031552368227,
+      "wetBulbK": 300.03002235695703
+    },
+    {
+      "pressurePa": 70649.59246065067,
+      "airTemperatureK": 295.6663320007651,
+      "relativeHumidity": 0.5989620080625297,
+      "wetBulbK": 289.83055140754544
+    }
+  ]
+}
