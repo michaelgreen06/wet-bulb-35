@@ -14,11 +14,14 @@ test("forecast markup is inert and limited to enriched Popular-40 city pages", (
   const popularHtml = pageHtml(houston, { forecastEnabled: true });
   assert.match(popularHtml, /data-forecast-widget/);
   assert.match(popularHtml, /data-forecast-path="\/wetbulb-temperature\/united-states\/texas\/houston\/"/);
-  assert.match(popularHtml, /Five-day wet bulb forecast for Houston/);
+  assert.match(popularHtml, /Five-day maximum wet bulb temperature forecast for Houston/);
+  assert.match(popularHtml, /Forecast wet bulb temperature values are calculated/);
   assert.match(popularHtml, /Romps thermodynamic liquid-water method/);
   assert.match(popularHtml, /https:\/\/open-meteo\.com\//);
   assert.match(popularHtml, /five-day wet bulb forecast/);
   assert.doesNotMatch(popularHtml, /data-forecast-day=/);
+  assert.ok(popularHtml.indexOf("Forecast notes") > popularHtml.indexOf("Climate context for Houston"));
+  assert.ok(popularHtml.indexOf("Forecast notes") > popularHtml.indexOf("data-forecast-widget"));
 
   const ordinaryHtml = pageHtml(ordinary);
   assert.doesNotMatch(ordinaryHtml, /data-forecast-widget/);
