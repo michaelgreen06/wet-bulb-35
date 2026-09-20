@@ -156,15 +156,17 @@ export function normalizeOpenMeteoForecast(
     const surfacePressureHpa = (pressures as unknown[])[index];
     if (typeof localTime !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(localTime)
       || !finiteNumber(temperatureC)
-      || !finiteNumber(dewPointC) || dewPointC > (temperatureC as number) + 0.2
+      || !finiteNumber(dewPointC)
       || !finiteNumber(surfacePressureHpa) || surfacePressureHpa <= 0) {
       throw new TypeError(`Open-Meteo hourly row ${index} is invalid.`);
     }
+    // Dew point cannot physically exceed air temperature; clamp provider noise to saturation.
+    const clampedDewPointC = Math.min(dewPointC, temperatureC);
     observations.push({
       localTime,
       temperatureC,
-      dewPointC,
-      vaporPressurePa: calculateRompsLiquidSaturationVaporPressurePa(dewPointC + 273.15),
+      dewPointC: clampedDewPointC,
+      vaporPressurePa: calculateRompsLiquidSaturationVaporPressurePa(clampedDewPointC + 273.15),
       surfacePressurePa: surfacePressureHpa * 100,
     });
   }
@@ -209,7 +211,7 @@ export function isOpenMeteoSource(value: unknown): value is OpenMeteoSource {
     && typeof row.localTime === "string"
     && finiteNumber(row.temperatureC)
     && finiteNumber(row.dewPointC)
-    && row.dewPointC <= row.temperatureC + 0.2
+    && row.dewPointC <= row.temperatureC
     && finiteNumber(row.vaporPressurePa)
     && row.vaporPressurePa >= 0
     && finiteNumber(row.surfacePressurePa)

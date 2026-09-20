@@ -125,6 +125,16 @@ describe("Open-Meteo forecast adapter", () => {
     expect(() => normalizeOpenMeteoForecast(fall, location, Date.now())).toThrow(/coverage|misaligned/);
   });
 
+  it("clamps a supersaturated row to saturation instead of rejecting the payload", () => {
+    const noisy = upstreamFixture();
+    noisy.hourly.dew_point_2m[5] = noisy.hourly.temperature_2m[5] + 1.5;
+    const source = normalizeOpenMeteoForecast(noisy, location, Date.now());
+    expect(source.hourly).toHaveLength(120);
+    expect(source.hourly[5].dewPointC).toBe(source.hourly[5].temperatureC);
+    expect(source.hourly[5].vaporPressurePa).toBe(calculateRompsLiquidSaturationVaporPressurePa(source.hourly[5].temperatureC + 273.15));
+    expect(calculateFiveDayWetBulbForecast(source).days).toHaveLength(FORECAST_DAYS);
+  });
+
   it("rejects bad units, misaligned arrays, gaps, duplicates, and incomplete days", () => {
     const badUnit = upstreamFixture();
     badUnit.hourly_units.surface_pressure = "Pa";
