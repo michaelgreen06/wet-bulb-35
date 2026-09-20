@@ -100,68 +100,21 @@ function expectUnit(units: Record<string, unknown>, key: string, accepted: strin
   }
 }
 
-function expectedLocalHourCounts(date: string, timezone: string): Map<number, number> {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23",
-  });
-  const center = Date.parse(`${date}T12:00:00Z`);
-  if (!Number.isFinite(center)) throw new TypeError("Open-Meteo returned an invalid local date.");
-  const expected = new Map<number, number>();
-  for (let offset = -36; offset <= 36; offset += 1) {
-    const parts = Object.fromEntries(formatter.formatToParts(new Date(center + offset * 3_600_000)).map((part) => [part.type, part.value]));
-    const localDate = `${parts.year}-${parts.month}-${parts.day}`;
-    if (localDate === date) {
-      const hour = Number(parts.hour);
-      expected.set(hour, (expected.get(hour) ?? 0) + 1);
-    }
-  }
-  return expected;
-}
-
-function validateFiveDayHourlyCoverage(observations: NormalizedHourlyObservation[], timezone: string): void {
-  if (observations.length < 119 || observations.length > 121) {
+// Open-Meteo labels every hour with one fixed UTC offset for the whole response and
+// always returns 24 rows per local day, including across DST transitions.
+function validateFiveDayHourlyCoverage(observations: NormalizedHourlyObservation[]): void {
+  if (observations.length !== FORECAST_DAYS * 24) {
     throw new TypeError("Open-Meteo did not return complete hourly coverage.");
   }
-  const byDate = new Map<string, number[]>();
-  let previous = "";
-  for (const observation of observations) {
-    if (previous && observation.localTime < previous) {
-      throw new TypeError("Open-Meteo hourly timestamps are not ordered.");
-    }
-    previous = observation.localTime;
-    const date = observation.localTime.slice(0, 10);
-    const hour = Number(observation.localTime.slice(11, 13));
-    if (!byDate.has(date)) byDate.set(date, []);
-    byDate.get(date)?.push(hour);
-  }
-  const dates = [...byDate.keys()].sort();
-  if (dates.length !== FORECAST_DAYS) throw new TypeError("Open-Meteo did not return five local forecast days.");
-  for (let index = 1; index < dates.length; index += 1) {
-    const prior = Date.parse(`${dates[index - 1]}T00:00:00Z`);
-    const current = Date.parse(`${dates[index]}T00:00:00Z`);
-    if (!Number.isFinite(prior) || current - prior !== 86_400_000) {
-      throw new TypeError("Open-Meteo forecast dates are not consecutive.");
-    }
-  }
-  for (const date of dates) {
-    const hours = byDate.get(date) ?? [];
-    if (hours.length < 23 || hours.length > 25) {
-      throw new TypeError("Open-Meteo returned an incomplete local forecast day.");
-    }
-    const counts = new Map<number, number>();
-    for (const hour of hours) counts.set(hour, (counts.get(hour) ?? 0) + 1);
-    const expected = expectedLocalHourCounts(date, timezone);
-    if (expected.size === 0 || hours.length !== [...expected.values()].reduce((sum, count) => sum + count, 0)
-      || [...expected].some(([hour, count]) => counts.get(hour) !== count)
-      || [...counts].some(([hour, count]) => expected.get(hour) !== count)) {
+  const firstDay = Date.parse(`${observations[0].localTime.slice(0, 10)}T00:00:00Z`);
+  if (!Number.isFinite(firstDay)) throw new TypeError("Open-Meteo returned an invalid local date.");
+  observations.forEach((observation, index) => {
+    const expectedDate = new Date(firstDay + Math.floor(index / 24) * 86_400_000).toISOString().slice(0, 10);
+    const expectedTime = `${expectedDate}T${String(index % 24).padStart(2, "0")}:00`;
+    if (observation.localTime !== expectedTime) {
       throw new TypeError("Open-Meteo hourly timestamps contain gaps or duplicates.");
     }
-  }
+  });
 }
 
 export function normalizeOpenMeteoForecast(
@@ -188,7 +141,7 @@ export function normalizeOpenMeteoForecast(
     throw new TypeError("Open-Meteo hourly arrays are missing.");
   }
   const length = (times as unknown[]).length;
-  if (length === 0 || length > 121
+  if (length === 0 || length > FORECAST_DAYS * 24
     || (temperatures as unknown[]).length !== length
     || (dewPoints as unknown[]).length !== length
     || (pressures as unknown[]).length !== length) {
@@ -224,7 +177,7 @@ export function normalizeOpenMeteoForecast(
     throw new TypeError("Open-Meteo location metadata is invalid.");
   }
 
-  validateFiveDayHourlyCoverage(observations, value.timezone);
+  validateFiveDayHourlyCoverage(observations);
 
   return {
     schemaVersion: OPEN_METEO_SCHEMA_VERSION,
@@ -264,7 +217,7 @@ export function isOpenMeteoSource(value: unknown): value is OpenMeteoSource {
     && row.vaporPressurePa <= row.surfacePressurePa);
   if (!validRows) return false;
   try {
-    validateFiveDayHourlyCoverage(value.hourly as NormalizedHourlyObservation[], value.timezone as string);
+    validateFiveDayHourlyCoverage(value.hourly as NormalizedHourlyObservation[]);
     return true;
   } catch {
     return false;

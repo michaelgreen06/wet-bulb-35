@@ -102,29 +102,27 @@ describe("Open-Meteo forecast adapter", () => {
     }) - 273.15, 10);
   });
 
-  it("accepts a complete 23-hour daylight-saving day", () => {
-    const spring = upstreamFixture();
-    spring.hourly.time = spring.hourly.time.map((value) => {
-      const day = Number(value.slice(8, 10));
-      return `2026-03-${String(day - 12).padStart(2, "0")}${value.slice(10)}`;
-    });
-    const missing = spring.hourly.time.indexOf("2026-03-08T02:00");
-    for (const values of Object.values(spring.hourly)) values.splice(missing, 1);
-    expect(normalizeOpenMeteoForecast(spring, location, Date.now()).hourly).toHaveLength(119);
-  });
-
-  it("accepts a complete 25-hour daylight-saving day", () => {
+  it("accepts Open-Meteo's fixed-offset 24-row days across a DST transition", () => {
+    // Live provider behavior: America/Chicago 2026-11-01 still arrives as 00:00..23:00 with one 01:00.
     const fall = upstreamFixture();
     fall.hourly.time = fall.hourly.time.map((value) => {
       const day = Number(value.slice(8, 10));
-      return `2026-11-${String(day - 19).padStart(2, "0")}${value.slice(10)}`;
+      return `2026-${day < 22 ? "10" : "11"}-${String(day < 22 ? day + 10 : day - 21).padStart(2, "0")}${value.slice(10)}`;
     });
-    const repeated = fall.hourly.time.indexOf("2026-11-01T01:00");
-    fall.hourly.time.splice(repeated, 0, fall.hourly.time[repeated]);
-    fall.hourly.temperature_2m.splice(repeated, 0, fall.hourly.temperature_2m[repeated]);
-    fall.hourly.dew_point_2m.splice(repeated, 0, fall.hourly.dew_point_2m[repeated]);
-    fall.hourly.surface_pressure.splice(repeated, 0, fall.hourly.surface_pressure[repeated]);
-    expect(normalizeOpenMeteoForecast(fall, location, Date.now()).hourly).toHaveLength(121);
+    expect(fall.hourly.time).toContain("2026-11-01T01:00");
+    expect(normalizeOpenMeteoForecast(fall, location, Date.now()).hourly).toHaveLength(120);
+  });
+
+  it("rejects 23-hour and 25-hour days", () => {
+    const spring = upstreamFixture();
+    const missing = spring.hourly.time.indexOf("2026-09-21T02:00");
+    for (const values of Object.values(spring.hourly)) values.splice(missing, 1);
+    expect(() => normalizeOpenMeteoForecast(spring, location, Date.now())).toThrow(/coverage/);
+
+    const fall = upstreamFixture();
+    const repeated = fall.hourly.time.indexOf("2026-09-21T01:00");
+    for (const values of Object.values(fall.hourly)) values.splice(repeated, 0, values[repeated] as never);
+    expect(() => normalizeOpenMeteoForecast(fall, location, Date.now())).toThrow(/coverage|misaligned/);
   });
 
   it("rejects bad units, misaligned arrays, gaps, duplicates, and incomplete days", () => {
