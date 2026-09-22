@@ -1,0 +1,171 @@
+name: Global wet bulb hotspots
+
+on:
+  schedule:
+    # ECMWF documents a 7–9 hour dissemination delay. Start 9h15 after 06Z.
+    - cron: "15 15 * * *"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish the validated snapshot to the configured R2 bucket"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: global-inhabited-hotspots
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    if: github.event_name == 'workflow_dispatch' || vars.GLOBAL_HOTSPOTS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      HOTSPOT_DAILY_LOCATION_LIMIT: ${{ vars.HOTSPOT_DAILY_LOCATION_LIMIT || '5000' }}
+      HOTSPOT_EXCLUDED_SAMPLE_SIZE: ${{ vars.HOTSPOT_EXCLUDED_SAMPLE_SIZE || '100' }}
+      # At batch-size 100, 20 seconds caps public-endpoint demand at
+      # 300 location-equivalents/minute before retries and backoff.
+      HOTSPOT_INTER_BATCH_DELAY_MS: ${{ vars.HOTSPOT_INTER_BATCH_DELAY_MS || '20000' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Install JavaScript dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install pinned hotspot dependencies
+        run: |
+          python -m venv .venv-hotspots
+          .venv-hotspots/bin/python -m pip install --require-hashes -r requirements/global-hotspots.txt
+
+      - name: Verify focused hotspot implementation
+        run: |
+          npm run test:global-hotspots
+          .venv-hotspots/bin/python -m unittest tests/test_generate_ecmwf_hotspot_candidates.py tests/test_download_ecmwf_hotspot_grid.py tests/test_generate_global_grid_hotspot_snapshot.py
+
+      - name: Build the canonical city manifest
+        run: npm run build:hotspot-city-manifest
+
+      - name: Download today's complete public ECMWF 06Z run
+        run: |
+          for attempt in $(seq 1 7); do
+            if .venv-hotspots/bin/python scripts/download-ecmwf-hotspot-grid.py \
+              --date "$(date -u +%F)" \
+              --time 6 \
+              --source azure \
+              --forecast-output .hotspots/ecmwf-forecast.grib2 \
+              --land-mask-output .hotspots/ecmwf-land-mask.grib2 \
+              --metadata-output .hotspots/ecmwf-download.json; then
+              break
+            fi
+            if [ "$attempt" -eq 7 ]; then
+              echo "The complete 06Z run was still unavailable after 30 minutes." >&2
+              exit 1
+            fi
+            echo "The 06Z mirror is not complete yet; retrying in 5 minutes." >&2
+            sleep 300
+          done
+
+      - name: Discover candidate cities on the native model grid
+        run: |
+          STEPS=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.steps.join(','))")
+          .venv-hotspots/bin/python scripts/generate-ecmwf-hotspot-candidates.py \
+            --forecast-grib .hotspots/ecmwf-forecast.grib2 \
+            --land-mask-grib .hotspots/ecmwf-land-mask.grib2 \
+            --cities .hotspots/cities.json \
+            --output .hotspots/candidates.json \
+            --steps "$STEPS" \
+            --margin-c 1.5 \
+            --threshold-c 27.0 \
+            --dilation-rings 1
+
+      - name: Refine every candidate hourly and validate the snapshot
+        env:
+          OPEN_METEO_API_MODE: ${{ vars.OPEN_METEO_API_MODE || 'public-noncommercial' }}
+          OPEN_METEO_BASE_URL: ${{ vars.OPEN_METEO_BASE_URL }}
+          OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
+        run: |
+          npm run generate:hotspot-snapshot -- \
+            --candidates .hotspots/candidates.json \
+            --city-manifest .hotspots/cities.json \
+            --output .hotspots/snapshot.json \
+            --batch-size 100
+
+      - name: Rank every global model-grid cell from the same initialization
+        run: |
+          STEPS=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.steps.join(','))")
+          .venv-hotspots/bin/python scripts/generate-global-grid-hotspot-snapshot.py \
+            --forecast-grib .hotspots/ecmwf-forecast.grib2 \
+            --output .hotspots/global-grid-snapshot.json \
+            --steps "$STEPS"
+
+      - name: Verify both products use the requested 06Z initialization
+        run: |
+          .venv-hotspots/bin/python - <<'PY'
+          import json
+          from pathlib import Path
+
+          download = json.loads(Path('.hotspots/ecmwf-download.json').read_text())
+          inhabited = json.loads(Path('.hotspots/snapshot.json').read_text())
+          global_grid = json.loads(Path('.hotspots/global-grid-snapshot.json').read_text())
+          initializations = {
+              download['initialization'],
+              inhabited['discovery']['initialization'],
+              global_grid['model']['initialization'],
+          }
+          if len(initializations) != 1:
+              raise SystemExit(f'Hotspot products have mismatched initializations: {sorted(initializations)}')
+          initialization = initializations.pop()
+          if not initialization.endswith('T06:00:00Z'):
+              raise SystemExit(f'Expected a 06Z initialization, got {initialization}')
+          PY
+
+      - name: Retain the validated snapshot as a workflow artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: global-hotspots-${{ github.run_id }}
+          path: |
+            .hotspots/snapshot.json
+            .hotspots/global-grid-snapshot.json
+            .hotspots/ecmwf-download.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish content-addressed and current R2 objects
+        if: github.event_name == 'schedule' || inputs.publish
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.WETBULB35_CLOUDFLARE_API_TOKEN }}
+          HOTSPOT_R2_BUCKET: ${{ vars.HOTSPOT_R2_BUCKET }}
+        run: |
+          test -n "$HOTSPOT_R2_BUCKET"
+          INHABITED_DIGEST=$(sha256sum .hotspots/snapshot.json | cut -d' ' -f1)
+          GLOBAL_GRID_DIGEST=$(sha256sum .hotspots/global-grid-snapshot.json | cut -d' ' -f1)
+          INHABITED_IMMUTABLE="inhabited-hotspots/v1/snapshots/sha256-${INHABITED_DIGEST}.json"
+          GLOBAL_GRID_IMMUTABLE="global-grid-hotspots/v1/snapshots/sha256-${GLOBAL_GRID_DIGEST}.json"
+
+          npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/$INHABITED_IMMUTABLE" --file=.hotspots/snapshot.json --remote
+          npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/$GLOBAL_GRID_IMMUTABLE" --file=.hotspots/global-grid-snapshot.json --remote
+          npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/$INHABITED_IMMUTABLE" --file=.hotspots/verify-inhabited-immutable.json --remote
+          npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/$GLOBAL_GRID_IMMUTABLE" --file=.hotspots/verify-global-grid-immutable.json --remote
+          cmp .hotspots/snapshot.json .hotspots/verify-inhabited-immutable.json
+          cmp .hotspots/global-grid-snapshot.json .hotspots/verify-global-grid-immutable.json
+
+          npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/inhabited-hotspots/v1/latest.json" --file=.hotspots/snapshot.json --remote
+          npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/global-grid-hotspots/v1/latest.json" --file=.hotspots/global-grid-snapshot.json --remote
+          npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/inhabited-hotspots/v1/latest.json" --file=.hotspots/verify-inhabited-latest.json --remote
+          npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/global-grid-hotspots/v1/latest.json" --file=.hotspots/verify-global-grid-latest.json --remote
+          cmp .hotspots/snapshot.json .hotspots/verify-inhabited-latest.json
+          cmp .hotspots/global-grid-snapshot.json .hotspots/verify-global-grid-latest.json

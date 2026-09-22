@@ -1,10 +1,8 @@
-name = "wetbulb35-weather-production"
+name = "wetbulb35-weather-staging"
 main = "workers/hono-page-renderer.mjs"
 compatibility_date = "2026-09-08"
-workers_dev = false
-preview_urls = false
 
-# Route-free production candidate. Deployment still requires explicit approval.
+# Isolated workers.dev staging candidate only. No production route, DNS, or custom domain.
 [assets]
 directory = "worker-assets"
 binding = "ASSETS"
@@ -42,3 +40,7 @@ FORECAST_TIMEOUT_MS = "5000"
 FORECAST_DAILY_ATTEMPT_LIMIT = "2000"
 OPEN_METEO_API_MODE = "public-noncommercial"
 HTML_CACHE_EVENT_SAMPLE_RATE = "0"
+HOTSPOT_FEATURE_MODE = "enabled"
+HOTSPOT_SNAPSHOT_ASSET_PATH = "/hotspot-snapshot.json"
+GLOBAL_GRID_HOTSPOT_FEATURE_MODE = "enabled"
+GLOBAL_GRID_HOTSPOT_SNAPSHOT_ASSET_PATH = "/global-grid-hotspot-snapshot.json"
