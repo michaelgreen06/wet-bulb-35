@@ -235,7 +235,7 @@ export async function forecastResponse(
   if (BOT_PATTERN.test(request.headers.get("user-agent") || "")) return new Response(null, { status: 204 });
   const path = new URL(request.url).searchParams.get("path");
   if (!path || !/^\/wetbulb-temperature\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+\/$/.test(path)) {
-    return json({ error: "A canonical Popular-40 location path is required." }, 400);
+    return json({ error: "A canonical location path is required." }, 400);
   }
   let location: ForecastLocation | null;
   try {

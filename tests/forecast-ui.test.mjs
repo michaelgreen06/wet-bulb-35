@@ -8,7 +8,7 @@ const houstonPath = "/wetbulb-temperature/united-states/texas/houston/";
 const houston = cities.find((city) => routePathForCity(city) === houstonPath);
 const ordinary = cities.find((city) => routePathForCity(city) !== houstonPath && city.name === "Vila");
 
-test("forecast markup is inert and limited to enriched Popular-40 city pages", () => {
+test("forecast markup is inert and available on every city page", () => {
   assert.ok(houston);
   assert.ok(ordinary);
   const popularHtml = pageHtml(houston, { forecastEnabled: true });
@@ -23,9 +23,11 @@ test("forecast markup is inert and limited to enriched Popular-40 city pages", (
   assert.ok(popularHtml.indexOf("Forecast notes") > popularHtml.indexOf("Climate context for Houston"));
   assert.ok(popularHtml.indexOf("Forecast notes") > popularHtml.indexOf("data-forecast-widget"));
 
-  const ordinaryHtml = pageHtml(ordinary);
-  assert.doesNotMatch(ordinaryHtml, /data-forecast-widget/);
-  assert.doesNotMatch(ordinaryHtml, /Open-Meteo/);
+  const ordinaryHtml = pageHtml(ordinary, { forecastEnabled: true });
+  assert.match(ordinaryHtml, /data-forecast-widget/);
+  assert.match(ordinaryHtml, /Five-day maximum wet bulb temperature forecast for Vila/);
+  assert.match(ordinaryHtml, /Forecast wet bulb temperature values are calculated/);
+  assert.match(ordinaryHtml, /Open-Meteo/);
   assert.match(ordinaryHtml, /We use the Stull formula with current air temperature and relative humidity/);
 
   const productionDisabledHtml = pageHtml(houston, { forecastEnabled: false });

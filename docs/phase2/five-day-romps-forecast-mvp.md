@@ -2,7 +2,7 @@
 
 ## Scope
 
-The MVP adds a client-loaded five-day wet bulb forecast to the 40 enriched city pages. It does not change current OpenWeather/Stull values, NASA POWER climatology, other city pages, sitemaps, or canonical routes.
+The forecast is available on every canonical city page. It does not change current OpenWeather/Stull values, NASA POWER climatology, sitemaps, or canonical routes.
 
 Each daily card shows the maximum hourly wet bulb value and its expected local peak time. Open-Meteo attribution, retrieval time, timezone, Romps method, and a forecast disclaimer appear beside the result.
 
@@ -44,12 +44,12 @@ The Worker explicitly uses `models=best_match`, `timezone=auto`, and `forecast_d
 
 ## Request and cache boundaries
 
-`GET /api/forecast?path=<canonical-city-path>` accepts only an exact path in the reviewed Popular-40 enrichment registry. The Worker resolves the location from private route assets and never accepts coordinates from the browser.
+`GET /api/forecast?path=<canonical-city-path>` accepts only an exact path resolved from the canonical route manifest and private country shard. The Worker never accepts coordinates from the browser.
 
 The existing WeatherGate Durable Object handles a distinct `/forecast` operation with:
 
 - an independent Open-Meteo attempt counter;
-- a 500-attempt daily safety limit for the 40-city pilot;
+- a 2,000-attempt site-wide daily safety limit, matching current-condition protection;
 - one provider attempt and no retries per refresh;
 - a five-second timeout;
 - three hours of freshness; and
@@ -68,7 +68,7 @@ Malformed provider arrays, units, metadata, physical inputs, or formula outputs 
 1. Deploy to the route-free staging Worker.
 2. Verify representative hot/humid, dry, high-elevation, freezing, and timezone cases.
 3. Confirm attribution, mobile layout, bot isolation, cache reuse, and provider-attempt accounting.
-4. Release the Popular-40 pilot only after explicit approval.
-5. Monitor usage and failures before considering all city pages or a paid Open-Meteo customer endpoint.
+4. Release all-city availability only after explicit approval.
+5. Monitor usage, cache misses, budget exhaustion, and failures before changing the safety limit or moving to a paid Open-Meteo customer endpoint.
 
-The free Open-Meteo endpoint is restricted to non-commercial use under its current terms. Advertising, subscriptions, or other commercial operation requires the appropriate customer endpoint and licence before launch. The Popular-40 pilot is explicitly configured as `public-noncommercial` on staging and production. Before WetBulb35 introduces advertising, subscriptions, or another commercial use, production must move to `customer-commercial` with an `OPEN_METEO_API_KEY` secret configured through Wrangler's secret store and never committed.
+The free Open-Meteo endpoint is restricted to non-commercial use under its current terms. Advertising, subscriptions, or other commercial operation requires the appropriate customer endpoint and licence before launch. The forecast is explicitly configured as `public-noncommercial` on staging and production. Before WetBulb35 introduces advertising, subscriptions, or another commercial use, production must move to `customer-commercial` with an `OPEN_METEO_API_KEY` secret configured through Wrangler's secret store and never committed.
