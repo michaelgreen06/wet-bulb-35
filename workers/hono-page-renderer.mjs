@@ -1,7 +1,9 @@
 import { Hono } from "hono";
-import { pageHtml, renderBrowsePage, renderCountryPage, renderHomePage, renderStatePage } from "../lib/page-renderer.mjs";
-import { popular40EnrichmentByPath } from "../lib/popular-40-enrichment.mjs";
+import { pageHtml, renderBrowsePage, renderCountryPage, renderGlobalGridHotspotPage, renderHomePage, renderHotspotPage, renderStatePage } from "../lib/page-renderer.mjs";
+
 import { forecastResponse } from "./forecast-edge.ts";
+import { hotspotApiResponse, readHotspotSnapshot } from "./hotspots-edge.ts";
+import { globalGridHotspotApiResponse, readGlobalGridHotspotSnapshot } from "./global-grid-hotspots-edge.ts";
 import { createObservability, weatherResponse } from "./weather-edge.mjs";
 export { WeatherGate } from "./weather-edge.mjs";
 
@@ -26,7 +28,7 @@ async function readAssetJson(request, assets, pathname) {
   if (!response?.ok) throw new InternalMetadataError();
   try { return await response.json(); } catch { throw new InternalMetadataError(); }
 }
-function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID || DEFAULT_GA_MEASUREMENT_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial" }; }
+function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID || DEFAULT_GA_MEASUREMENT_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial", hotspotEnabled: env.HOTSPOT_FEATURE_MODE === "enabled" }; }
 function indexCountryShard(country, rows) {
   const states = new Map();
   for (const row of rows) {
@@ -318,7 +320,6 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     let executionContext;
     try { executionContext = context.executionCtx; } catch {}
     const resolveForecastLocation = async (path) => {
-      if (!popular40EnrichmentByPath.has(path)) return null;
       const parts = path.split("/").filter(Boolean);
       const result = await resolve(context.req.raw, context.env.ASSETS, parts);
       if (result?.kind !== "city") return null;
@@ -332,6 +333,54 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     return forecastResponse(context.req.raw, context.env, executionContext, resolveForecastLocation);
   });
   app.all("/api/forecast/", (context) => context.notFound());
+  app.all("/api/inhabited-hotspots", (context) => {
+    if (context.env.HOTSPOT_FEATURE_MODE !== "enabled") return context.notFound();
+    return hotspotApiResponse(context.req.raw, context.env, cache());
+  });
+  app.all("/api/inhabited-hotspots/", (context) => context.notFound());
+  app.all("/api/global-grid-hotspots", (context) => {
+    if (context.env.GLOBAL_GRID_HOTSPOT_FEATURE_MODE !== "enabled") return context.notFound();
+    return globalGridHotspotApiResponse(context.req.raw, context.env, cache());
+  });
+  app.all("/api/global-grid-hotspots/", (context) => context.notFound());
+  app.all("/wetbulb-temperature/forecast/global-hotspots", (context) => {
+    if (context.req.raw.method !== "GET" && context.req.raw.method !== "HEAD") return context.notFound();
+    const url = new URL(context.req.raw.url);
+    url.pathname = "/wetbulb-temperature/forecast/global-hotspots/";
+    return new Response(null, { status: 308, headers: { location: url.toString(), "strict-transport-security": STRICT_TRANSPORT_SECURITY } });
+  });
+  app.all("/wetbulb-temperature/forecast/global-hotspots/", async (context) => {
+    const request = context.req.raw;
+    if (request.method !== "GET" && request.method !== "HEAD") return context.notFound();
+    if (context.env.HOTSPOT_FEATURE_MODE !== "enabled") return context.notFound();
+    const result = await readHotspotSnapshot(context.env, cache());
+    if (!result.ok) {
+      const response = internalErrorResponse(result.status);
+      return request.method === "HEAD" ? headResponse(response) : response;
+    }
+    const response = htmlResponse(renderHotspotPage(result.snapshot, rendererOptions(context.env)), "/wetbulb-temperature/forecast/global-hotspots/");
+    response.headers.set("etag", result.etag);
+    return request.method === "HEAD" ? headResponse(response) : response;
+  });
+  app.all("/wetbulb-temperature/forecast/global-grid-hotspots", (context) => {
+    if (context.req.raw.method !== "GET" && context.req.raw.method !== "HEAD") return context.notFound();
+    const url = new URL(context.req.raw.url);
+    url.pathname = "/wetbulb-temperature/forecast/global-grid-hotspots/";
+    return new Response(null, { status: 308, headers: { location: url.toString(), "strict-transport-security": STRICT_TRANSPORT_SECURITY } });
+  });
+  app.all("/wetbulb-temperature/forecast/global-grid-hotspots/", async (context) => {
+    const request = context.req.raw;
+    if (request.method !== "GET" && request.method !== "HEAD") return context.notFound();
+    if (context.env.GLOBAL_GRID_HOTSPOT_FEATURE_MODE !== "enabled") return context.notFound();
+    const result = await readGlobalGridHotspotSnapshot(context.env, cache());
+    if (!result.ok) {
+      const response = internalErrorResponse(result.status);
+      return request.method === "HEAD" ? headResponse(response) : response;
+    }
+    const response = htmlResponse(renderGlobalGridHotspotPage(result.snapshot, rendererOptions(context.env)), "/wetbulb-temperature/forecast/global-grid-hotspots/");
+    response.headers.set("etag", result.etag);
+    return request.method === "HEAD" ? headResponse(response) : response;
+  });
   app.get("*", async (context) => {
     const request = context.req.raw;
     const url = new URL(request.url);
