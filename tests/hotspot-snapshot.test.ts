@@ -96,5 +96,9 @@ describe("global hotspot snapshot", () => {
     const malformed = structuredClone(snapshot);
     malformed.hotspots[0].rank = 2;
     expect(isHotspotSnapshot(malformed)).toBe(false);
+
+    const noLongerFutureOnly = structuredClone(snapshot);
+    noLongerFutureOnly.generatedAt = noLongerFutureOnly.validFrom;
+    expect(validateHotspotSnapshot(noLongerFutureOnly).success).toBe(false);
   });
 });

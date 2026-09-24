@@ -57,8 +57,8 @@ describe("global-grid hotspot snapshot edge delivery", () => {
       model: {
         source: "ecmwf-ifs-0.25",
         initialization: "2026-09-21T12:00:00Z",
-        validTimeBounds: { start: "2026-09-22T03:00:00Z", end: "2026-09-23T06:00:00Z" },
-        steps: [15, 18, 21, 24, 27, 30, 33, 36, 39, 42],
+        validTimeBounds: { start: "2026-09-22T03:00:00Z", end: "2026-09-23T02:00:00Z" },
+        steps: Array.from({ length: 24 }, (_, index) => index + 15),
         grid: { latitudeCount: 721, longitudeCount: 1440 },
         evaluatedCellCount: 783_744,
       },
@@ -71,7 +71,8 @@ describe("global-grid hotspot snapshot edge delivery", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.snapshot.counts).toEqual({ gridCells: 1_038_240, evaluatedWarmCells: 783_744, published: 1 });
-      expect(result.snapshot.validTo).toBe("2026-09-23T09:00:00.000Z");
+      expect(result.snapshot.validTo).toBe("2026-09-23T03:00:00.000Z");
+      expect(result.snapshot.model.interval).toBe("hourly-interpolated");
       expect(result.snapshot.hotspots[0]).toMatchObject({ rank: 1, maximumWetBulbC: 30.73, surfacePressureHpa: 1006.815 });
     }
   });

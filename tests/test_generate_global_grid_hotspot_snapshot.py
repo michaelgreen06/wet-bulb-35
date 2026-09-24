@@ -86,13 +86,6 @@ class GlobalGridHotspotSnapshotTests(unittest.TestCase):
         self.assertEqual((document["cells"][-1]["latitude"], document["cells"][-1]["longitude"]), (1.0, 9.0))
 
     def test_validation_rejects_non_three_hour_step_and_invalid_grid_values(self):
-        with self.assertRaisesRegex(ValueError, "three-hourly"):
-            HOTSPOTS.generate_snapshot_from_arrays(
-                latitudes=self.latitudes,
-                longitudes=self.longitudes,
-                steps={1: self.steps[0]},
-                model={"source": "ecmwf", "initialization": "2026-09-22T00:00:00Z", "steps": [1]},
-            )
         broken = {**self.steps[0], "pressure_pa": np.array([[101325.0, -1.0, np.nan], [101325.0, 101325.0, 101325.0]])}
         with self.assertRaisesRegex(ValueError, "positive"):
             HOTSPOTS.generate_snapshot_from_arrays(
@@ -120,13 +113,15 @@ class GlobalGridHotspotSnapshotTests(unittest.TestCase):
                 step_3_pressure_pa=self.steps[3]["pressure_pa"],
             )
             arguments = [
-                "--arrays-npz", str(fixture), "--output", str(output), "--run", "2026-09-22T00:00:00Z", "--steps", "0,3"
+                "--arrays-npz", str(fixture), "--output", str(output), "--run", "2026-09-22T00:00:00Z",
+                "--model-source", "noaa-gfs-0.25", "--steps", "0,3"
             ]
             HOTSPOTS.main(arguments)
             HOTSPOTS.main([*arguments[:3], str(output_again), *arguments[4:]])
             document = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(output.read_bytes(), output_again.read_bytes())
             self.assertEqual(document["model"]["evaluatedCellCount"], 4)
+            self.assertEqual(document["model"]["source"], "noaa-gfs-0.25")
             self.assertNotIn("land", json.dumps(document).lower())
 
     def test_grib_loader_reuses_shared_decoder_without_land_mask(self):

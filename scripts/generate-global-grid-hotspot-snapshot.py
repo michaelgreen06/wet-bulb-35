@@ -2,7 +2,7 @@
 """Write a deterministic top-50 ECMWF global-grid wet-bulb snapshot.
 
 This offline product evaluates every finite warm native-grid cell, including
-land, ocean, and uninhabited cells, at the supplied three-hourly forecast steps.
+land, ocean, and uninhabited cells, at the supplied publication-relative hourly forecast steps.
 """
 
 import argparse
@@ -67,10 +67,10 @@ def _validate_axes(latitudes: np.ndarray, longitudes: np.ndarray) -> tuple[np.nd
 
 def _validate_steps(steps: dict[int, dict[str, Any]], model: dict[str, Any]) -> tuple[list[int], dt.datetime]:
     if not isinstance(steps, dict) or not steps:
-        raise ValueError("at least one three-hourly forecast step is required")
+        raise ValueError("at least one forecast step is required")
     ordered_steps = sorted(steps)
-    if ordered_steps != list(steps) or any(isinstance(step, bool) or not isinstance(step, int) or step < 0 or step % 3 for step in ordered_steps):
-        raise ValueError("steps must be sorted, nonnegative, unique three-hourly integers")
+    if ordered_steps != list(steps) or any(isinstance(step, bool) or not isinstance(step, int) or step < 0 for step in ordered_steps):
+        raise ValueError("steps must be sorted, nonnegative, unique integers")
     if not isinstance(model, dict) or set(model) != {"source", "initialization", "steps"}:
         raise ValueError("model must contain exactly source, initialization, and steps")
     if not isinstance(model["source"], str) or not model["source"]:
@@ -148,8 +148,8 @@ def validate_snapshot_document(document: dict[str, Any]) -> None:
     if start > end:
         raise ValueError("snapshot valid-time bounds are reversed")
     steps = model["steps"]
-    if not isinstance(steps, list) or not steps or any(isinstance(step, bool) or not isinstance(step, int) or step < 0 or step % 3 for step in steps) or steps != sorted(set(steps)):
-        raise ValueError("snapshot steps must be sorted unique nonnegative three-hourly integers")
+    if not isinstance(steps, list) or not steps or any(isinstance(step, bool) or not isinstance(step, int) or step < 0 for step in steps) or steps != sorted(set(steps)):
+        raise ValueError("snapshot steps must be sorted unique nonnegative integers")
     if start != initialization + dt.timedelta(hours=steps[0]) or end != initialization + dt.timedelta(hours=steps[-1]):
         raise ValueError("snapshot valid-time bounds must match initialization and steps")
     grid = model["grid"]
@@ -300,8 +300,8 @@ def _parse_steps(value: str) -> tuple[int, ...]:
         steps = tuple(int(part) for part in parts)
     except ValueError as error:
         raise ValueError("--steps must be a comma-separated integer list") from error
-    if not steps or tuple(sorted(set(steps))) != steps or any(step < 0 or step % 3 for step in steps):
-        raise ValueError("--steps must be sorted, unique, nonnegative three-hourly integers")
+    if not steps or tuple(sorted(set(steps))) != steps or any(step < 0 for step in steps):
+        raise ValueError("--steps must be sorted, unique, nonnegative integers")
     return steps
 
 
@@ -312,7 +312,10 @@ def main(argv: list[str] | None = None) -> None:
     input_group.add_argument("--arrays-npz", type=Path, help="synthetic test fixture only; never a production source")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--run", help="required with --arrays-npz; UTC ISO-8601 model initialization")
+    parser.add_argument("--model-source", default="ecmwf-ifs-0.25")
     parser.add_argument("--steps", default=",".join(map(str, DEFAULT_STEPS)))
+    parser.add_argument("--window-start", help="inclusive UTC hourly validity start")
+    parser.add_argument("--window-end", help="inclusive UTC hourly validity end")
     args = parser.parse_args(argv)
     try:
         expected_steps = _parse_steps(args.steps)
@@ -331,11 +334,15 @@ def main(argv: list[str] | None = None) -> None:
             latitudes, longitudes, steps, initialization = load_grib_inputs(args.forecast_grib, expected_steps)
             if args.run and _iso_utc(_parse_utc_timestamp(args.run, "--run")) != initialization:
                 parser.error("--run does not match GRIB model initialization")
+        if bool(args.window_start) != bool(args.window_end):
+            parser.error("--window-start and --window-end must be supplied together")
+        if args.window_start and args.window_end:
+            steps = SHARED.interpolate_hourly_steps(steps, initialization, args.window_start, args.window_end)
         document = generate_snapshot_from_arrays(
             latitudes=latitudes,
             longitudes=longitudes,
             steps=steps,
-            model={"source": "ecmwf-ifs-0.25", "initialization": initialization, "steps": list(expected_steps)},
+            model={"source": args.model_source, "initialization": initialization, "steps": list(steps)},
         )
     except ValueError as error:
         parser.error(str(error))

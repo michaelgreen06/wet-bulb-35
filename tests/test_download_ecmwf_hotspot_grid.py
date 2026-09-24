@@ -25,19 +25,40 @@ class CoveringStepsTests(unittest.TestCase):
         runs = MODULE.candidate_runs(object(), "2026-09-22", 6)
         self.assertEqual(runs, [dt.datetime(2026, 9, 22, 6, tzinfo=dt.UTC)])
 
-    def test_exact_cycle_boundary_uses_nine_three_hourly_steps(self):
+    def test_exact_cycle_boundary_uses_hourly_window_and_bracketing_steps(self):
         run = dt.datetime(2026, 9, 22, 0, tzinfo=dt.UTC)
         reference = dt.datetime(2026, 9, 22, 9, tzinfo=dt.UTC)
-        self.assertEqual(MODULE.covering_steps(run, reference), [9, 12, 15, 18, 21, 24, 27, 30, 33])
+        start, end = MODULE.hourly_window(reference)
+        self.assertEqual((start, end), (
+            dt.datetime(2026, 9, 22, 10, tzinfo=dt.UTC),
+            dt.datetime(2026, 9, 23, 9, tzinfo=dt.UTC),
+        ))
+        self.assertEqual(MODULE.covering_steps(run, start, end), [9, 12, 15, 18, 21, 24, 27, 30, 33])
 
     def test_between_boundaries_brackets_the_complete_next_24_hours(self):
         run = dt.datetime(2026, 9, 21, 12, tzinfo=dt.UTC)
         reference = dt.datetime(2026, 9, 22, 5, 30, tzinfo=dt.UTC)
-        self.assertEqual(MODULE.covering_steps(run, reference), [15, 18, 21, 24, 27, 30, 33, 36, 39, 42])
+        start, end = MODULE.hourly_window(reference)
+        self.assertEqual((start, end), (
+            dt.datetime(2026, 9, 22, 6, tzinfo=dt.UTC),
+            dt.datetime(2026, 9, 23, 5, tzinfo=dt.UTC),
+        ))
+        self.assertEqual(MODULE.covering_steps(run, start, end), [18, 21, 24, 27, 30, 33, 36, 39, 42])
 
     def test_future_cycle_never_requests_negative_steps(self):
         run = dt.datetime(2026, 9, 22, 12, tzinfo=dt.UTC)
         reference = dt.datetime(2026, 9, 22, 10, tzinfo=dt.UTC)
-        self.assertEqual(MODULE.covering_steps(run, reference), [0, 3, 6, 9, 12, 15, 18, 21, 24])
+        start, end = MODULE.hourly_window(reference)
+        self.assertEqual(MODULE.covering_steps(run, start, end), [0, 3, 6, 9, 12, 15, 18, 21, 24])
+
+    def test_exact_hour_also_starts_at_the_following_utc_hour(self):
+        start, end = MODULE.hourly_window(dt.datetime(2026, 9, 22, 15, tzinfo=dt.UTC))
+        self.assertEqual(start, dt.datetime(2026, 9, 22, 16, tzinfo=dt.UTC))
+        self.assertEqual(end, dt.datetime(2026, 9, 23, 15, tzinfo=dt.UTC))
+
+    def test_partial_hour_starts_at_next_complete_utc_hour(self):
+        start, end = MODULE.hourly_window(dt.datetime(2026, 9, 22, 15, 15, 42, tzinfo=dt.UTC))
+        self.assertEqual(start, dt.datetime(2026, 9, 22, 16, tzinfo=dt.UTC))
+        self.assertEqual(end, dt.datetime(2026, 9, 23, 15, tzinfo=dt.UTC))
 if __name__ == "__main__":
     unittest.main()

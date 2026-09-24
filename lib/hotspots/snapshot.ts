@@ -79,8 +79,8 @@ export const HotspotSnapshotSchema = z.object({
     surfacePressureHpa: z.number().finite().positive(),
   }).strict()).min(1).max(HOTSPOT_MAX_PUBLISHED_CELLS),
 }).strict().superRefine((snapshot, context) => {
-  if (Date.parse(snapshot.generatedAt) > Date.parse(snapshot.validTo)) {
-    context.addIssue({ code: "custom", message: "generatedAt must not be after validTo" });
+  if (Date.parse(snapshot.generatedAt) >= Date.parse(snapshot.validFrom)) {
+    context.addIssue({ code: "custom", message: "generatedAt must precede validFrom for a future-only forecast" });
   }
   if (Date.parse(snapshot.validFrom) >= Date.parse(snapshot.validTo)) {
     context.addIssue({ code: "custom", message: "validFrom must precede validTo" });

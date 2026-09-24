@@ -57,7 +57,7 @@ export const GlobalGridHotspotSnapshotSchema = z.object({
   model: z.object({
     source: z.string().min(1),
     initialization: isoUtc,
-    interval: z.literal("three-hourly"),
+    interval: z.enum(["three-hourly", "hourly-interpolated"]),
     resolution: z.literal("0.25°"),
     steps: z.array(z.number().int().nonnegative()).min(1),
   }).strict(),
@@ -153,7 +153,9 @@ async function parseSnapshotText(text: string): Promise<GlobalGridHotspotSnapsho
   }
   const raw = rawGlobalGridSnapshotSchema.safeParse(value);
   if (raw.success) {
-    const end = new Date(Date.parse(raw.data.model.validTimeBounds.end) + 3 * 60 * 60 * 1000).toISOString();
+    const hourly = raw.data.model.steps.length > 1
+      && raw.data.model.steps.every((step, index, steps) => index === 0 || step === steps[index - 1] + 1);
+    const end = new Date(Date.parse(raw.data.model.validTimeBounds.end) + (hourly ? 1 : 3) * 60 * 60 * 1000).toISOString();
     value = {
       schemaVersion: 1,
       generatedAt: raw.data.model.initialization,
@@ -168,7 +170,7 @@ async function parseSnapshotText(text: string): Promise<GlobalGridHotspotSnapsho
       model: {
         source: raw.data.model.source,
         initialization: raw.data.model.initialization,
-        interval: "three-hourly",
+        interval: hourly ? "hourly-interpolated" : "three-hourly",
         resolution: "0.25°",
         steps: raw.data.model.steps,
       },

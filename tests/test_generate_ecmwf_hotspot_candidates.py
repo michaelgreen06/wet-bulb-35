@@ -67,7 +67,7 @@ class NativeGridHotspotCandidateTests(unittest.TestCase):
 
         self.assertEqual(candidates["schemaVersion"], 1)
         self.assertEqual(candidates["method"], "romps-thermodynamic-liquid")
-        self.assertEqual(candidates["discoveryBoundary"], "three-hourly-native-grid-candidate-discovery-not-final-hourly-ranking")
+        self.assertEqual(candidates["discoveryBoundary"], "hourly-interpolated-native-grid-candidate-discovery-not-final-hourly-ranking")
         self.assertEqual(candidates["globalLandMaximum"]["peakStep"], 0)
         self.assertEqual(candidates["globalLandMaximum"]["latitude"], 0.75)
         self.assertEqual(candidates["globalLandMaximum"]["longitude"], 0.0)
@@ -88,6 +88,65 @@ class NativeGridHotspotCandidateTests(unittest.TestCase):
             np.array([1.0, 0.75, 0.5]), np.array([-180.0, -179.75, 179.5, 179.75]), 0.88, 179.9
         )
         self.assertEqual((row, column), (0, 0))
+
+    def test_candidate_evidence_normalizes_zero_to_360_longitudes(self):
+        fields = {
+            0: {
+                "temperature_k": np.array([[305.15]]),
+                "dew_point_k": np.array([[303.15]]),
+                "pressure_pa": np.array([[101325.0]]),
+                "valid_time": "2026-09-22T00:00:00Z",
+            }
+        }
+        result = HOTSPOTS.discover_candidates_from_arrays(
+            latitudes=np.array([17.5]),
+            longitudes=np.array([269.25]),
+            land_mask=np.array([[1.0]]),
+            steps=fields,
+            cities=[{"path": "/test/", "name": "Test", "state": "", "country": "Test", "latitude": 17.5, "longitude": -90.75}],
+            model={"source": "noaa-gfs-0.25", "run": "2026-09-22T00:00:00Z", "steps": [0]},
+            threshold_c=-100,
+            dilation_rings=0,
+        )
+        self.assertEqual(result["globalLandMaximum"]["longitude"], -90.75)
+        self.assertEqual(result["cities"][0]["gridCell"]["longitude"], -90.75)
+
+    def test_interpolates_simultaneous_fields_to_exact_hourly_window(self):
+        shape = (1, 1)
+        source = {
+            9: {
+                "temperature_k": np.full(shape, 300.0),
+                "dew_point_k": np.full(shape, 294.0),
+                "pressure_pa": np.full(shape, 100000.0),
+                "valid_time": "2026-09-22T15:00:00Z",
+            },
+            12: {
+                "temperature_k": np.full(shape, 306.0),
+                "dew_point_k": np.full(shape, 300.0),
+                "pressure_pa": np.full(shape, 100300.0),
+                "valid_time": "2026-09-22T18:00:00Z",
+            },
+        }
+        hourly = HOTSPOTS.interpolate_hourly_steps(
+            source,
+            "2026-09-22T06:00:00Z",
+            "2026-09-22T16:00:00Z",
+            "2026-09-22T18:00:00Z",
+        )
+        self.assertEqual(list(hourly), [10, 11, 12])
+        self.assertEqual(hourly[10]["valid_time"], "2026-09-22T16:00:00Z")
+        self.assertAlmostEqual(float(hourly[10]["temperature_k"][0, 0]), 302.0)
+        self.assertAlmostEqual(float(hourly[11]["dew_point_k"][0, 0]), 298.0)
+        self.assertAlmostEqual(float(hourly[11]["pressure_pa"][0, 0]), 100200.0)
+
+    def test_hourly_interpolation_rejects_window_outside_sampled_steps(self):
+        with self.assertRaisesRegex(ValueError, "bracket"):
+            HOTSPOTS.interpolate_hourly_steps(
+                self.steps,
+                "2026-09-22T00:00:00Z",
+                "2026-09-22T01:00:00Z",
+                "2026-09-22T04:00:00Z",
+            )
 
     def test_validate_rejects_invalid_city_and_nonfinite_grid_value(self):
         with self.assertRaisesRegex(ValueError, "city"):
@@ -130,12 +189,14 @@ class NativeGridHotspotCandidateTests(unittest.TestCase):
                 "--cities", str(cities_path),
                 "--output", str(output_path),
                 "--run", "20260922T000000Z",
+                "--model-source", "noaa-gfs-0.25",
                 "--steps", "0",
                 "--threshold-c", "-100",
                 "--dilation-rings", "0",
             ])
             result = json.loads(output_path.read_text(encoding="utf-8"))
             self.assertEqual(result["cities"][0]["path"], "/peak/")
+            self.assertEqual(result["model"]["source"], "noaa-gfs-0.25")
             self.assertEqual(result["model"]["steps"], [0])
 
 

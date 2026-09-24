@@ -11,7 +11,7 @@ The MVP does not create an R2 bucket, alter production configuration, deploy a W
 
 ## Product
 
-Once daily, the pipeline identifies high forecast wet bulb regions on the public ECMWF IFS 0.25° grid, intersects buffered cells with the complete canonical WetBulb35 location manifest, refines only those locations with 24 hourly values from one fixed ECMWF model through Open-Meteo, and publishes one validated snapshot.
+Once daily, the pipeline identifies high forecast wet bulb regions on the public ECMWF IFS 0.25° grid over the first 24 complete UTC hours after retrieval, intersects buffered cells with the complete canonical WetBulb35 location manifest, refines only those locations with the same 24 hourly values from one fixed ECMWF model through Open-Meteo, and publishes one validated snapshot.
 
 Public wording remains deliberately narrow:
 
@@ -27,11 +27,13 @@ The page does not claim a measured value, official record, city-center precision
    - `2d`
    - `sp`
    - The three indexed fields for all required forecast steps are fetched with one multi-range client retrieval and written to one local GRIB file; the land/sea mask is a second small retrieval.
-   - dynamically selected three-hourly forecast steps that bracket the complete next-24-hour window at execution time
+   - dynamically selected three-hourly source steps that bracket a publication-relative window beginning at the next full UTC hour after retrieval
+   - metadata recording retrieval time, the inclusive first/last evaluated hours, the exclusive validity end, source steps, and the 24 evaluated hourly lead times
    - one matching `lsm` land-sea mask
 3. `scripts/generate-ecmwf-hotspot-candidates.py`:
    - validates the complete GRIB message set and common initialization/grid;
-   - calculates Romps liquid wet bulb from simultaneous temperature, dew point, and surface pressure;
+   - linearly interpolates simultaneous temperature, dew point, and surface pressure fields to the exact 24 hourly valid times before calculating Romps liquid wet bulb;
+   - never interpolates relative humidity, wet bulb, or separately selected extrema;
    - retains land cells above the absolute threshold or within the configured margin of the global land maximum;
    - expands selected cells by a configurable number of neighboring rings with longitude wrapping;
    - maps every canonical location to its nearest model cell locally;
@@ -39,14 +41,14 @@ The page does not claim a measured value, official record, city-center precision
 4. `scripts/generate-inhabited-hotspot-snapshot.ts`:
    - adds a deterministic daily sample of excluded locations as recall controls;
    - fails if discovered candidates plus controls exceed the explicit daily location budget;
-   - requests 24 aligned UTC hourly values from fixed model `ecmwf_ifs025`;
+   - requests the exact same publication-relative 24 aligned UTC hourly values from fixed model `ecmwf_ifs025`;
    - calculates each hourly Romps value before selecting each location maximum;
    - deduplicates only the presentation results by the model cell returned by Open-Meteo;
    - validates the complete snapshot and atomically writes one local JSON file.
 5. `.github/workflows/global-inhabited-hotspots.yml` uploads:
    - a content-addressed immutable object at `inhabited-hotspots/v1/snapshots/sha256-<digest>.json`;
    - only after read-back verification, the current alias at `inhabited-hotspots/v1/latest.json`.
-   - The daily job begins at 15:15 UTC, 9 hours 15 minutes after the 06Z initialization, because ECMWF documents a 7–9 hour dissemination delay. A missing mirror object is treated as incomplete dissemination and retried every five minutes for 30 minutes; it is not treated as proof that the run does not exist.
+   - The daily job begins at 15:15 UTC, 9 hours 15 minutes after the 06Z initialization, because ECMWF documents a 7–9 hour dissemination delay. The forecast window is not fixed to initialization; it begins at the next full UTC hour after successful retrieval. A missing mirror object is treated as incomplete dissemination and retried every five minutes for 30 minutes; it is not treated as proof that the run does not exist.
 
 A failed download, incomplete GRIB, budget overrun, provider failure, malformed response, validation error, or R2 verification failure stops the run. It cannot replace the prior current snapshot before a new snapshot has passed generation and immutable-object verification.
 
@@ -110,7 +112,12 @@ npm run test:forecast
 
 python3 -m venv .venv-hotspots
 .venv-hotspots/bin/python -m pip install --require-hashes -r requirements/global-hotspots.txt
-.venv-hotspots/bin/python -m unittest tests/test_generate_ecmwf_hotspot_candidates.py
+.venv-hotspots/bin/python -m unittest \
+  tests/test_download_ecmwf_hotspot_grid.py \
+  tests/test_download_gfs_hotspot_grid.py \
+  tests/test_generate_ecmwf_hotspot_candidates.py \
+  tests/test_generate_global_grid_hotspot_snapshot.py \
+  tests/test_compare_hotspot_shadow_snapshots.py
 ```
 
 Build the complete city manifest:
@@ -123,6 +130,12 @@ The full live generation is intentionally an offline/operator workflow. Generate
 
 ## Data and licensing
 
-- ECMWF Open Data discovery uses the public 0.25° three-hourly grid and requires ECMWF attribution under CC BY 4.0.
+- ECMWF Open Data discovery uses the public 0.25° three-hourly source grid, interpolated to an explicitly labeled hourly evaluation cadence, and requires ECMWF attribution under CC BY 4.0.
 - Exact final ranking uses hourly Open-Meteo `ecmwf_ifs025` data.
 - Open-Meteo public access is noncommercial. Advertising, subscriptions, sponsorships, or other commercial use requires an appropriate customer endpoint and license before monetization is activated.
+
+## Direct-model shadow comparison
+
+`scripts/download-gfs-hotspot-grid.py` retrieves only NOAA GFS 0.25° surface pressure, 2 m temperature, and 2 m dew point messages for the exact same validity window. The direct GFS path calculates Romps locally, makes zero Open-Meteo calls, and never deploys or publishes a page.
+
+`scripts/compare-hotspot-shadow-snapshots.py` records top-20/top-50 native-grid overlap, candidate-path overlap, model initializations, and maxima. A seven-run local shadow schedule retains the complete artifacts under `/home/laclaw/.local/share/wetbulb35-model-shadow/`; model differences are observations, not release gates. Production remains on IFS unless the completed comparison and later observation scoring justify a change.

@@ -10,7 +10,7 @@ const candidateDocument = {
   method: "romps-liquid",
   methodVersion: "2026-heatindex-0.0.2",
   discoveryBoundary: "candidate-only",
-  model: { source: "ecmwf-ifs-0.25", initialization: "2026-09-22T00:00:00Z", steps: [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33], grid: { latitudeCount: 721, longitudeCount: 1440 } },
+  model: { source: "ecmwf-ifs-0.25", initialization: "2026-09-22T00:00:00Z", steps: Array.from({ length: 24 }, (_, index) => index + 8), grid: { latitudeCount: 721, longitudeCount: 1440 } },
   selection: { marginC: 2, thresholdC: 26, dilationRings: 1 },
   globalLandMaximum: { wetBulbC: 32.4 },
   cities: [{
@@ -96,9 +96,9 @@ describe("hotspot generation pipeline", () => {
     })).rejects.toThrow(/exceeds/);
   });
 
-  it("rejects discovery data that does not cover the fixed refinement window", async () => {
+  it("rejects discovery data that is not one exact 24-hour sequence", async () => {
     const staleDiscovery = structuredClone(candidateDocument);
-    staleDiscovery.model.steps = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27];
+    staleDiscovery.model.steps = Array.from({ length: 23 }, (_, index) => index + 8);
     await expect(generateHotspotSnapshot({
       candidateDocument: staleDiscovery,
       cityManifest,
@@ -108,6 +108,6 @@ describe("hotspot generation pipeline", () => {
       fetchImplementation: async (url) => responseFor(url),
       options: {},
       generatedAt: "2026-09-22T00:30:00Z",
-    })).rejects.toThrow(/does not cover/);
+    })).rejects.toThrow(/24-hour/);
   });
 });

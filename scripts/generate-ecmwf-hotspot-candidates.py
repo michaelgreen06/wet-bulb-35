@@ -2,7 +2,7 @@
 """Discover inhabited ECMWF native-grid wet-bulb candidates.
 
 This is an offline discovery layer: it reads one frozen IFS GRIB run and a city
-manifest, identifies three-hourly native-grid candidates, and writes JSON for
+manifest, identifies hourly-interpolated native-grid candidates, and writes JSON for
 later hourly, city-specific refinement. It does not claim a final hourly rank.
 """
 
@@ -19,7 +19,7 @@ import numpy as np
 SCHEMA_VERSION = 1
 METHOD = "romps-thermodynamic-liquid"
 METHOD_VERSION = "2026-heatindex-0.0.2"
-DISCOVERY_BOUNDARY = "three-hourly-native-grid-candidate-discovery-not-final-hourly-ranking"
+DISCOVERY_BOUNDARY = "hourly-interpolated-native-grid-candidate-discovery-not-final-hourly-ranking"
 TRIPLE_POINT_K = 273.16
 DEFAULT_STEPS = tuple(range(0, 25, 3))
 CITY_FIELDS = ("path", "name", "state", "country", "latitude", "longitude")
@@ -176,7 +176,7 @@ def _grid_cell_record(
 ) -> dict[str, Any]:
     return {
         "latitude": float(latitudes[row]),
-        "longitude": float(longitudes[column]),
+        "longitude": float(((longitudes[column] + 180.0) % 360.0) - 180.0),
         "wetBulbC": float(maxima[row, column]),
         "temperatureC": float(peak_temperature[row, column] - 273.15),
         "dewPointC": float(peak_dew_point[row, column] - 273.15),
@@ -335,6 +335,75 @@ def _iso_time(date_value: int, time_value: int) -> str:
     return dt.datetime.strptime(date_text + time_text, "%Y%m%d%H%M").replace(tzinfo=dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _parse_utc_timestamp(value: str, label: str) -> dt.datetime:
+    try:
+        parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, ValueError) as error:
+        raise ValueError(f"{label} must be a UTC ISO-8601 timestamp") from error
+    if parsed.tzinfo is None or parsed.utcoffset() != dt.timedelta(0):
+        raise ValueError(f"{label} must be a UTC ISO-8601 timestamp")
+    return parsed.astimezone(dt.timezone.utc)
+
+
+def interpolate_hourly_steps(
+    source_steps: dict[int, dict[str, Any]],
+    initialization: str,
+    window_start: str,
+    window_end: str,
+) -> dict[int, dict[str, Any]]:
+    """Linearly interpolate simultaneous source fields to an inclusive hourly window."""
+    initialization_time = _parse_utc_timestamp(initialization, "model initialization")
+    start = _parse_utc_timestamp(window_start, "window start")
+    end = _parse_utc_timestamp(window_end, "window end")
+    if start.minute or start.second or start.microsecond or end.minute or end.second or end.microsecond or end < start:
+        raise ValueError("hourly window must use ordered whole UTC hours")
+    start_hours = (start - initialization_time).total_seconds() / 3600
+    end_hours = (end - initialization_time).total_seconds() / 3600
+    if not start_hours.is_integer() or not end_hours.is_integer() or start_hours < 0:
+        raise ValueError("hourly window must align to integer nonnegative model lead hours")
+
+    ordered = sorted(source_steps)
+    if not ordered or ordered != list(source_steps) or any(step < 0 or step % 3 for step in ordered):
+        raise ValueError("source steps must be sorted nonnegative three-hourly integers")
+    if ordered[0] > start_hours or ordered[-1] < end_hours:
+        raise ValueError("sampled source steps do not bracket the complete hourly window")
+
+    required_fields = {"temperature_k", "dew_point_k", "pressure_pa", "valid_time"}
+    arrays: dict[int, dict[str, Any]] = {}
+    shape: tuple[int, ...] | None = None
+    for step in ordered:
+        fields = source_steps[step]
+        if set(fields) != required_fields:
+            raise ValueError(f"source step {step} must contain simultaneous temperature, dew point, pressure, and valid time")
+        expected_time = initialization_time + dt.timedelta(hours=step)
+        if _parse_utc_timestamp(fields["valid_time"], f"source step {step} valid time") != expected_time:
+            raise ValueError(f"source step {step} valid time does not match its lead hour")
+        normalized = {name: np.asarray(fields[name], dtype=float) for name in ("temperature_k", "dew_point_k", "pressure_pa")}
+        if shape is None:
+            shape = normalized["temperature_k"].shape
+        if any(values.shape != shape for values in normalized.values()):
+            raise ValueError("sampled source fields must share one grid shape")
+        arrays[step] = normalized
+
+    hourly: dict[int, dict[str, Any]] = {}
+    for target_step in range(int(start_hours), int(end_hours) + 1):
+        lower = max(step for step in ordered if step <= target_step)
+        upper = min(step for step in ordered if step >= target_step)
+        if lower == upper:
+            interpolated = {name: arrays[lower][name] for name in arrays[lower]}
+        else:
+            fraction = (target_step - lower) / (upper - lower)
+            interpolated = {
+                name: arrays[lower][name] + (arrays[upper][name] - arrays[lower][name]) * fraction
+                for name in arrays[lower]
+            }
+        hourly[target_step] = {
+            **interpolated,
+            "valid_time": (initialization_time + dt.timedelta(hours=target_step)).isoformat().replace("+00:00", "Z"),
+        }
+    return hourly
+
+
 def _decode_grib_messages(path: Path) -> list[dict[str, Any]]:
     try:
         import eccodes
@@ -435,7 +504,10 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--cities", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--run", help="required with --arrays-npz; ISO-like model initialization identifier")
+    parser.add_argument("--model-source", default="ecmwf-ifs-0.25")
     parser.add_argument("--steps", default=",".join(map(str, DEFAULT_STEPS)))
+    parser.add_argument("--window-start", help="inclusive UTC hourly validity start")
+    parser.add_argument("--window-end", help="inclusive UTC hourly validity end")
     parser.add_argument("--margin-c", type=float, default=2.0)
     parser.add_argument("--threshold-c", type=float, default=26.0)
     parser.add_argument("--dilation-rings", type=int, default=1)
@@ -457,13 +529,17 @@ def main(argv: list[str] | None = None) -> None:
         latitudes, longitudes, land_mask, steps, model_run = load_grib_inputs(args.forecast_grib, args.land_mask_grib, expected_steps)
         if args.run and args.run != model_run:
             parser.error("--run does not match GRIB model initialization")
+    if bool(args.window_start) != bool(args.window_end):
+        parser.error("--window-start and --window-end must be supplied together")
+    if args.window_start and args.window_end:
+        steps = interpolate_hourly_steps(steps, model_run, args.window_start, args.window_end)
     document = discover_candidates_from_arrays(
         latitudes=latitudes,
         longitudes=longitudes,
         land_mask=land_mask,
         steps=steps,
         cities=cities,
-        model={"source": "ecmwf-ifs-0.25", "run": model_run, "steps": sorted(steps)},
+        model={"source": args.model_source, "run": model_run, "steps": sorted(steps)},
         margin_c=args.margin_c,
         threshold_c=args.threshold_c,
         dilation_rings=args.dilation_rings,

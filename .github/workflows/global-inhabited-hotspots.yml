@@ -53,7 +53,7 @@ jobs:
       - name: Verify focused hotspot implementation
         run: |
           npm run test:global-hotspots
-          .venv-hotspots/bin/python -m unittest tests/test_generate_ecmwf_hotspot_candidates.py tests/test_download_ecmwf_hotspot_grid.py tests/test_generate_global_grid_hotspot_snapshot.py
+          .venv-hotspots/bin/python -m unittest tests/test_generate_ecmwf_hotspot_candidates.py tests/test_download_ecmwf_hotspot_grid.py tests/test_download_gfs_hotspot_grid.py tests/test_generate_global_grid_hotspot_snapshot.py tests/test_compare_hotspot_shadow_snapshots.py
 
       - name: Build the canonical city manifest
         run: npm run build:hotspot-city-manifest
@@ -81,12 +81,16 @@ jobs:
       - name: Discover candidate cities on the native model grid
         run: |
           STEPS=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.steps.join(','))")
+          WINDOW_START=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.windowStart)")
+          WINDOW_END=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.windowEnd)")
           .venv-hotspots/bin/python scripts/generate-ecmwf-hotspot-candidates.py \
             --forecast-grib .hotspots/ecmwf-forecast.grib2 \
             --land-mask-grib .hotspots/ecmwf-land-mask.grib2 \
             --cities .hotspots/cities.json \
             --output .hotspots/candidates.json \
             --steps "$STEPS" \
+            --window-start "$WINDOW_START" \
+            --window-end "$WINDOW_END" \
             --margin-c 1.5 \
             --threshold-c 27.0 \
             --dilation-rings 1
@@ -106,10 +110,14 @@ jobs:
       - name: Rank every global model-grid cell from the same initialization
         run: |
           STEPS=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.steps.join(','))")
+          WINDOW_START=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.windowStart)")
+          WINDOW_END=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.windowEnd)")
           .venv-hotspots/bin/python scripts/generate-global-grid-hotspot-snapshot.py \
             --forecast-grib .hotspots/ecmwf-forecast.grib2 \
             --output .hotspots/global-grid-snapshot.json \
-            --steps "$STEPS"
+            --steps "$STEPS" \
+            --window-start "$WINDOW_START" \
+            --window-end "$WINDOW_END"
 
       - name: Verify both products use the requested 06Z initialization
         run: |
@@ -130,6 +138,10 @@ jobs:
           initialization = initializations.pop()
           if not initialization.endswith('T06:00:00Z'):
               raise SystemExit(f'Expected a 06Z initialization, got {initialization}')
+          if inhabited['validFrom'] != download['windowStart'] or inhabited['validTo'] != download['validTo']:
+              raise SystemExit('Inhabited snapshot does not match the publication-relative 24-hour window')
+          if global_grid['model']['validTimeBounds'] != {'start': download['windowStart'], 'end': download['windowEnd']}:
+              raise SystemExit('Global-grid snapshot does not match the publication-relative 24-hour window')
           PY
 
       - name: Retain the validated snapshot as a workflow artifact

@@ -42,13 +42,16 @@ function cellId(latitude: number, longitude: number): string {
   return `${latitude.toFixed(4)}:${longitude.toFixed(4)}`;
 }
 
-export function fixedHourlyWindow(initialization: string): { startHour: string; endHour: string } {
-  const initializationMs = Date.parse(initialization);
+export function discoveryHourlyWindow(discovery: HotspotDiscoveryMetadata): { startHour: string; endHour: string } {
+  const initializationMs = Date.parse(discovery.initialization);
   if (!Number.isFinite(initializationMs)) throw new TypeError("Hotspot model initialization must be a valid timestamp.");
-  // The daily 06Z product publishes after dissemination, so its stable
-  // next-24-hour window starts at 14Z (lead hour 8) on every rerun.
-  const startMs = initializationMs + 8 * 3_600_000;
-  const endMs = startMs + 23 * 3_600_000;
+  const steps = discovery.steps;
+  if (steps.length !== 24 || steps.some((step, index) => !Number.isInteger(step) || step < 0
+    || (index > 0 && step !== steps[index - 1] + 1))) {
+    throw new RangeError("ECMWF discovery must contain one exact publication-relative 24-hour sequence.");
+  }
+  const startMs = initializationMs + steps[0] * 3_600_000;
+  const endMs = initializationMs + steps[steps.length - 1] * 3_600_000;
   const format = (value: number) => `${new Date(value).toISOString().slice(0, 13)}:00`;
   return { startHour: format(startMs), endHour: format(endMs) };
 }
@@ -59,13 +62,13 @@ export function assertDiscoveryCoversWindow(
 ): void {
   const initializationMs = Date.parse(discovery.initialization);
   const startMs = Date.parse(`${window.startHour}:00Z`);
-  const validToMs = Date.parse(`${window.endHour}:00Z`) + 3_600_000;
+  const endMs = Date.parse(`${window.endHour}:00Z`);
   const minimumStep = Math.min(...discovery.steps);
   const maximumStep = Math.max(...discovery.steps);
   const discoveryFromMs = initializationMs + minimumStep * 3_600_000;
   const discoveryToMs = initializationMs + maximumStep * 3_600_000;
-  if (!Number.isFinite(initializationMs) || discoveryFromMs > startMs || discoveryToMs < validToMs) {
-    throw new RangeError("ECMWF discovery does not cover the complete fixed hourly refinement window.");
+  if (!Number.isFinite(initializationMs) || discoveryFromMs !== startMs || discoveryToMs !== endMs) {
+    throw new RangeError("ECMWF discovery does not exactly match the publication-relative hourly refinement window.");
   }
 }
 function validCity(raw: unknown): raw is ManifestCity {
@@ -240,7 +243,7 @@ export async function generateHotspotSnapshot({
   if (!Number.isSafeInteger(dailyLocationLimit) || dailyLocationLimit <= 0 || candidates.length > dailyLocationLimit) {
     throw new RangeError("Hotspot candidate and validation-control count exceeds the configured daily location limit.");
   }
-  const window = fixedHourlyWindow(parsed.discovery.initialization);
+  const window = discoveryHourlyWindow(parsed.discovery);
   assertDiscoveryCoversWindow(parsed.discovery, window);
   const refinements = await refineAllHotspotCandidates({
     candidates,
