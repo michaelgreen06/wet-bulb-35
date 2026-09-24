@@ -117,7 +117,9 @@ python3 -m venv .venv-hotspots
   tests/test_download_gfs_hotspot_grid.py \
   tests/test_generate_ecmwf_hotspot_candidates.py \
   tests/test_generate_global_grid_hotspot_snapshot.py \
-  tests/test_compare_hotspot_shadow_snapshots.py
+  tests/test_compare_hotspot_shadow_snapshots.py \
+  tests/test_capture_hotspot_shadow_stations.py \
+  tests/test_score_hotspot_shadow_observations.py
 ```
 
 Build the complete city manifest:
@@ -139,3 +141,11 @@ The full live generation is intentionally an offline/operator workflow. Generate
 `scripts/download-gfs-hotspot-grid.py` retrieves only NOAA GFS 0.25° surface pressure, 2 m temperature, and 2 m dew point messages for the exact same validity window. The direct GFS path calculates Romps locally, makes zero Open-Meteo calls, and never deploys or publishes a page.
 
 `scripts/compare-hotspot-shadow-snapshots.py` records top-20/top-50 native-grid overlap, candidate-path overlap, model initializations, and maxima. A seven-run local shadow schedule retains the complete artifacts under `/home/laclaw/.local/share/wetbulb35-model-shadow/`; model differences are observations, not release gates. Production remains on IFS unless the completed comparison and later observation scoring justify a change.
+
+### Independent station-observation scoring
+
+Every daily shadow run also writes `stations.json` before the source GRIBs can be replaced. `scripts/capture-hotspot-shadow-stations.py` samples both models at the same NOAA GHCNh station panel for all 24 valid hours using each model's nearest native grid cell. The panel combines 22 fixed humid-climate airport stations with up to 20 deterministic stations within 100 km of the union of both models' top grid cells. IFS fields are interpolated to the product hours before sampling; GFS fields remain native hourly values. The capture is private, local-only, and never affects staging or production output.
+
+After the window ends and a 36-hour observation-availability delay has elapsed, `scripts/score-hotspot-shadow-observations.py` retrieves the selected stations' yearly NOAA GHCNh PSV files. It performs deterministic one-to-one matching to the nearest report within 30 minutes without interpolating or reusing observations, preserves NOAA quality and provenance fields, and calculates observed Romps wet bulb only when quality-accepted simultaneous temperature, dew point, and station-level pressure are present. Scores include component and wet bulb bias, MAE, RMSE, threshold misses/false alarms, fixed-versus-dynamic panels, lead-hour bins, and paired IFS-versus-GFS error counts.
+
+Open-Meteo reanalysis and historical forecasts are not treated as independent observations. NOAA files are cached with their ETag, Last-Modified value, retrieval time, and SHA-256 digest because GHCNh is updated daily and can be revised. Scores remain provisional and are refreshed daily until at least 120 hours after the forecast window; a final score also requires at least one quality-accepted wet bulb pair and no retryable source errors. A station-year that NOAA does not publish is retained as an explicit coverage gap rather than blocking every other station. Missing or delayed observations therefore remain retryable and never invalidate or replace a forecast capture.

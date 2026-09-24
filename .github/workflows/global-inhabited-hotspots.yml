@@ -53,7 +53,7 @@ jobs:
       - name: Verify focused hotspot implementation
         run: |
           npm run test:global-hotspots
-          .venv-hotspots/bin/python -m unittest tests/test_generate_ecmwf_hotspot_candidates.py tests/test_download_ecmwf_hotspot_grid.py tests/test_download_gfs_hotspot_grid.py tests/test_generate_global_grid_hotspot_snapshot.py tests/test_compare_hotspot_shadow_snapshots.py
+          .venv-hotspots/bin/python -m unittest tests/test_generate_ecmwf_hotspot_candidates.py tests/test_download_ecmwf_hotspot_grid.py tests/test_download_gfs_hotspot_grid.py tests/test_generate_global_grid_hotspot_snapshot.py tests/test_compare_hotspot_shadow_snapshots.py tests/test_capture_hotspot_shadow_stations.py tests/test_score_hotspot_shadow_observations.py
 
       - name: Build the canonical city manifest
         run: npm run build:hotspot-city-manifest
