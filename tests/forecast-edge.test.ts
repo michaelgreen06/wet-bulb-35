@@ -3,6 +3,7 @@ import {
   FORECAST_BROWSER_CACHE_CONTROL,
   forecastKey,
   forecastResponse,
+  forecastTunables,
   refreshForecast,
   validForecastGateRequest,
 } from "../workers/forecast-edge.ts";
@@ -94,6 +95,10 @@ afterEach(() => {
 });
 
 describe("forecast edge and WeatherGate integration", () => {
+  it("uses the reviewed 2,000-attempt site-wide forecast safety limit", () => {
+    expect(forecastTunables(gateEnv()).dailyAttempts).toBe(2000);
+  });
+
   it("validates method, bots, canonical paths, and resolved city identity before gate access", async () => {
     let resolverCalls = 0;
     let gateCalls = 0;
