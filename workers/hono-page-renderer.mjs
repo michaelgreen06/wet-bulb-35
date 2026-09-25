@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { pageHtml, renderBrowsePage, renderCountryPage, renderHomePage, renderStatePage } from "../lib/page-renderer.mjs";
-import { popular40EnrichmentByPath } from "../lib/popular-40-enrichment.mjs";
 import { forecastResponse } from "./forecast-edge.ts";
 import { createObservability, weatherResponse } from "./weather-edge.mjs";
 export { WeatherGate } from "./weather-edge.mjs";
@@ -318,7 +317,6 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     let executionContext;
     try { executionContext = context.executionCtx; } catch {}
     const resolveForecastLocation = async (path) => {
-      if (!popular40EnrichmentByPath.has(path)) return null;
       const parts = path.split("/").filter(Boolean);
       const result = await resolve(context.req.raw, context.env.ASSETS, parts);
       if (result?.kind !== "city") return null;

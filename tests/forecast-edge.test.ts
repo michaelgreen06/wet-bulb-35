@@ -3,6 +3,7 @@ import {
   FORECAST_BROWSER_CACHE_CONTROL,
   forecastKey,
   forecastResponse,
+  forecastTunables,
   refreshForecast,
   validForecastGateRequest,
 } from "../workers/forecast-edge.ts";
@@ -14,6 +15,12 @@ const location = {
   name: "Houston, Texas, United States",
   latitude: 29.7604,
   longitude: -95.3698,
+};
+const ordinaryLocation = {
+  path: "/wetbulb-temperature/united-states/texas/beaumont/",
+  name: "Beaumont, Texas, United States",
+  latitude: 30.0802,
+  longitude: -94.1266,
 };
 
 function upstreamFixture() {
@@ -76,7 +83,7 @@ const gateEnv = (overrides = {}) => ({
   FORECAST_FRESH_SECONDS: "10800",
   FORECAST_STALE_SECONDS: "43200",
   FORECAST_TIMEOUT_MS: "5000",
-  FORECAST_DAILY_ATTEMPT_LIMIT: "500",
+  FORECAST_DAILY_ATTEMPT_LIMIT: "2000",
   OPEN_METEO_API_MODE: "public-noncommercial",
   OBSERVABILITY: { weather() {}, forecast() {} },
   ...overrides,
@@ -88,7 +95,11 @@ afterEach(() => {
 });
 
 describe("forecast edge and WeatherGate integration", () => {
-  it("validates method, bots, canonical paths, and resolved Popular-40 identity before gate access", async () => {
+  it("uses the reviewed 2,000-attempt site-wide forecast safety limit", () => {
+    expect(forecastTunables(gateEnv()).dailyAttempts).toBe(2000);
+  });
+
+  it("validates method, bots, canonical paths, and resolved city identity before gate access", async () => {
     let resolverCalls = 0;
     let gateCalls = 0;
     const resolver = async () => { resolverCalls += 1; return location; };
@@ -232,10 +243,15 @@ describe("forecast edge and WeatherGate integration", () => {
     expect(providerCalls).toBe(1);
   });
 
-  it("Hono exposes the endpoint only for exact Popular-40 canonical paths and resolved static coordinates", async () => {
+  it("Hono exposes the endpoint for every exact canonical city path and resolved static coordinates", async () => {
     const { storage } = fakeStorage();
     vi.stubGlobal("fetch", async () => Response.json(upstreamFixture()));
     const envelope = await refreshForecast(storage, gateEnv(), gateBody());
+    const ordinaryEnvelope = await refreshForecast(storage, gateEnv(), {
+      key: forecastKey(ordinaryLocation.path),
+      location: ordinaryLocation,
+      state: "miss",
+    });
     let gateBodyReceived: Record<string, unknown> | null = null;
     const assets = {
       async fetch(request: Request) {
@@ -247,13 +263,16 @@ describe("forecast edge and WeatherGate integration", () => {
               country: "United States",
               countrySlug: "united-states",
               file: "united-states.json",
-              count: 1,
-              states: [{ slug: "texas", name: "Texas", count: 1 }],
+              count: 2,
+              states: [{ slug: "texas", name: "Texas", count: 2 }],
             }],
           });
         }
         if (pathname === "/locations/shards/united-states.json") {
-          return Response.json({ v: 1, r: [["Houston", "Texas", location.latitude, location.longitude, "houston"]] });
+          return Response.json({ v: 1, r: [
+            ["Beaumont", "Texas", ordinaryLocation.latitude, ordinaryLocation.longitude, "beaumont"],
+            ["Houston", "Texas", location.latitude, location.longitude, "houston"],
+          ] });
         }
         return new Response("missing", { status: 404 });
       },
@@ -266,7 +285,7 @@ describe("forecast edge and WeatherGate integration", () => {
         get: () => ({
           fetch: async (_url: string, init?: RequestInit) => {
             gateBodyReceived = JSON.parse(String(init?.body));
-            return Response.json(envelope);
+            return Response.json(gateBodyReceived?.key === forecastKey(ordinaryLocation.path) ? ordinaryEnvelope : envelope);
           },
         }),
       },
@@ -281,6 +300,11 @@ describe("forecast edge and WeatherGate integration", () => {
         longitude: location.longitude,
       },
     });
+
+    gateBodyReceived = null;
+    const ordinary = await app.fetch(new Request("https://test/api/forecast?path=" + encodeURIComponent(ordinaryLocation.path)), env);
+    expect(ordinary.status).toBe(200);
+    expect(gateBodyReceived).toMatchObject({ location: ordinaryLocation });
 
     gateBodyReceived = null;
     const unavailable = await app.fetch(new Request("https://test/api/forecast?path=" + encodeURIComponent("/wetbulb-temperature/andorra/encamp/vila/")), env);
