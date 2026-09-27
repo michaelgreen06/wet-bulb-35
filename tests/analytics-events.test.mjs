@@ -73,6 +73,13 @@ test("weather and forecast failures are bounded and deduplicated", async () => {
   assert.equal(JSON.stringify(events).includes("secret body"), false);
 });
 
+test("network failures use the network category without exposing exception text", async () => {
+  const { events } = await runtime({ html: page({ city: true }), fetchImpl: async () => { throw new Error("private network detail"); } });
+  assert.equal(event(events, "weather_load_failure").failure_category, "network");
+  assert.equal(event(events, "forecast_load_failure").failure_category, "network");
+  assert.equal(JSON.stringify(events).includes("private network detail"), false);
+});
+
 test("gtag absence, automation, and bot traffic are complete no-ops", async () => {
   assert.deepEqual((await runtime({ gtag: false })).events, []);
   assert.deepEqual((await runtime({ bot: true, html: page({ city: true }) })).events, []);
