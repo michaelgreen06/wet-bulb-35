@@ -13,4 +13,4 @@ binding = "CF_VERSION_METADATA"
 
 [vars]
 CANONICAL_ORIGIN = "https://www.wetbulb35.com"
-GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"
+GOOGLE_ANALYTICS_ID = ""
