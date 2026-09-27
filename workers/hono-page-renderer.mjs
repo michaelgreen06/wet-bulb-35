@@ -25,7 +25,7 @@ async function readAssetJson(request, assets, pathname) {
   if (!response?.ok) throw new InternalMetadataError();
   try { return await response.json(); } catch { throw new InternalMetadataError(); }
 }
-function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID || DEFAULT_GA_MEASUREMENT_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial" }; }
+function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID === undefined ? DEFAULT_GA_MEASUREMENT_ID : env.GOOGLE_ANALYTICS_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial" }; }
 function indexCountryShard(country, rows) {
   const states = new Map();
   for (const row of rows) {

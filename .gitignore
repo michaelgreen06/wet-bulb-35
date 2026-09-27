@@ -65,9 +65,9 @@ __pycache__/
 *.sqlite
 # GA4 credentials and private local aggregate outputs.
 ga4-reader.json
-analytics-private/
-reports/
-state/
+/analytics-private/
+/reports/
+/state/
 .gsc-*
 
 # Private enrichment inputs and local extraction work must never be committed.

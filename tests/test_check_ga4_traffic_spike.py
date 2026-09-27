@@ -16,6 +16,12 @@ class SpikeAlertTests(unittest.TestCase):
         self.assertFalse(spike.is_material_spike(80, [0] * 28))
         self.assertIsNone(spike.evaluate_target({"complete": False, "sessions": 200}, baseline))
 
+    def test_relative_or_robust_threshold_can_independently_trigger(self):
+        noisy_baseline = [100, 200] * 14
+        self.assertTrue(spike.is_material_spike(300, noisy_baseline))
+        robust_baseline = [190, 210] * 14
+        self.assertTrue(spike.is_material_spike(301, robust_baseline))
+
     def test_dedupes_unless_material_revision_or_known_attribution(self):
         with tempfile.TemporaryDirectory() as directory:
             state = pathlib.Path(directory) / "state.sqlite3"
@@ -24,6 +30,16 @@ class SpikeAlertTests(unittest.TestCase):
             self.assertFalse(spike.record_if_new(state, alert))
             self.assertTrue(spike.record_if_new(state, {**alert, "sessions": 181}))
             self.assertTrue(spike.record_if_new(state, {**alert, "sessions": 181, "attribution": "google / organic"}))
+
+    def test_persists_every_evaluation_without_raw_source_rows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = pathlib.Path(directory) / "state.sqlite3"
+            spike.record_evaluation(state, {"date": "2026-09-20", "sessions": 150, "attribution": "unknown", "sources": [{"name": "(not set)", "sessions": 150}]})
+            import sqlite3
+            row = sqlite3.connect(state).execute("SELECT date, sessions, attribution, attribution_hash FROM evaluations").fetchone()
+            self.assertEqual(row[:3], ("2026-09-20", 150, "unknown"))
+            self.assertEqual(len(row[3]), 64)
+            self.assertEqual(state.stat().st_mode & 0o777, 0o600)
 
     def test_data_quality_and_repeat_heavy_labels(self):
         body = spike.render_alert({"date": "2026-09-20", "sessions": 180, "median": 20, "sources": [{"name": "(not set)", "sessions": 160}], "repeat_heavy": True, "countries": [], "pages": []})
