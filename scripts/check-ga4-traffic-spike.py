@@ -123,7 +123,8 @@ def evaluate_dates(client, as_of):
     alerts, evaluated = [], []
     for target in targets:
         baseline_days = [target - timedelta(days=offset) for offset in range(1, 29)]
-        baseline = [sessions_by_day[day.strftime("%Y%m%d")] for day in baseline_days if day.strftime("%Y%m%d") in sessions_by_day]
+        # GA4 omits zero-session days; treat missing baseline days as 0 so one quiet day cannot mute alerts.
+        baseline = [sessions_by_day.get(day.strftime("%Y%m%d"), 0) for day in baseline_days]
         target_key = target.strftime("%Y%m%d")
         target_data = collect_target(client, target.isoformat())
         target_data["complete"] = target_key in sessions_by_day

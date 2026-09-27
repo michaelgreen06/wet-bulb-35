@@ -270,7 +270,7 @@ test("client runtime wires Google Places selection to in-place weather refresh",
   assert.match(runtime, /widget\.dataset\.lat = String\(lat\)/);
   assert.match(runtime, /widget\.dataset\.lon = String\(lng\)/);
   assert.match(runtime, /widget\.dataset\.location = label/);
-  assert.match(runtime, /await fetchWeather\(widget, lat, lng, label, "current_location"\)/);
+  assert.match(runtime, /await fetchWeather\(widget, lat, lng, label, "places_search"\)/);
   assert.match(runtime, /input\.dataset\.placesSelected = "true"/);
   assert.match(runtime, /if \(input\.dataset\.placesSelected === "true"\)/);
   assert.match(runtime, /window\.location\.href = partial\.url/);

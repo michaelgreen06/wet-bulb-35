@@ -7,7 +7,7 @@ All product events use `event_version: 1` and `page_type` (`city` or `directory`
 | `location_search_success`, `location_search_no_match` | `search_method`: `static`, `places` |
 | `current_location_success` | none |
 | `current_location_failure` | `failure_category`: `denied`, `timeout`, `unsupported`, `http`, `invalid_payload`, `network`, `unknown` |
-| `weather_load_success`, `weather_load_failure` | `trigger`: `page_init`, `current_location`; failure also has `failure_category` |
+| `weather_load_success`, `weather_load_failure` | `trigger`: `page_init`, `current_location`, `places_search`; failure also has `failure_category` |
 | `forecast_view`, `forecast_load_failure` | failure has `failure_category` |
 | `map_view`, `map_interaction` | interaction: `pointer`, `keyboard`, `zoom` |
 | `hotspot_city_click` | `rank_bucket`: `top_10`, `top_25`, `top_50`, `other` |

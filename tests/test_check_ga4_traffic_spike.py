@@ -41,6 +41,17 @@ class SpikeAlertTests(unittest.TestCase):
             self.assertEqual(len(row[3]), 64)
             self.assertEqual(state.stat().st_mode & 0o777, 0o600)
 
+    def test_missing_baseline_days_count_as_zero(self):
+        from datetime import date, timedelta
+        from unittest.mock import patch
+        target = date(2026, 9, 20)
+        by_day = {(target - timedelta(days=n)).strftime("%Y%m%d"): 20 for n in range(1, 29) if n != 5}
+        by_day[target.strftime("%Y%m%d")] = 150
+        with patch.object(spike, "daily_sessions", return_value=by_day), \
+             patch.object(spike, "collect_target", side_effect=lambda _c, d: {"date": d, "sessions": 0, "sources": []}):
+            alerts, _ = spike.evaluate_dates(None, target + timedelta(days=1))
+        self.assertEqual([alert["date"] for alert in alerts], [target.isoformat()])
+
     def test_data_quality_and_repeat_heavy_labels(self):
         body = spike.render_alert({"date": "2026-09-20", "sessions": 180, "median": 20, "sources": [{"name": "(not set)", "sessions": 160}], "repeat_heavy": True, "countries": [], "pages": []})
         self.assertIn("data-quality", body)
