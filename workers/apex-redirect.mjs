@@ -1,25 +1,28 @@
 const APEX_HOST = "wetbulb35.com";
-const CANONICAL_ORIGIN = "https://www.wetbulb35.com";
-const SECURITY_HEADERS = {
-  "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
-};
+const CANONICAL_HOST = "www.wetbulb35.com";
+const HSTS = "max-age=63072000";
 
-export function apexRedirect(request) {
-  const url = new URL(request.url);
-  if (url.hostname !== APEX_HOST) {
-    return new Response("Misdirected request", {
-      status: 421,
-      headers: { ...SECURITY_HEADERS, "cache-control": "no-store" },
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (url.hostname !== APEX_HOST) {
+      return new Response("Not Found", {
+        status: 404,
+        headers: { "strict-transport-security": HSTS },
+      });
+    }
+
+    url.protocol = "https:";
+    url.hostname = CANONICAL_HOST;
+    url.port = "";
+
+    return new Response(null, {
+      status: 308,
+      headers: {
+        location: url.toString(),
+        "cache-control": "public, max-age=14400, must-revalidate",
+        "strict-transport-security": HSTS,
+      },
     });
-  }
-  return new Response(null, {
-    status: 308,
-    headers: {
-      ...SECURITY_HEADERS,
-      "cache-control": "public, max-age=3600, s-maxage=86400",
-      location: `${CANONICAL_ORIGIN}${url.pathname}${url.search}`,
-    },
-  });
-}
-
-export default { fetch: apexRedirect };
+  },
+};
