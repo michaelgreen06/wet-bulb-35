@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "generate-sitemaps": "node scripts/generate-sitemaps.js",
+    "generate:city-population": "node scripts/build-city-population.mjs",
     "generate:legacy-city-route-redirects": "node scripts/generate-legacy-city-route-redirects.mjs",
     "generate:popular-40-enrichment": "python3 scripts/generate-popular-40-enrichment.py",
     "test:popular-40-enrichment": "node --test tests/popular-40-enrichment.test.mjs && python3 tests/test_popular_40_enrichment_generator.py",
@@ -41,7 +42,7 @@
     "dry-run:rollback-cutover-rehearsal": "node scripts/rollback-cutover-rehearsal.mjs --dry-run",
     "load:staging-safe": "node scripts/staging-load-harness.mjs --mode=fake",
     "vercel-build": "npm run test:static-prototype && npm run test:tier1-cities && npm run test:popular-40-enrichment && npm run test:forecast && npm run build:vercel-output",
-    "test:static-prototype": "node --test tests/static-generator.test.mjs tests/vercel-ignore-build.test.mjs tests/nearby.test.mjs",
+    "test:static-prototype": "node --test tests/static-generator.test.mjs tests/vercel-ignore-build.test.mjs tests/nearby.test.mjs tests/city-population.test.mjs",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
