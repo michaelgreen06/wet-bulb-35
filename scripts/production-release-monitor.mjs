@@ -102,11 +102,18 @@ async function cfJson(fetchImpl, url, token) {
 }
 
 export function selectCustomDomainBinding(domains) {
-  const records = domains.filter((domain) => domain.hostname === EXPECTED_DOMAIN);
-  const enabled = records.filter((domain) => domain.service === EXPECTED_WORKER && domain.environment === "production" && domain.status === "active");
+  const records = (Array.isArray(domains) ? domains : []).filter((domain) => domain?.hostname === EXPECTED_DOMAIN);
+  const enabled = records.filter((domain) => domain.service === EXPECTED_WORKER
+    && domain.environment === "production"
+    && domain.enabled === true
+    && typeof domain.cert_id === "string"
+    && domain.cert_id.length > 0);
   return {
     healthy: records.length === 1 && enabled.length === 1,
-    records: records.map(({ id, hostname, service, environment, status }) => ({ id, hostname, service, environment, status })),
+    // Keep failure evidence bounded to routing identity and certificate presence.
+    records: records.map(({ id, hostname, service, environment, enabled, cert_id: certId }) => ({
+      id, hostname, service, environment, enabled, cert_id: typeof certId === "string" && certId.length > 0 ? certId : null,
+    })),
   };
 }
 

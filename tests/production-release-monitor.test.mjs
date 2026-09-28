@@ -1,22 +1,22 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import http from "node:http";
-import os from "node:os";
 import path from "node:path";
-import test from "node:test";
-import { execFile, spawnSync } from "node:child_process";
+import { spawnSync, execFile } from "node:child_process";
 import { promisify } from "node:util";
+import os from "node:os";
+import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { pollingPhase, runReleaseChecks, selectCustomDomainBinding } from "../scripts/production-release-monitor.mjs";
 import { indexable, robotsAllowPublicPages } from "../scripts/release-indexing-checks.mjs";
 import { advanceMonitor, confirmedChecks, recoverRelease, newMonitorState } from "../scripts/production-monitor-control.mjs";
+import { issueStore, monitorJob } from "../scripts/run-production-monitor.mjs";
 import { validateProductionConfig } from "../scripts/validate-production-release-config.mjs";
 
 const EXPECTED = "11111111-1111-4111-8111-111111111111";
 const ROLLBACK = "22222222-2222-4222-8222-222222222222";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const execute = promisify(execFile);
 
 function cards(prefix, count) {
   return Array.from({ length: count }, (_, index) => `<a class="p-4 border rounded-lg hover:bg-gray-50 transition-colors" href="/${prefix}/${String(index).padStart(4, "0")}/"><div class="font-semibold">${prefix} ${String(index).padStart(4, "0")}</div></a>`).join("");
@@ -29,7 +29,9 @@ function canonical(path) {
 function state() {
   return {
     activeVersion: EXPECTED,
-    domains: [{ id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", status: "active" }],
+    // This shape reflects the Workers custom-domains GET response: enabled
+    // and cert_id are present; there is no status field.
+    domains: [{ id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", enabled: true, cert_id: "cert-1" }],
     failBrowse: false,
     failWeather: false,
     requests: [],
@@ -43,15 +45,18 @@ async function fixture() {
     fixtureState.requests.push(`${request.method} ${url.pathname}`);
     const send = (status, type, body = "") => {
       response.writeHead(status, { "content-type": type });
-      response.end(request.method === "HEAD" ? "" : body);
+      if (request.method !== "HEAD") response.end(body); else response.end();
     };
     if (url.pathname === "/client/v4/accounts/account-1/workers/scripts/wetbulb35-weather-production/deployments") {
       return send(200, "application/json", JSON.stringify({ success: true, result: { deployments: [
-        { id: "old", created_on: "2026-09-01T00:00:00Z", versions: [{ version_id: "00000000-0000-4000-8000-000000000000", percentage: 100 }] },
-        { id: "active", created_on: "2026-09-15T00:00:00Z", versions: [{ version_id: fixtureState.activeVersion, percentage: 100 }] },
+        // Oldest first, like the live API history: the monitor must pick the newest, not index 0.
+        { id: "deployment-0", created_on: "2026-09-01T00:00:00Z", versions: [{ version_id: "00000000-0000-4000-8000-000000000000", percentage: 100 }] },
+        { id: "deployment-1", created_on: "2026-09-15T00:00:00Z", versions: [{ version_id: fixtureState.activeVersion, percentage: 100 }] },
       ] } }));
     }
-    if (url.pathname === "/client/v4/accounts/account-1/workers/domains") return send(200, "application/json", JSON.stringify({ success: true, result: fixtureState.domains }));
+    if (url.pathname === "/client/v4/accounts/account-1/workers/domains" && request.method === "GET") {
+      return send(200, "application/json", JSON.stringify({ success: true, result: fixtureState.domains }));
+    }
     if (url.pathname === "/test/rollback" && request.method === "POST") {
       fixtureState.rollbackCalls = (fixtureState.rollbackCalls || 0) + 1;
       fixtureState.activeVersion = ROLLBACK;
@@ -66,13 +71,14 @@ async function fixture() {
     }
     if (url.pathname === "/wetbulb-temperature/united-states/") return send(200, "text/html", canonical(url.pathname) + cards("State", 51));
     if (url.pathname === "/wetbulb-temperature/united-states/texas/") return send(200, "text/html", canonical(url.pathname) + cards("City", 1_009));
-    if (url.pathname === "/wetbulb-temperature/united-states/texas/houston/" || url.pathname === "/wetbulb-temperature/singapore/singapore/singapore/" || url.pathname === "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/") return send(200, "text/html", canonical(url.pathname));
+    if (url.pathname === "/wetbulb-temperature/united-states/texas/houston/") return send(200, "text/html", canonical(url.pathname));
+    if (url.pathname === "/wetbulb-temperature/singapore/singapore/singapore/" || url.pathname === "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/") return send(200, "text/html", canonical(url.pathname));
     if (url.pathname === "/assets/app.js") return send(200, "text/javascript", "maps.googleapis.com/maps/api/js fetchWeather");
     if (url.pathname === "/assets/locations.json") return send(200, "application/json", "[]");
     if (url.pathname === "/robots.txt") return send(200, "text/plain", "Sitemap: https://www.wetbulb35.com/sitemap.xml");
     if (url.pathname === "/sitemap.xml") {
-      const count = fixtureState.activeVersion === ROLLBACK ? 227 : 228;
-      return send(200, "application/xml", `<sitemapindex>${Array.from({ length: count }, (_, index) => `<sitemap><loc>https://www.wetbulb35.com/sitemaps/sitemap-${index}.xml</loc></sitemap>`).join("")}</sitemapindex>`);
+      const members = Array.from({ length: fixtureState.activeVersion === ROLLBACK ? 227 : 228 }, (_, index) => `<sitemap><loc>https://www.wetbulb35.com/sitemaps/sitemap-${index}.xml</loc></sitemap>`).join("");
+      return send(200, "application/xml", `<sitemapindex>${members}</sitemapindex>`);
     }
     if (url.pathname === "/api/weather") return fixtureState.failWeather
       ? send(500, "application/json", JSON.stringify({ error: "provider unavailable" }))
@@ -80,132 +86,362 @@ async function fixture() {
     return send(404, "text/plain", "missing");
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const { port } = server.address();
-  const origin = `http://127.0.0.1:${port}`;
+  const address = server.address();
+  const origin = `http://127.0.0.1:${address.port}`;
   return { server, state: fixtureState, origin, apiBase: `${origin}/client/v4` };
 }
 
-const optionsFor = (mock) => ({ origin: mock.origin, apiBase: mock.apiBase, token: "test-token", accountId: "account-1", expectedVersion: EXPECTED, rollbackVersion: ROLLBACK });
-
-test("monitor requires one enabled production custom domain and never queries routes", async () => {
+test("release monitor detects health, failure, rollback eligibility, and stale monitors", async () => {
   const mock = await fixture();
   try {
-    const healthy = await runReleaseChecks(optionsFor(mock));
+    const options = { origin: mock.origin, apiBase: mock.apiBase, token: "test-token", accountId: "account-1", expectedVersion: EXPECTED, rollbackVersion: ROLLBACK, weather: true };
+    const healthy = await runReleaseChecks(options);
     assert.equal(healthy.status, "healthy");
     assert.equal(healthy.rollbackEligible, false);
     assert.ok(mock.state.requests.includes("GET /client/v4/accounts/account-1/workers/domains"));
     assert.equal(mock.state.requests.some((request) => request.includes("/workers/routes")), false);
 
+    mock.state.failWeather = true;
+    const weatherFailure = await runReleaseChecks(options);
+    assert.equal(weatherFailure.status, "healthy");
+    assert.equal(weatherFailure.rollbackEligible, false);
+    assert.ok(weatherFailure.warnings.some((warning) => warning.startsWith("weather_")));
+    mock.state.failWeather = false;
+
+    mock.state.failBrowse = true;
+    const failed = await runReleaseChecks(options);
+    const confirmed = await runReleaseChecks(options);
+    assert.equal(failed.status, "critical_failure");
+    assert.equal(failed.rollbackEligible, true);
+    assert.equal(confirmed.status, "critical_failure");
+    assert.equal(confirmed.rollbackEligible, true);
+    assert.ok(failed.criticalFailures.some((failure) => failure.startsWith("browse:")));
+
+    mock.state.failBrowse = false;
     mock.state.domains = [];
-    const missing = await runReleaseChecks(optionsFor(mock));
-    assert.equal(missing.rollbackEligible, true);
-    assert.ok(missing.criticalFailures.some((failure) => failure.startsWith("production_custom_domain:")));
+    const missingDomain = await runReleaseChecks(options);
+    assert.equal(missingDomain.rollbackEligible, true);
+    assert.ok(missingDomain.criticalFailures.some((failure) => failure.startsWith("production_custom_domain:")));
 
-    mock.state.domains = [
-      { id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", status: "active" },
-      { id: "domain-2", hostname: "www.wetbulb35.com", service: "another-worker", environment: "production", status: "active" },
-    ];
-    assert.equal((await runReleaseChecks(optionsFor(mock))).rollbackEligible, true);
-
-    mock.state.domains = [{ id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", status: "pending" }];
-    assert.equal((await runReleaseChecks(optionsFor(mock))).rollbackEligible, true);
-  } finally { mock.server.close(); }
-});
-
-test("custom-domain selection fails closed on duplicates, other services, or disabled records", () => {
-  const exact = { id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", status: "active" };
-  assert.equal(selectCustomDomainBinding([exact]).healthy, true);
-  for (const domains of [[], [{ ...exact, status: "pending" }], [{ ...exact, service: "another-worker" }], [exact, { ...exact, id: "domain-2" }]]) {
-    assert.equal(selectCustomDomainBinding(domains).healthy, false);
+    mock.state.domains = [{ id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", enabled: true, cert_id: "cert-1" }];
+    mock.state.activeVersion = "33333333-3333-4333-8333-333333333333";
+    const stale = await runReleaseChecks(options);
+    assert.equal(stale.status, "superseded");
+    assert.equal(stale.rollbackEligible, false);
+  } finally {
+    mock.server.close();
   }
 });
 
-test("weather failures warn without rollback while page failures are rollback eligible", async () => {
-  const mock = await fixture();
-  try {
-    mock.state.failWeather = true;
-    const weather = await runReleaseChecks({ ...optionsFor(mock), weather: true });
-    assert.equal(weather.status, "healthy");
-    assert.ok(weather.warnings.some((warning) => warning.startsWith("weather_")));
-    mock.state.failWeather = false;
-    mock.state.failBrowse = true;
-    const failed = await runReleaseChecks(optionsFor(mock));
-    assert.equal(failed.status, "critical_failure");
-    assert.equal(failed.rollbackEligible, true);
-  } finally { mock.server.close(); }
+test("custom-domain selection requires one exact enabled, certified production binding", () => {
+  const exact = { id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", enabled: true, cert_id: "cert-1" };
+  assert.equal(selectCustomDomainBinding([exact]).healthy, true);
+  for (const domains of [
+    [],
+    [{ ...exact, service: "another-worker" }],
+    [{ ...exact, environment: "staging" }],
+    [{ ...exact, enabled: false }],
+    [{ ...exact, cert_id: "" }],
+    [exact, { ...exact, id: "domain-2" }],
+  ]) assert.equal(selectCustomDomainBinding(domains).healthy, false);
 });
 
-test("rollback changes only the Worker version and verifies the existing custom domain", async () => {
-  const mock = await fixture();
-  try {
-    mock.state.failBrowse = true;
-    const result = await recoverRelease(optionsFor(mock), {
-      rollback: async (version) => { assert.equal(version, ROLLBACK); mock.state.activeVersion = version; mock.state.failBrowse = false; },
-    });
-    assert.equal(result.status, "recovered");
-    assert.equal(mock.state.activeVersion, ROLLBACK);
-    assert.equal(mock.state.domains.length, 1);
-    assert.equal(mock.state.requests.some((request) => request.includes("/workers/routes")), false);
-  } finally { mock.server.close(); }
+test("polling schedule is two minutes, then thirty minutes, and expires after 24 hours", () => {
+  const startedAt = "2026-09-15T00:00:00Z";
+  assert.deepEqual(pollingPhase({ startedAt, lastCheckedAt: null, now: new Date("2026-09-15T00:00:00Z") }).intervalMinutes, 2);
+  assert.equal(pollingPhase({ startedAt, lastCheckedAt: "2026-09-15T00:00:00Z", now: new Date("2026-09-15T00:01:00Z") }).due, false);
+  assert.equal(pollingPhase({ startedAt, lastCheckedAt: "2026-09-15T00:00:00Z", now: new Date("2026-09-15T00:02:00Z") }).due, true);
+  assert.equal(pollingPhase({ startedAt, lastCheckedAt: "2026-09-15T01:00:00Z", now: new Date("2026-09-15T01:29:00Z") }).due, false);
+  assert.equal(pollingPhase({ startedAt, lastCheckedAt: "2026-09-15T01:00:00Z", now: new Date("2026-09-15T01:30:00Z") }).due, true);
+  assert.equal(pollingPhase({ startedAt, lastCheckedAt: "2026-09-15T23:30:00Z", now: new Date("2026-09-16T00:00:00Z") }).expired, true);
 });
 
-test("stale monitors refuse rollback and weather-only monitor cycles do not recover", async () => {
-  const mock = await fixture();
-  try {
-    mock.state.activeVersion = "33333333-3333-4333-8333-333333333333";
-    let mutations = 0;
-    assert.equal((await recoverRelease(optionsFor(mock), { rollback: async () => mutations++ })).status, "superseded");
-    assert.equal(mutations, 0);
-    mock.state.activeVersion = EXPECTED;
-    mock.state.failWeather = true;
-    let rolledBack = false;
-    const monitor = newMonitorState({ expectedVersion: EXPECTED, rollbackVersion: ROLLBACK, releaseSha: "a".repeat(40), now: new Date("2026-09-15T00:00:00Z") });
-    const state = await advanceMonitor(monitor, { save: async () => {}, notify: async () => {}, now: () => new Date("2026-09-15T00:00:00Z"), options: optionsFor(mock), checks: (args) => confirmedChecks(args, { sleep: async () => {} }), recover: async () => { rolledBack = true; } });
-    assert.equal(state.status, "active");
-    assert.equal(rolledBack, false);
-  } finally { mock.server.close(); }
-});
-
-test("production deploy wrapper and config only use the custom-domain config", () => {
+test("production deploy wrapper is approval-gated and can only use the custom-domain config", () => {
   const script = fs.readFileSync(path.join(root, "scripts/deploy-production-release.sh"), "utf8");
   const deployCommands = script.split("\n").filter((line) => line.includes("wrangler deploy"));
   assert.deepEqual(deployCommands, ["./node_modules/.bin/wrangler deploy --config wrangler.weather-production-domain.toml"]);
   assert.match(script, /--approved-existing-custom-domain-deploy/);
   const refusal = spawnSync("bash", [path.join(root, "scripts/deploy-production-release.sh")], { cwd: root, encoding: "utf8" });
   assert.equal(refusal.status, 2);
-  assert.match(refusal.stderr, /custom-domain-deploy/);
-
-  const config = fs.readFileSync(path.join(root, "wrangler.weather-production-domain.toml"), "utf8");
-  assert.doesNotThrow(() => validateProductionConfig(config));
-  assert.throws(() => validateProductionConfig(config.replace("custom_domain = true", "custom_domain = false")));
-  assert.throws(() => validateProductionConfig(config + "\nroute = \"www.wetbulb35.com/*\"\n"));
-  assert.throws(() => validateProductionConfig(config.replace("www.wetbulb35.com", "*.wetbulb35.com")));
+  assert.match(refusal.stderr, /Refusing production deploy/);
 });
 
-test("polling schedule and indexing guards retain bounded release behavior", () => {
-  const startedAt = "2026-09-15T00:00:00Z";
-  assert.equal(pollingPhase({ startedAt, lastCheckedAt: null, now: new Date(startedAt) }).intervalMinutes, 2);
-  assert.equal(pollingPhase({ startedAt, lastCheckedAt: startedAt, now: new Date("2026-09-15T01:30:00Z") }).due, true);
-  assert.equal(pollingPhase({ startedAt, lastCheckedAt: startedAt, now: new Date("2026-09-16T00:00:00Z") }).expired, true);
-  assert.equal(indexable('<meta name="robots" content="noindex">', new Response()), false);
-  assert.equal(robotsAllowPublicPages("User-agent: *\nDisallow: /api/\nAllow: /", ["/", "/wetbulb-temperature/"]), true);
+const startedAt = "2026-09-15T00:00:00Z";
+const newState = () => newMonitorState({ expectedVersion: EXPECTED, rollbackVersion: ROLLBACK, releaseSha: "a".repeat(40), now: new Date(startedAt) });
+const healthy = () => ({ status: "healthy", rollbackEligible: false, criticalFailures: [], weatherRequests: 0 });
+const failure = (name = "browse:500") => ({ status: "critical_failure", rollbackEligible: true, criticalFailures: [name], weatherRequests: 0 });
+const optionsFor = (mock) => ({ origin: mock.origin, apiBase: mock.apiBase, token: "test-token", accountId: "account-1", expectedVersion: EXPECTED, rollbackVersion: ROLLBACK });
+
+test("robots rules honor crawler groups, wildcards, specificity and Allow ties", () => {
+  const paths = ["/", "/wetbulb-temperature/united-states/texas/houston/"];
+  for (const rules of ["User-agent: *\nDisallow: /", "User-agent: Googlebot\nDisallow: /\nUser-agent: *\nAllow: /", "User-agent: bingbot\nDisallow: /wetbulb-temperature/*$"]) {
+    assert.equal(robotsAllowPublicPages(rules, paths), false, rules);
+  }
+  assert.equal(robotsAllowPublicPages("User-agent: *\nDisallow: /api/\nAllow: /", paths), true);
+  assert.equal(robotsAllowPublicPages("User-agent: *\nDisallow: /\nAllow: /", paths), true);
+  assert.equal(robotsAllowPublicPages("User-agent: googlebot\nAllow: /\nUser-agent: bingbot\nAllow: /", paths), true);
 });
 
-test("shell rollback entry point performs no domain mutation and verifies recovery", async () => {
+test("deployment guard accepts only the exact custom domain", () => {
+  const valid = fs.readFileSync(path.join(root, "wrangler.weather-production-domain.toml"), "utf8");
+  assert.doesNotThrow(() => validateProductionConfig(valid));
+  assert.throws(() => validateProductionConfig(valid.replace("custom_domain = true", "custom_domain = false")));
+  assert.throws(() => validateProductionConfig(valid + '\nroute = "wetbulb35.com/*"\n'));
+  assert.throws(() => validateProductionConfig(valid.replace("www.wetbulb35.com", "*.wetbulb35.com")));
+  assert.throws(() => validateProductionConfig(valid.replace("custom_domain = true }", "custom_domain = true }, { pattern = \"other.example\", custom_domain = true }")));
+});
+
+test("meta and HTTP noindex directives are rejected across quoting and attribute order", () => {
+  for (const html of ['<meta name="robots" content="noindex, follow">', "<META CONTENT='none' NAME='Googlebot'>", '<meta name=bingbot content=noindex>']) {
+    assert.equal(indexable(html, new Response()), false, html);
+  }
+  assert.equal(indexable("", new Response(null, { headers: { "X-Robots-Tag": "googlebot: noindex" } })), false);
+  assert.equal(indexable('<meta name="robots" content="index,follow">', new Response()), true);
+});
+
+test("custom-domain guard fails on duplicate hostname records and never queries routes", async () => {
+  const mock = await fixture();
+  try {
+    mock.state.domains.push({ id: "domain-2", hostname: "www.wetbulb35.com", service: "another-worker", environment: "production", enabled: true, cert_id: "cert-2" });
+    const result = await runReleaseChecks(optionsFor(mock));
+    assert.ok(result.criticalFailures.some((item) => item.startsWith("production_custom_domain:")));
+    assert.equal(mock.state.requests.some((request) => request.includes("/workers/routes")), false);
+  } finally { mock.server.close(); }
+});
+
+test("live-shaped health fixture with Disallow or noindex is never healthy", async () => {
+  const mock = await fixture();
+  try {
+    for (const mode of ["robots", "meta", "header"]) {
+      const fetchImpl = async (url, options) => {
+        const response = await fetch(url, options);
+        if (mode === "robots" && new URL(url).pathname === "/robots.txt") return new Response("User-agent: *\nDisallow: /\nSitemap: https://www.wetbulb35.com/sitemap.xml");
+        if (new URL(url).pathname === "/" && mode !== "robots") return new Response((await response.text()) + (mode === "meta" ? '<meta name="robots" content="noindex">' : ""), { headers: mode === "header" ? { "x-robots-tag": "noindex" } : {} });
+        return response;
+      };
+      const result = await runReleaseChecks({ ...optionsFor(mock), fetchImpl });
+      assert.equal(result.status, "critical_failure", mode);
+    }
+  } finally { mock.server.close(); }
+});
+
+test("sitemap outage aborts within its deadline with bounded requests", async () => {
+  const mock = await fixture();
+  try {
+    let attempts = 0;
+    const fetchImpl = (url, options) => {
+      if (!new URL(url).pathname.startsWith("/sitemaps/")) return fetch(url, options);
+      attempts++;
+      return new Promise((resolve, reject) => {
+        if (options.signal.aborted) reject(options.signal.reason);
+        else options.signal.addEventListener("abort", () => reject(options.signal.reason), { once: true });
+      });
+    };
+    const before = Date.now();
+    const result = await runReleaseChecks({ ...optionsFor(mock), fetchImpl, fullSitemaps: true, sitemapTimeoutMs: 25 });
+    assert.ok(Date.now() - before < 2_000);
+    assert.ok(attempts <= 4, `attempts=${attempts}`);
+    assert.equal(result.rollbackEligible, true);
+  } finally { mock.server.close(); }
+});
+
+test("confirmed critical pages bypass the expensive sitemap crawl", async () => {
+  const mock = await fixture();
+  try {
+    mock.state.failBrowse = true;
+    let sitemapCalls = 0;
+    const fetchImpl = (url, options) => { if (new URL(url).pathname.startsWith("/sitemaps/")) sitemapCalls++; return fetch(url, options); };
+    assert.equal((await runReleaseChecks({ ...optionsFor(mock), fetchImpl, fullSitemaps: true })).rollbackEligible, true);
+    assert.equal(sitemapCalls, 0);
+  } finally { mock.server.close(); }
+});
+
+test("confirmation requires matching failures and never suppresses supersession or missing control", async () => {
+  const sequences = [
+    [[failure(), failure()], "critical_failure"],
+    [[failure(), healthy()], "healthy"],
+    [[failure(), failure("home:500")], "unconfirmed_failure"],
+    [[{ ...failure(), status: "control_unavailable", rollbackEligible: false }, failure()], "unconfirmed_failure"],
+    [[failure(), { ...healthy(), status: "superseded" }], "superseded"],
+    [[failure(), { ...healthy(), status: "control_unavailable" }], "control_unavailable"],
+  ];
+  for (const [sequence, expected] of sequences) {
+    let sleeps = 0;
+    const result = await confirmedChecks({}, { check: async () => sequence.shift(), sleep: async (ms) => { assert.equal(ms, 20_000); sleeps++; } });
+    assert.equal(result.status, expected);
+    assert.equal(sleeps, 1);
+  }
+  const result = await confirmedChecks({ weatherBudget: 2 }, {
+    check: async ({ weather }) => weather ? failure("weather_houston:500") : healthy(), sleep: async () => {},
+  });
+  assert.equal(result.status, "unconfirmed_failure");
+  assert.equal(result.weatherRequests, 2);
+});
+
+test("rollback version with a broken custom domain or page continues recovery checks", async () => {
+  const mock = await fixture();
+  try {
+    mock.state.activeVersion = ROLLBACK;
+    mock.state.domains = [];
+    mock.state.failBrowse = true;
+    const result = await runReleaseChecks(optionsFor(mock));
+    assert.equal(result.status, "recovery_failure");
+    assert.ok(result.criticalFailures.some((item) => item.startsWith("browse:")));
+    assert.ok(result.criticalFailures.some((item) => item.startsWith("production_custom_domain:")));
+  } finally { mock.server.close(); }
+});
+
+test("end-to-end version-only recovery persists failure, resumes on a new runner and rolls back only once", async () => {
+  const mock = await fixture();
+  try {
+    mock.state.failBrowse = true;
+    let saved;
+    let rollbacks = 0;
+    const messages = [];
+    const options = optionsFor(mock);
+    const dependencies = {
+      rollback: async (version) => { assert.equal(saved.status, "recovering"); assert.equal(version, ROLLBACK); rollbacks++; mock.state.activeVersion = version; },
+    };
+    const runner = {
+      save: async (value) => { saved = structuredClone(value); }, notify: async (message) => messages.push(message), now: () => new Date(startedAt), options,
+      checks: (args) => confirmedChecks(args, { sleep: async () => {} }),
+      recover: (args) => recoverRelease(args, dependencies),
+    };
+    await advanceMonitor(newState(), runner);
+    assert.equal(saved.status, "recovering");
+    assert.ok(messages.at(-1).includes("CRITICAL"));
+    mock.state.failBrowse = false;
+    await advanceMonitor(structuredClone(saved), runner);
+    assert.equal(saved.status, "recovered");
+    assert.equal(rollbacks, 1);
+    assert.ok(messages.at(-1).includes("verified"));
+  } finally { mock.server.close(); }
+});
+
+test("new deployment between detection and rollback refuses version rollback", async () => {
+  const mock = await fixture();
+  try {
+    let mutations = 0;
+    mock.state.activeVersion = "33333333-3333-4333-8333-333333333333";
+    const result = await recoverRelease(optionsFor(mock), { rollback: async () => mutations++ });
+    assert.equal(result.status, "superseded");
+    assert.equal(mutations, 0);
+  } finally { mock.server.close(); }
+});
+
+test("weather failure warns the operator but never rolls back", async () => {
+  const mock = await fixture();
+  try {
+    mock.state.failWeather = true;
+    const notices = [];
+    let rolledBack = false;
+    const result = await advanceMonitor(newState(), {
+      save: async () => {}, notify: async (message) => notices.push(message), now: () => new Date(startedAt), options: optionsFor(mock),
+      checks: (args) => confirmedChecks(args, { sleep: async () => {} }),
+      recover: (args) => recoverRelease(args, { rollback: async () => { rolledBack = true; } }),
+    });
+    assert.equal(result.status, "active");
+    assert.equal(rolledBack, false);
+    assert.equal(mock.state.activeVersion, EXPECTED);
+    assert.ok(notices.some((message) => /^WARNING: weather_/.test(message)));
+  } finally { mock.server.close(); }
+});
+
+test("weather budget counts retries and remains capped across runner restarts", async () => {
+  let state = newState();
+  let actualRequests = 0;
+  for (let minute = 0; minute < 24 * 60; minute += 10) {
+    state = await advanceMonitor(structuredClone(state), {
+      save: async () => {}, notify: async () => {}, now: () => new Date(Date.parse(startedAt) + minute * 60_000),
+      checks: async ({ weatherBudget }) => {
+        const requests = Math.min(weatherBudget, 2);
+        actualRequests += requests;
+        return { ...healthy(), weatherRequests: requests };
+      },
+    });
+  }
+  assert.equal(actualRequests, 58);
+  assert.equal(state.weatherRequests, 58);
+});
+
+test("expiry never claims success for an unresolved recovery and never mutates production", async () => {
+  const state = { ...newState(), status: "recovering" };
+  const messages = [];
+  let calls = 0;
+  await advanceMonitor(state, { save: async () => {}, notify: async (message) => messages.push(message), now: () => new Date("2026-09-16T00:00:00Z"), recover: async () => calls++ });
+  assert.equal(state.status, "expired_unhealthy");
+  assert.equal(calls, 0);
+  assert.ok(messages[0].includes("without verified health"));
+});
+
+test("operator stop is rechecked before recovery after detection", async () => {
+  let stopped = false;
+  let recoveries = 0;
+  await advanceMonitor(newState(), {
+    save: async () => {}, notify: async () => {}, now: () => new Date(startedAt), authorized: async () => !stopped,
+    checks: async () => { stopped = true; return failure(); }, recover: async () => { recoveries++; },
+  });
+  assert.equal(recoveries, 0);
+});
+
+function memoryStore(initial = null) {
+  let issue = initial ? { number: 7, state: "open", body: JSON.stringify(initial) } : null;
+  const messages = [];
+  return { messages,
+    active: async () => issue?.state === "open" ? structuredClone(issue) : null,
+    create: async (state) => { issue = { number: 7, state: "open", body: JSON.stringify(state) }; return 7; },
+    read: async () => structuredClone(issue),
+    save: async (number, state) => { issue.body = JSON.stringify(state); },
+    close: async () => { issue.state = "closed"; },
+    notify: async (number, message) => messages.push(message),
+  };
+}
+
+test("hosted runner start, first-hour checkpoint, scheduled resumption and stop share durable state", async () => {
+  const store = memoryStore();
+  let time = Date.parse(startedAt);
+  let cycles = 0;
+  const clock = () => new Date(time);
+  const step = (state, args) => advanceMonitor(state, { ...args, checks: async () => { cycles++; return healthy(); } });
+  const result = await monitorJob({ action: "start", store, versions: newState(), control: async () => ({ activeVersion: EXPECTED }), now: clock, sleep: async (ms) => { time += ms; }, step });
+  assert.equal(result.firstHourComplete, "2026-09-15T01:00:00.000Z");
+  assert.equal(cycles, 31);
+  time += 30 * 60_000;
+  await monitorJob({ action: "check", store, now: clock, step });
+  assert.equal(cycles, 32);
+  await monitorJob({ action: "stop", store, now: clock, step });
+  assert.equal((await store.read()).state, "closed");
+  assert.equal((await monitorJob({ action: "check", store, now: clock, step })).status, "inactive");
+});
+
+test("stop CLI always identifies its repository and works outside a checkout", async () => {
+  const calls = [];
+  const store = issueStore("owner/repo", async (bin, args) => {
+    calls.push(args);
+    return { stdout: args[0] === "issue" ? '[{"number":7,"body":"{}"}]' : '{}' };
+  });
+  assert.equal((await monitorJob({ action: "stop", store })).status, "stopped");
+  assert.deepEqual(calls[0].slice(0, 4), ["issue", "list", "--repo", "owner/repo"]);
+  assert.ok(calls.some((args) => args.includes("repos/owner/repo/issues/7") && args.includes("state=closed")));
+});
+
+test("shell rollback entry point performs version-only recovery using simulated Cloudflare and Wrangler", async () => {
   const mock = await fixture();
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), "release-shell-rehearsal-"));
   try {
+    // Intercept every fetch in child Node processes. This rehearsal cannot
+    // contact Cloudflare or the public site, even if a test path changes.
     const hook = path.join(temp, "mock-fetch.mjs");
     fs.writeFileSync(hook, `const original = globalThis.fetch; globalThis.fetch = (input, options) => { const url = new URL(input); return original(new URL(url.pathname + url.search, ${JSON.stringify(mock.origin)}), options); };`);
     const npx = path.join(temp, "npx");
-    fs.writeFileSync(npx, `#!${process.execPath}\nif (process.argv.slice(2).join(' ') !== ${JSON.stringify(`--yes wrangler@4.129.1 rollback ${ROLLBACK} --name wetbulb35-weather-production --message Confirmed production release failure --yes`)}) process.exit(9);\nconst response = await fetch(${JSON.stringify(mock.origin + "/test/rollback")}, {method:'POST'}); if (!response.ok) process.exit(8);\n`);
+    fs.writeFileSync(npx, `#!${process.execPath}\nif (process.argv.slice(2).join(' ') !== ${JSON.stringify(`--yes wrangler@4.129.1 rollback ${ROLLBACK} --name wetbulb35-weather-production --message Confirmed production release failure --yes`)}) process.exit(9);\nfetch(${JSON.stringify(mock.origin + "/test/rollback")}, {method:'POST'}).then(r => {if (!r.ok) process.exit(8);});\n`);
     fs.chmodSync(npx, 0o755);
-    const env = { ...process.env, PATH: `${temp}${path.delimiter}${path.dirname(process.execPath)}${path.delimiter}${process.env.PATH}`, NODE_OPTIONS: `--import=${hook}`, CLOUDFLARE_API_TOKEN: "test-only", CLOUDFLARE_ACCOUNT_ID: "account-1" };
+    const env = { ...process.env, PATH: `${temp}${path.delimiter}${path.dirname(process.execPath)}${path.delimiter}${process.env.PATH}`,
+      NODE_OPTIONS: `--import=${hook}`, CLOUDFLARE_API_TOKEN: "test-only", CLOUDFLARE_ACCOUNT_ID: "account-1" };
     mock.state.failBrowse = true;
-    const result = await execute("bash", ["scripts/execute-production-rollback.sh", EXPECTED, ROLLBACK], { cwd: root, env });
+    const result = await promisify(execFile)("bash", ["scripts/execute-production-rollback.sh", EXPECTED, ROLLBACK], { cwd: root, env });
     assert.equal(JSON.parse(result.stdout).status, "recovered");
     assert.equal(mock.state.rollbackCalls, 1);
-    assert.equal(mock.state.requests.some((request) => request.includes("/workers/routes")), false);
   } finally {
     mock.server.close();
     fs.rmSync(temp, { recursive: true, force: true });

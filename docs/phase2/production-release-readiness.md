@@ -55,7 +55,8 @@ The monitor reads two Cloudflare control-plane facts:
 2. `GET /accounts/{account_id}/workers/domains` reports **exactly one** `www.wetbulb35.com` record with:
    - `service: wetbulb35-weather-production`
    - `environment: production`
-   - `status: active`
+   - `enabled: true`
+   - a nonempty `cert_id` (certificate evidence)
 
 Any absent, pending, disabled, duplicate, or wrong-service `www` binding is a critical failure. The monitor intentionally does not inspect, create, restore, or rely on Worker routes, DNS records, or Vercel.
 
