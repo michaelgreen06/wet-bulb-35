@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "stationIds": [
+    "AEI0000OMAA",
+    "AEI0000OMDB",
+    "QAI0000OTHH",
+    "SAI0000OEDR",
+    "KUI0000OKBK",
+    "BAI0000OBBI",
+    "INI0000VIDP",
+    "INU042809-1",
+    "BGI0000VGHS",
+    "BGU041978-1",
+    "INI0000VABB",
+    "SNI0000WSSS",
+    "MYI0000WMKK",
+    "IDU096749-1",
+    "RPI0000RPLL",
+    "NII0000DNMM",
+    "NII0000DNPO",
+    "TZI0000HTDA",
+    "USW00012960",
+    "USW00012839",
+    "USW00012916",
+    "MXI0000MMMD"
+  ]
+}
