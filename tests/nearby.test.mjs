@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { compactNearby, computeNearby, expandNearby, NEARBY_LIMIT } from "../lib/nearby.mjs";
+import { compactNearby, computeNearby, expandNearby, HUB_LIMIT, NEARBY_LIMIT } from "../lib/nearby.mjs";
+import { loadCityPopulation } from "../lib/city-population.mjs";
 import { createSiteData, pageHtml, prepareCities, routePathForCity } from "../lib/page-renderer.mjs";
 
 const fixture = JSON.parse(fs.readFileSync("tests/fixtures/hono-binding-cities.json", "utf8"));
@@ -22,14 +23,37 @@ test("nearby links exclude self, cross state and country labels, and round trip 
   assert.deepEqual(nearby.get(routePathForCity(cities[0])), []);
 });
 
-test("hub within radius is appended after the nearest cities", () => {
-  const { cities } = prepareCities(Array.from({ length: 12 }, (_, index) => ({
-    name: `Town ${index}`, resolvedCountryName: "X", resolvedAdmin1Code: "Y", latitude: 10 + index * 0.05, longitude: 10,
-  })));
+const towns = () => prepareCities(Array.from({ length: 12 }, (_, index) => ({
+  name: `Town ${index}`, resolvedCountryName: "X", resolvedAdmin1Code: "Y", latitude: 10 + index * 0.05, longitude: 10,
+}))).cities;
+
+test("without population data, Tier-1 hubs within radius are appended by distance", () => {
+  const cities = towns();
   const hub = routePathForCity(cities[11]);
-  const entries = computeNearby(cities, new Set([hub])).get(routePathForCity(cities[0]));
+  const entries = computeNearby(cities, { hubPaths: new Set([hub]) }).get(routePathForCity(cities[0]));
   assert.equal(entries.length, NEARBY_LIMIT + 1);
   assert.equal(entries.at(-1).path, hub);
+});
+
+test("with population data, the largest cities within radius are appended", () => {
+  const cities = towns();
+  const key = (city) => `${city.latitude},${city.longitude}`;
+  const population = { [key(cities[9])]: 25000, [key(cities[10])]: 900000, [key(cities[11])]: 50000, [key(cities[1])]: 5000000 };
+  const entries = computeNearby(cities, { hubPaths: new Set([routePathForCity(cities[9])]), population }).get(routePathForCity(cities[0]));
+  assert.equal(entries.length, NEARBY_LIMIT + HUB_LIMIT);
+  assert.deepEqual(entries.slice(NEARBY_LIMIT).map((entry) => entry.path), [routePathForCity(cities[10]), routePathForCity(cities[11])]);
+});
+
+test("population hubs within 150 km are found at high latitudes", () => {
+  const { cities } = prepareCities([
+    { name: "Origin", resolvedCountryName: "X", resolvedAdmin1Code: "Y", latitude: 80, longitude: 0 },
+    { name: "Hub", resolvedCountryName: "X", resolvedAdmin1Code: "Y", latitude: 80, longitude: 7 },
+  ]);
+  const hub = cities[1];
+  const population = { [`${hub.latitude},${hub.longitude}`]: 100000 };
+  const entries = computeNearby(cities, { population }).get(routePathForCity(cities[0]));
+  assert.equal(entries.at(-1).path, routePathForCity(hub));
+  assert.ok(entries.at(-1).km <= 150);
 });
 
 test("city page renders nearby links only when present", () => {
@@ -40,12 +64,12 @@ test("city page renders nearby links only when present", () => {
 });
 
 test("every nearby link in the full inventory resolves to a generated city route", { timeout: 120_000 }, () => {
-  const siteData = createSiteData(JSON.parse(fs.readFileSync("scripts/resolved_cities.json", "utf8")));
+  const siteData = createSiteData(JSON.parse(fs.readFileSync("scripts/resolved_cities.json", "utf8")), null, loadCityPopulation());
   let empty = 0;
   for (const city of siteData.cities) {
     const self = routePathForCity(city);
     if (!city.nearby.length) empty += 1;
-    assert.ok(city.nearby.length <= NEARBY_LIMIT + 1, self);
+    assert.ok(city.nearby.length <= NEARBY_LIMIT + HUB_LIMIT, self);
     for (const entry of city.nearby) {
       assert.ok(siteData.cityRoutes.has(entry.path), `${self} -> ${entry.path}`);
       assert.notEqual(entry.path, self);
