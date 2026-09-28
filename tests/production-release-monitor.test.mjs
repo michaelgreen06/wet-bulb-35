@@ -29,9 +29,9 @@ function canonical(path) {
 function state() {
   return {
     activeVersion: EXPECTED,
-    // This shape reflects the Workers custom-domains GET response: enabled
-    // and cert_id are present; there is no status field.
-    domains: [{ id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", enabled: true, cert_id: "cert-1" }],
+    // This shape reflects the Workers custom-domains GET response: cert_id is
+    // present; there is no enabled or status field.
+    domains: [{ id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", cert_id: "cert-1" }],
     failBrowse: false,
     failWeather: false,
     requests: [],
@@ -123,7 +123,7 @@ test("release monitor detects health, failure, rollback eligibility, and stale m
     assert.equal(missingDomain.rollbackEligible, true);
     assert.ok(missingDomain.criticalFailures.some((failure) => failure.startsWith("production_custom_domain:")));
 
-    mock.state.domains = [{ id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", enabled: true, cert_id: "cert-1" }];
+    mock.state.domains = [{ id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", cert_id: "cert-1" }];
     mock.state.activeVersion = "33333333-3333-4333-8333-333333333333";
     const stale = await runReleaseChecks(options);
     assert.equal(stale.status, "superseded");
@@ -133,14 +133,13 @@ test("release monitor detects health, failure, rollback eligibility, and stale m
   }
 });
 
-test("custom-domain selection requires one exact enabled, certified production binding", () => {
-  const exact = { id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", enabled: true, cert_id: "cert-1" };
+test("custom-domain selection requires one exact certified production binding", () => {
+  const exact = { id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", cert_id: "cert-1" };
   assert.equal(selectCustomDomainBinding([exact]).healthy, true);
   for (const domains of [
     [],
     [{ ...exact, service: "another-worker" }],
     [{ ...exact, environment: "staging" }],
-    [{ ...exact, enabled: false }],
     [{ ...exact, cert_id: "" }],
     [exact, { ...exact, id: "domain-2" }],
   ]) assert.equal(selectCustomDomainBinding(domains).healthy, false);
@@ -202,7 +201,7 @@ test("meta and HTTP noindex directives are rejected across quoting and attribute
 test("custom-domain guard fails on duplicate hostname records and never queries routes", async () => {
   const mock = await fixture();
   try {
-    mock.state.domains.push({ id: "domain-2", hostname: "www.wetbulb35.com", service: "another-worker", environment: "production", enabled: true, cert_id: "cert-2" });
+    mock.state.domains.push({ id: "domain-2", hostname: "www.wetbulb35.com", service: "another-worker", environment: "production", cert_id: "cert-2" });
     const result = await runReleaseChecks(optionsFor(mock));
     assert.ok(result.criticalFailures.some((item) => item.startsWith("production_custom_domain:")));
     assert.equal(mock.state.requests.some((request) => request.includes("/workers/routes")), false);

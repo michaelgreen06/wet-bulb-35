@@ -55,10 +55,9 @@ The monitor reads two Cloudflare control-plane facts:
 2. `GET /accounts/{account_id}/workers/domains` reports **exactly one** `www.wetbulb35.com` record with:
    - `service: wetbulb35-weather-production`
    - `environment: production`
-   - `enabled: true`
    - a nonempty `cert_id` (certificate evidence)
 
-Any absent, pending, disabled, duplicate, or wrong-service `www` binding is a critical failure. The monitor intentionally does not inspect, create, restore, or rely on Worker routes, DNS records, or Vercel.
+Any absent, uncertified, duplicate, or wrong-service `www` binding is a critical failure. The monitor intentionally does not inspect, create, restore, or rely on Worker routes, DNS records, or Vercel.
 
 The first hour checks every two minutes; the remaining window checks every 30 minutes until 24 hours. Full sitemap checks run at bounded milestones. Two matching critical failure categories, separated by 20 seconds, are required before rollback. A stale monitor stops without mutation when another version is active.
 
