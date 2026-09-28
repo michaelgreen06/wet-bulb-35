@@ -44,6 +44,18 @@ test("with population data, the largest cities within radius are appended", () =
   assert.deepEqual(entries.slice(NEARBY_LIMIT).map((entry) => entry.path), [routePathForCity(cities[10]), routePathForCity(cities[11])]);
 });
 
+test("population hubs within 150 km are found at high latitudes", () => {
+  const { cities } = prepareCities([
+    { name: "Origin", resolvedCountryName: "X", resolvedAdmin1Code: "Y", latitude: 80, longitude: 0 },
+    { name: "Hub", resolvedCountryName: "X", resolvedAdmin1Code: "Y", latitude: 80, longitude: 7 },
+  ]);
+  const hub = cities[1];
+  const population = { [`${hub.latitude},${hub.longitude}`]: 100000 };
+  const entries = computeNearby(cities, { population }).get(routePathForCity(cities[0]));
+  assert.equal(entries.at(-1).path, routePathForCity(hub));
+  assert.ok(entries.at(-1).km <= 150);
+});
+
 test("city page renders nearby links only when present", () => {
   const siteData = createSiteData(fixture);
   const metsamor = siteData.cities.find((city) => city.outputCitySlug === "metsamor-40-0723-44-2917");
