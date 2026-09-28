@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { pageHtml, renderBrowsePage, renderCountryPage, renderHomePage, renderStatePage } from "../lib/page-renderer.mjs";
+import { expandNearby } from "../lib/nearby.mjs";
 import { forecastResponse } from "./forecast-edge.ts";
 import { createObservability, weatherResponse } from "./weather-edge.mjs";
 export { WeatherGate } from "./weather-edge.mjs";
@@ -28,11 +29,12 @@ async function readAssetJson(request, assets, pathname) {
 function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID === undefined ? DEFAULT_GA_MEASUREMENT_ID : env.GOOGLE_ANALYTICS_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial" }; }
 function indexCountryShard(country, rows) {
   const states = new Map();
+  const stateSlugs = new Map((country.states || []).map((state) => [state.name, state.slug]));
   for (const row of rows) {
     if (!Array.isArray(row) || typeof row[1] !== "string" || typeof row[4] !== "string") continue;
-    const [name, stateName, latitude, longitude, outputCitySlug] = row;
+    const [name, stateName, latitude, longitude, outputCitySlug, nearby] = row;
     if (!states.has(stateName)) states.set(stateName, []);
-    states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug });
+    states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug, nearby: expandNearby(country.countrySlug, stateSlugs.get(stateName), nearby) });
   }
   for (const cities of states.values()) cities.sort((a, b) => a.name.localeCompare(b.name) || a.outputCitySlug.localeCompare(b.outputCitySlug));
   return new Map([...states].map(([stateName, cities]) => [stateName, {
@@ -153,7 +155,11 @@ function validManifest(value) {
 }
 function validShard(value) {
   return value && value.v === 1 && Array.isArray(value.r) && value.r.every((row) => Array.isArray(row)
-    && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string" && (row.length < 6 || row[5] === null || Number.isInteger(row[5])));
+    && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string" && (row.length < 6 || validNearby(row[5])));
+}
+function validNearby(value) {
+  return Array.isArray(value) && value.every((entry) => Array.isArray(entry) && entry.length === 5 && /^[a-z0-9-]*$/.test(entry[0])
+    && /^[a-z0-9-]*$/.test(entry[1]) && /^[a-z0-9-]+$/.test(entry[2]) && typeof entry[3] === "string" && Number.isInteger(entry[4]));
 }
 function validLegacyManifest(value) {
   if (!(value && value.v === 1 && typeof value.artifactSha256 === "string" && /^[a-f0-9]{64}$/.test(value.artifactSha256)

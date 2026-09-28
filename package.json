@@ -41,7 +41,7 @@
     "dry-run:production-route-restoration": "node scripts/restore-production-worker-route.mjs",
     "load:staging-safe": "node scripts/staging-load-harness.mjs --mode=fake",
     "vercel-build": "npm run test:static-prototype && npm run test:tier1-cities && npm run test:popular-40-enrichment && npm run test:forecast && npm run build:vercel-output",
-    "test:static-prototype": "node --test tests/static-generator.test.mjs tests/vercel-ignore-build.test.mjs",
+    "test:static-prototype": "node --test tests/static-generator.test.mjs tests/vercel-ignore-build.test.mjs tests/nearby.test.mjs",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",

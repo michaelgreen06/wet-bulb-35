@@ -6,6 +6,7 @@ import os from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRouteIdentityIndex } from "./probe-location-route-identity.mjs";
 import { tier1ByCanonicalPath } from "../lib/page-renderer.mjs";
+import { compactNearby, computeNearby } from "../lib/nearby.mjs";
 
 const GENERATOR_ID = "wetbulb35-hono-assets";
 const REPOSITORY_ROOT = fs.realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."));
@@ -46,6 +47,7 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
   const root = validateOutputDirectory(outDir);
   const identity = createRouteIdentityIndex(sourceCities);
   const tier1 = tier1ByCanonicalPath(tier1Manifest);
+  const nearby = computeNearby(identity.rows, new Set(tier1.keys()));
   const resolvedTier1 = new Set();
   const locations = path.join(root, "locations");
   const shards = path.join(locations, "shards");
@@ -73,6 +75,7 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
       row.latitude,
       row.longitude,
       row.outputCitySlug,
+      compactNearby(row, nearby.get(route) ?? []),
     ]);
   }
 
