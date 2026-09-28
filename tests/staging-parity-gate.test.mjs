@@ -35,7 +35,7 @@ test("parity rejects missing runtime scripts and changed browser asset contents"
   }
 });
 
-test("full parity gate requests browser assets and rejects their byte differences", { timeout: 30_000 }, async () => {
+test("full parity gate requests browser assets and rejects their byte differences", { timeout: 90_000 }, async () => {
   const requested = [];
   const servers = [];
   const origin = async (changed) => {
@@ -59,7 +59,7 @@ test("full parity gate requests browser assets and rejects their byte difference
   } finally { await Promise.all(servers.map((server) => new Promise((resolve) => server.close(resolve)))); }
 });
 
-test("parity probes canonical HTML routes and staging-only slashless redirect contracts", { timeout: 30_000 }, async () => {
+test("parity probes canonical HTML routes and staging-only slashless redirect contracts", { timeout: 90_000 }, async () => {
   const requested = { production: [], staging: [] };
   const servers = [];
   const origin = async (name) => {

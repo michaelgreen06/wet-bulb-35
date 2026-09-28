@@ -8,7 +8,10 @@ export { WeatherGate } from "./weather-edge.mjs";
 const LOCATION_ROOT = "/locations";
 const DEFAULT_CANONICAL_ORIGIN = "https://www.wetbulb35.com";
 const DEFAULT_GA_MEASUREMENT_ID = "G-LNPWV0JL7S";
-const DEFAULT_MAX_CACHED_SHARDS = 8;
+// Country shards now contain nearby-link metadata. Bound parsed-shard retention
+// conservatively so diverse traffic cannot retain eight large object graphs in
+// one 128 MiB Worker isolate.
+const DEFAULT_MAX_CACHED_SHARDS = 3;
 const HTML_CACHE_SCHEMA = 1;
 const HTML_CACHE_FRESH_MS = 24 * 60 * 60 * 1_000;
 const HTML_CACHE_STALE_MS = 7 * 24 * 60 * 60 * 1_000;
