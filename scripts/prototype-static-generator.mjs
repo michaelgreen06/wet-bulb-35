@@ -106,7 +106,7 @@ export function generateStaticSite(options = {}) {
   fs.mkdirSync(outDir, { recursive: true });
 
   const sourceCities = JSON.parse(fs.readFileSync(sourceFile, "utf8")).slice(0, limit);
-  const siteData = createSiteData(sourceCities, tier1Manifest);
+  const siteData = createSiteData(sourceCities, tier1Manifest, options.population ?? null);
 
   copyPublicAssets(outDir);
   ensureAssets(outDir, siteData, { placesApiKey });

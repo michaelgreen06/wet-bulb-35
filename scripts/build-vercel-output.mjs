@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { generateStaticSite } from "./prototype-static-generator.mjs";
+import { loadCityPopulation } from "../lib/city-population.mjs";
 
 const OUTPUT_DIR = path.resolve(".vercel/output");
 const STATIC_DIR = path.join(OUTPUT_DIR, "static");
@@ -142,6 +143,7 @@ export function buildVercelOutput() {
     outDir: STATIC_DIR,
     limit: 130686,
     tier1Manifest: JSON.parse(fs.readFileSync(path.resolve("scripts/tier1-city-manifest.json"), "utf8")),
+    population: loadCityPopulation(),
   });
 
   fs.mkdirSync(FUNCTION_DIR, { recursive: true });

@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRouteIdentityIndex } from "./probe-location-route-identity.mjs";
 import { tier1ByCanonicalPath } from "../lib/page-renderer.mjs";
 import { compactNearby, computeNearby } from "../lib/nearby.mjs";
+import { loadCityPopulation } from "../lib/city-population.mjs";
 
 const GENERATOR_ID = "wetbulb35-hono-assets";
 const REPOSITORY_ROOT = fs.realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."));
@@ -43,11 +44,11 @@ function parseArgs(argv = process.argv.slice(2)) {
   }));
 }
 
-export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = null }) {
+export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = null, population = null }) {
   const root = validateOutputDirectory(outDir);
   const identity = createRouteIdentityIndex(sourceCities);
   const tier1 = tier1ByCanonicalPath(tier1Manifest);
-  const nearby = computeNearby(identity.rows, new Set(tier1.keys()));
+  const nearby = computeNearby(identity.rows, { hubPaths: new Set(tier1.keys()), population });
   const resolvedTier1 = new Set();
   const locations = path.join(root, "locations");
   const shards = path.join(locations, "shards");
@@ -121,7 +122,7 @@ function main() {
   const out = args.get("out") ?? "worker-assets";
   const sourceCities = JSON.parse(fs.readFileSync(source, "utf8"));
   const tier1Manifest = JSON.parse(fs.readFileSync("scripts/tier1-city-manifest.json", "utf8"));
-  console.log(JSON.stringify(buildHonoBindingAssets({ sourceCities, outDir: out, tier1Manifest })));
+  console.log(JSON.stringify(buildHonoBindingAssets({ sourceCities, outDir: out, tier1Manifest, population: loadCityPopulation() })));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
