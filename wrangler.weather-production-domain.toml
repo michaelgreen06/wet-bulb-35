@@ -4,7 +4,9 @@ compatibility_date = "2026-09-08"
 workers_dev = false
 preview_urls = false
 
-# Route-free production candidate. Deployment still requires explicit approval.
+# The canonical production hostname is a Worker custom domain, not a zone route.
+routes = [{ pattern = "www.wetbulb35.com", custom_domain = true }]
+
 [assets]
 directory = "worker-assets"
 binding = "ASSETS"

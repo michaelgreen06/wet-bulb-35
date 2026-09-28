@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
-import { relevantRoutes, selectRouteAction } from "./restore-production-worker-route.mjs";
 import { indexable, robotsAllowPublicPages } from "./release-indexing-checks.mjs";
 
 const DEFAULT_ORIGIN = "https://www.wetbulb35.com";
-const EXPECTED_ROUTE = "www.wetbulb35.com/*";
+const EXPECTED_DOMAIN = "www.wetbulb35.com";
 const EXPECTED_WORKER = "wetbulb35-weather-production";
 const EXPECTED_SITEMAP_MEMBER_COUNT = 228;
 const EXPECTED_SITEMAP_ENTRY_COUNT = 134_668;
@@ -102,7 +101,24 @@ async function cfJson(fetchImpl, url, token) {
   return parsed.result;
 }
 
-export async function readControlPlane({ fetchImpl = fetch, apiBase = "https://api.cloudflare.com/client/v4", token, accountId, zoneName = "wetbulb35.com", worker = EXPECTED_WORKER }) {
+export function selectCustomDomainBinding(domains) {
+  const records = (Array.isArray(domains) ? domains : []).filter((domain) => domain?.hostname === EXPECTED_DOMAIN);
+  const bound = records.filter((domain) => domain.service === EXPECTED_WORKER
+    && domain.environment === "production"
+    && domain.enabled !== false
+    && typeof domain.cert_id === "string"
+    && domain.cert_id.length > 0);
+  return {
+    healthy: records.length === 1 && bound.length === 1,
+    // Keep failure evidence bounded to routing identity and certificate presence.
+    records: records.map(({ id, hostname, service, environment, enabled, cert_id: certId }) => ({
+      id, hostname, service, environment, enabled: typeof enabled === "boolean" ? enabled : null,
+      cert_id: typeof certId === "string" && certId.length > 0 ? certId : null,
+    })),
+  };
+}
+
+export async function readControlPlane({ fetchImpl = fetch, apiBase = "https://api.cloudflare.com/client/v4", token, accountId, worker = EXPECTED_WORKER }) {
   required(token, "Cloudflare API token");
   required(accountId, "Cloudflare account ID");
   const deployments = await cfJson(fetchImpl, `${apiBase}/accounts/${accountId}/workers/scripts/${worker}/deployments`, token);
@@ -110,17 +126,12 @@ export async function readControlPlane({ fetchImpl = fetch, apiBase = "https://a
   const active = [...(deployments.deployments || [])].sort((a, b) => Date.parse(b.created_on) - Date.parse(a.created_on))[0];
   const activeVersions = active?.versions || [];
   const activeVersion = activeVersions.length === 1 && activeVersions[0].percentage === 100 ? activeVersions[0].version_id : null;
-  const zones = await cfJson(fetchImpl, `${apiBase}/zones?name=${encodeURIComponent(zoneName)}`, token);
-  if (zones.length !== 1) throw new Error(`Expected one active zone for ${zoneName}`);
-  const routes = await cfJson(fetchImpl, `${apiBase}/zones/${zones[0].id}/workers/routes`, token);
-  const exactRoutes = routes.filter((route) => route.pattern === EXPECTED_ROUTE);
+  const domains = await cfJson(fetchImpl, `${apiBase}/accounts/${accountId}/workers/domains`, token);
+  const customDomain = selectCustomDomainBinding(domains);
   return {
     activeDeploymentId: active?.id || null,
     activeVersion,
-    exactRoutes: exactRoutes.map((route) => ({ id: route.id, pattern: route.pattern, script: route.script || null })),
-    relevantRoutes: relevantRoutes(routes),
-    routeAction: selectRouteAction(routes),
-    zoneId: zones[0].id,
+    customDomain,
   };
 }
 
@@ -229,7 +240,7 @@ export async function runReleaseChecks({
     return { status: "control_unavailable", rollbackEligible: false, criticalFailures: [`control_plane:${error.message}`], warnings, control: null };
   }
 
-  const routeHealthy = control.routeAction.action === "none";
+  const customDomainHealthy = control.customDomain.healthy;
   const currentIsExpected = control.activeVersion === expectedVersion;
   const currentIsRollback = rollbackVersion && control.activeVersion === rollbackVersion;
   if (!currentIsExpected && !currentIsRollback) {
@@ -242,7 +253,7 @@ export async function runReleaseChecks({
     };
   }
   recovery = recovery || Boolean(currentIsRollback);
-  if (!routeHealthy) criticalFailures.push(`production_route:${JSON.stringify(control.relevantRoutes)}`);
+  if (!customDomainHealthy) criticalFailures.push(`production_custom_domain:${JSON.stringify(control.customDomain.records)}`);
   const htmlCheck = (path, predicate = () => true) => (body, response) =>
     predicate(body) && canonicalPresent(body, path) && indexable(body, response);
 

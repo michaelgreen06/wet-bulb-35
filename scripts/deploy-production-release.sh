@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "${1:-}" != "--approved-existing-route-deploy" ]]; then
-  echo "Refusing production deploy without --approved-existing-route-deploy" >&2
+if [[ "${1:-}" != "--approved-existing-custom-domain-deploy" ]]; then
+  echo "Refusing production deploy without --approved-existing-custom-domain-deploy" >&2
   exit 2
 fi
 
@@ -27,7 +27,7 @@ fi
 node --input-type=module - <<'NODE'
 import fs from 'node:fs';
 import { validateProductionConfig } from './scripts/validate-production-release-config.mjs';
-validateProductionConfig(fs.readFileSync('wrangler.weather-production-route.toml', 'utf8'));
+validateProductionConfig(fs.readFileSync('wrangler.weather-production-domain.toml', 'utf8'));
 NODE
 
 npm run test:tier1-cities
@@ -40,6 +40,5 @@ const runtime = fs.readFileSync('worker-assets/assets/app.js', 'utf8');
 if (!runtime.includes('maps.googleapis.com/maps/api/js')) throw new Error('Google Places runtime is absent');
 NODE
 
-# This is intentionally the route-bearing config. Do not replace it with
-# wrangler.weather-production.toml: that config is route-free.
-./node_modules/.bin/wrangler deploy --config wrangler.weather-production-route.toml
+# This config owns the one existing production custom-domain binding.
+./node_modules/.bin/wrangler deploy --config wrangler.weather-production-domain.toml
