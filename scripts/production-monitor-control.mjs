@@ -1,7 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readControlPlane, runReleaseChecks } from "./production-release-monitor.mjs";
-import { restoreProductionRoute } from "./restore-production-worker-route.mjs";
 
 const execute = promisify(execFile);
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,7 +34,6 @@ export async function confirmedChecks(options, { check = runReleaseChecks, sleep
 
 export async function recoverRelease(options, dependencies = {}) {
   const control = dependencies.control ?? readControlPlane;
-  const restore = dependencies.restore ?? restoreProductionRoute;
   const check = dependencies.check ?? runReleaseChecks;
   const rollback = dependencies.rollback ?? (async (version) => {
     await execute("npx", ["--yes", "wrangler@4.129.1", "rollback", version,
@@ -58,9 +56,6 @@ export async function recoverRelease(options, dependencies = {}) {
     }
     if (state.activeVersion !== baseline) return { status: state.activeVersion === expected ? "recovery_failure" : "superseded", reason: "rollback_version_not_active", weatherRequests };
     if (options.authorized && !await options.authorized()) return { status: "stopped", weatherRequests };
-    // Safe to retry after partial recovery: no second version rollback.
-    const route = await restore({ ...options, apply: true });
-    if (!["restored", "already_correct"].includes(route.status)) return { status: "recovery_failure", reason: "route_restoration_refused", route, weatherRequests };
     const weather = (options.weatherBudget ?? 0) >= 2;
     if (weather) weatherRequests = 2;
     const result = await check({ ...options, expectedVersion: baseline, rollbackVersion: undefined, recovery: true, weather });

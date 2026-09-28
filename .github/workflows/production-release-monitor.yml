@@ -34,8 +34,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # No credentials, provider requests, route changes, or live rollback.
-      - run: npm run test:production-release-monitor
+      # No credentials, provider requests, custom-domain changes, or live rollback.
+      - run: npm run test:production-release-monitor && npm run test:apex-redirect
       - run: bash -n scripts/deploy-production-release.sh scripts/execute-production-rollback.sh scripts/run-production-monitor-cycle.sh
 
   monitor:
