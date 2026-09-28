@@ -136,10 +136,12 @@ test("release monitor detects health, failure, rollback eligibility, and stale m
 test("custom-domain selection requires one exact certified production binding", () => {
   const exact = { id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", cert_id: "cert-1" };
   assert.equal(selectCustomDomainBinding([exact]).healthy, true);
+  assert.equal(selectCustomDomainBinding([{ ...exact, enabled: true }]).healthy, true);
   for (const domains of [
     [],
     [{ ...exact, service: "another-worker" }],
     [{ ...exact, environment: "staging" }],
+    [{ ...exact, enabled: false }],
     [{ ...exact, cert_id: "" }],
     [exact, { ...exact, id: "domain-2" }],
   ]) assert.equal(selectCustomDomainBinding(domains).healthy, false);
