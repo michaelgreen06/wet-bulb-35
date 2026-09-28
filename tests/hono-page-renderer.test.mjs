@@ -278,6 +278,29 @@ test("location resolver bounds parsed shard LRU, reloads evictions, and coalesce
   assert.equal(rejectedLoads, 2, "rejected shard loads must not be retained");
 });
 
+test("location resolver defaults to a three-shard memory safety bound", async () => {
+  const countries = Array.from({ length: 4 }, (_, index) => ({
+    country: `Country ${index}`, countrySlug: `country-${index}`, file: `country-${index}.json`, count: 1,
+    states: [{ name: "State", slug: "state", count: 1 }],
+  }));
+  const loads = new Map();
+  const assets = { async fetch(request) {
+    const pathname = new URL(request.url).pathname;
+    loads.set(pathname, (loads.get(pathname) || 0) + 1);
+    if (pathname === "/locations/route-manifest.json") return Response.json({ v: 1, countries });
+    return Response.json({ v: 1, r: [["City", "State", 1, 2, "city", []]] });
+  }};
+  const resolver = createLocationResolver();
+  const request = new Request(base);
+  const partsFor = (index) => ["wetbulb-temperature", `country-${index}`, "state"];
+  for (let index = 0; index < 4; index += 1) await resolver(request, assets, partsFor(index));
+  assert.deepEqual(resolver.cacheStats(), {
+    parsedShards: 3, parsedLegacyShards: 0, inFlightShards: 0, inFlightLegacyShards: 0, maxCachedShards: 3,
+  });
+  await resolver(request, assets, partsFor(0));
+  assert.equal(loads.get("/locations/shards/country-0.json"), 2);
+});
+
 test("HTML Cache API envelope has bounded fresh/stale behavior and never changes browser caching", async () => {
   let clock = 1_000;
   let providerCalls = 0;
