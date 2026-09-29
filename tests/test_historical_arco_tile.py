@@ -17,6 +17,16 @@ class TestARCO(unittest.TestCase):
         self.assertEqual(len(rows['33.4,-112.1']),2)
         self.assertEqual(rows['33.4,-112.1'][0]['pressurePa'],97000)
         self.assertEqual(masked,['33.4,-112.0'])
+    def test_only_selected_cell_is_materialized_and_missing_selection_fails(self):
+        times=['1950-01-02T00:00:00.000Z','1950-01-02T01:00:00.000Z']
+        cells=[(33.4,-112.1),(33.4,-112.0)]
+        t=[[293,294],[292,293]];d=[[280,281],[279,280]];p=[[97000,97001],[97100,97101]]
+        rows,masked=MODULE.align_tile_hours(times,cells,t,d,p,target_cells=[(33.4,-112.1)])
+        self.assertEqual(list(rows),['33.4,-112.1']);self.assertEqual(masked,[])
+        with self.assertRaises(ValueError):
+            MODULE.align_tile_hours(times,cells,t,d,p,target_cells=[(10,10)])
+        self.assertEqual(MODULE.local_year_window(1952),('1951-12-31','1953-01-02'))
+        self.assertEqual(MODULE.local_year_window(1950),('1950-01-02','1951-01-02'))
     def test_misaligned_or_partial_cell_is_rejected(self):
         times=['1950-01-02T00:00:00.000Z','1950-01-02T01:00:00.000Z']
         cells=[(33.4,-112.1)]
