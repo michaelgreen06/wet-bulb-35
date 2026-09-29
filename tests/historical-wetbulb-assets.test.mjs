@@ -54,6 +54,7 @@ test('complete synthetic year passes publication gate; any interior gap is refus
   const missingDay={...complete,daily:{...complete.daily}};delete missingDay.daily['06-01'];
   assert.throws(()=>createHistoricalShard([missingDay],{maxBytes:20000}),/coverage/);
   assert.throws(()=>createHistoricalShard([{...complete,monthly:{}}],{maxBytes:20000}),/coverage/);
+  assert.throws(()=>createHistoricalShard([{...complete,researchOnly:true}],{maxBytes:20000}),/research/);
 });
 test('bad date, nonhour timestamp, missing source and period mismatch fail closed',()=>{
  for(const item of [

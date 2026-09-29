@@ -39,8 +39,8 @@ export function buildAnnualSummary({normalized,cell,timeZone,localYear}) {
   if(rows.length!==record.hours) throw new Error('Normalized source row count mismatch.');
   const result=aggregateHistoricalWetBulb(rows,{timeZone,localYear});
   if(result.gridCell.map(x=>x.toFixed(1)).join(',')!==cell) throw new Error('Source grid cell mismatch.');
-  return { ...result, localYear, sourceArchiveSha256:manifest.sourceSha256,
-    normalizedCellSha256:record.sha256 };
+  return { ...result, localYear, researchOnly:manifest.researchOnly===true,
+    sourceArchiveSha256:manifest.sourceSha256, normalizedCellSha256:record.sha256 };
 }
 if(process.argv[1] && path.resolve(process.argv[1])===path.resolve(new URL(import.meta.url).pathname)) {
   const o=args(process.argv.slice(2));
