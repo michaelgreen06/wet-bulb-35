@@ -125,7 +125,9 @@ test("Cache API stores only a validated versioned envelope with cacheable TTL; b
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("cache-control"), BROWSER_CACHE_CONTROL);
     assert.deepEqual(await response.json(), transformedPayload);
-    assert.deepEqual(received, { key, lat: 1, lon: 2, state: "miss" });
+    assert.deepEqual(received, { key, lat: 1, lon: 2, state: "miss", source: {
+      asn: null, country: null, ua_family: "other", ua_major: null, referrer_class: "none", verified_bot: null,
+    } });
     assert.equal(calls, 1, "invalid cache envelope must be ignored");
 
     assert.equal(cache.puts.length, 1);
@@ -237,10 +239,14 @@ test("edge serves stale immediately and retains it when background refresh fails
   const stale = envelope({ storedAt: Date.now() - 400_000, freshUntil: Date.now() - 1, staleUntil: Date.now() + 200_000 });
   cache.values.set("https://test/__weather_cache__/" + encodeURIComponent(key), Response.json(stale, { headers: { "cache-control": "public, max-age=200" } }));
   let refreshCalls = 0;
+  let refreshBody;
   const waits = [];
   await withGlobals({ caches: { default: cache } }, async () => {
-    const response = await weatherResponse(request("/api/weather?lat=1&lon=2"), edgeEnv(async () => {
+    const response = await weatherResponse(request("/api/weather?lat=1&lon=2", { headers: {
+      "user-agent": "Mozilla/5.0 Chrome/151.0", referer: "https://www.wetbulb35.com/wetbulb-temperature/a/b/",
+    } }), edgeEnv(async (_url, init) => {
       refreshCalls += 1;
+      refreshBody = JSON.parse(init.body);
       return Response.json({ error: "Failed to refresh weather data." }, { status: 500 });
     }), { waitUntil(promise) { waits.push(promise); } });
     assert.equal(response.status, 200);
@@ -248,6 +254,9 @@ test("edge serves stale immediately and retains it when background refresh fails
     await Promise.all(waits);
   });
   assert.equal(refreshCalls, 1);
+  assert.equal(refreshBody.state, "stale");
+  assert.equal(refreshBody.source.referrer_class, "city_page");
+  assert.equal(refreshBody.source.ua_family, "chrome");
   assert.equal(cache.puts.length, 0);
 });
 
@@ -294,7 +303,8 @@ test("valid extreme readings return weather and reuse the cached provider result
 
 test("same-key concurrent misses coalesce inside one WeatherGate instance", async () => {
   const { storage } = storageWith();
-  const gate = new WeatherGate({ storage }, gateEnv());
+  const events = [];
+  const gate = new WeatherGate({ storage }, gateEnv({ OBSERVABILITY: createObservability({ logger: (event) => events.push(event) }) }));
   let release;
   const blocked = new Promise((resolve) => { release = resolve; });
   let providerCalls = 0;
@@ -308,6 +318,7 @@ test("same-key concurrent misses coalesce inside one WeatherGate instance", asyn
     assert.equal((await second).status, 200);
   });
   assert.equal(providerCalls, 1);
+  assert.equal(events.filter((event) => event.event === "weather_source_attribution").length, 1);
 });
 
 test("HTML rendering performs zero weather provider calls", async () => {
@@ -367,6 +378,52 @@ test("observability enforces fixed schemas and falls back to a null hash", async
   assert.deepEqual(events[2], { event: "html_cache_outcome", deployment_version: "unit-v1", outcome: "hit", cache_state: "hit", route_class: "html" });
   const serialized = JSON.stringify(events);
   for (const forbidden of ["do-not-log", "12.34", "-56.78", "appid", "raw error", "provider.example", "lat=12.34"]) assert.equal(serialized.includes(forbidden), false, forbidden);
+});
+
+test("a cold browser request forwards only coarse attribution into the private gate", async () => {
+  let received;
+  const req = request("/api/weather?lat=1&lon=2", { headers: {
+    "user-agent": "Mozilla/5.0 Chrome/151.0.0 Safari/537.36 do-not-log",
+    referer: "https://www.wetbulb35.com/wetbulb-temperature/private-route/?q=do-not-log",
+  } });
+  Object.defineProperty(req, "cf", { value: { asn: 13335, country: "US", asOrganization: "Secret Org", clientIP: "198.51.100.10", botManagement: { verifiedBot: false } } });
+  await withGlobals({ caches: { default: new FakeCache() } }, async () => {
+    const response = await weatherResponse(req, edgeEnv(async (_url, init) => {
+      received = JSON.parse(init.body);
+      return Response.json(envelope({ storedAt: Date.now(), freshUntil: Date.now() + 300_000, staleUntil: Date.now() + 600_000 }));
+    }));
+    assert.equal(response.status, 200);
+  });
+  assert.deepEqual(received.source, { asn: 13335, country: "US", ua_family: "chrome", ua_major: 151, referrer_class: "city_page", verified_bot: false });
+  assert.equal(received.key, weatherKey({ lat: 1, lon: 2 }));
+  assert.equal(received.state, "miss");
+  for (const sensitive of ["do-not-log", "private-route", "Secret Org", "198.51.100.10"]) assert.equal(JSON.stringify(received).includes(sensitive), false);
+});
+
+test("one allowlisted source event is recorded per reservation, including denied budget", async () => {
+  const logs = [];
+  const gate = new WeatherGate({ storage: storageWith().storage }, gateEnv({
+    WEATHER_DAILY_ATTEMPT_LIMIT: "1",
+    OBSERVABILITY: createObservability({ deploymentVersion: "unit-v1", logger: (event) => logs.push(event) }),
+  }));
+  const source = { asn: 13335, country: "US", ua_family: "chrome", ua_major: 151, referrer_class: "city_page", verified_bot: false,
+    clientIP: "198.51.100.10", url: "https://secret.example/?key=do-not-log" };
+  let upstream = 0;
+  await withGlobals({ fetch: async () => { upstream += 1; return Response.json(upstreamPayload); } }, async () => {
+    assert.equal((await gate.fetch(gateRequest({ key: weatherKey({ lat: 1, lon: 2 }), lat: 1, lon: 2, state: "miss", source }))).status, 200);
+    assert.equal((await gate.fetch(gateRequest({ key: weatherKey({ lat: 3, lon: 4 }), lat: 3, lon: 4, state: "miss", source }))).status, 500);
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(upstream, 1);
+  const attribution = logs.filter((event) => event.event === "weather_source_attribution");
+  assert.equal(attribution.length, 2);
+  assert.deepEqual(attribution.map((event) => event.source_state), ["reserved", "budget_denied"]);
+  for (const event of attribution) {
+    assert.deepEqual(Object.keys(event).sort(), ["asn", "cache_state", "country", "deployment_version", "event", "referrer_class", "source_state", "ua_family", "ua_major", "verified_bot"].sort());
+    assert.deepEqual({ asn: event.asn, country: event.country, ua_family: event.ua_family, ua_major: event.ua_major, referrer_class: event.referrer_class, verified_bot: event.verified_bot },
+      { asn: 13335, country: "US", ua_family: "chrome", ua_major: 151, referrer_class: "city_page", verified_bot: false });
+  }
+  for (const sensitive of ["198.51.100.10", "secret.example", "do-not-log", "lat:1:lon:2"]) assert.equal(JSON.stringify(logs).includes(sensitive), false);
 });
 
 test("keyed edge cache events are retained with waitUntil without delaying responses", async () => {

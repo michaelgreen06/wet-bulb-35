@@ -1,4 +1,5 @@
 import { refreshForecast, validForecastGateRequest } from "./forecast-edge.ts";
+import { sanitizeWeatherSource, sourceFromRequest } from "./weather-source-context.ts";
 
 export const BROWSER_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-revalidate";
 export const BOT_PATTERN = /(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|bytespider|crawler|spider|bot)/i;
@@ -52,6 +53,12 @@ export function createObservability({
         event: "weather_budget_exhausted", deployment_version,
         cache_state: input.cache_state === "stale_refresh" ? "stale_refresh" : "miss",
         reserved_budget_used: integer(input.reserved_budget_used), reserved_budget_limit: integer(input.reserved_budget_limit),
+      };
+      case "weather_source_attribution": return {
+        event: "weather_source_attribution", deployment_version,
+        cache_state: input.cache_state === "stale_refresh" ? "stale_refresh" : "miss",
+        source_state: input.source_state === "budget_denied" ? "budget_denied" : "reserved",
+        ...sanitizeWeatherSource(input.source),
       };
       case "weather_provider_call": return {
         event: "weather_provider_call", deployment_version,
@@ -224,13 +231,13 @@ async function writeEnvelope(cache, request, key, envelope) {
   } catch {}
 }
 
-async function callGate(env, key, coords, state) {
+async function callGate(env, key, coords, state, source) {
   if (!env.WEATHER_GATE) throw new Error(ERROR_REFRESH.error);
   const id = env.WEATHER_GATE.idFromName("WeatherGate");
   const response = await env.WEATHER_GATE.get(id).fetch("https://weather-gate/refresh", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ key, ...coords, state }),
+    body: JSON.stringify({ key, ...coords, state, source }),
   });
   if (!response.ok) {
     let message = ERROR_REFRESH.error;
@@ -268,7 +275,7 @@ export async function weatherResponse(request, env, executionContext) {
   }
   if (cached && now < cached.staleUntil) {
     observability.weather({ event: "weather_cache_stale", cache_state: "stale" }, key, executionContext);
-    const refresh = callGate(env, key, coords, "stale")
+    const refresh = callGate(env, key, coords, "stale", sourceFromRequest(request))
       .then((envelope) => writeEnvelope(cache, request, key, envelope))
       .catch(() => {});
     executionContext?.waitUntil?.(refresh);
@@ -277,7 +284,7 @@ export async function weatherResponse(request, env, executionContext) {
 
   observability.weather({ event: "weather_cache_miss", cache_state: "miss" }, key, executionContext);
   try {
-    const envelope = await callGate(env, key, coords, "miss");
+    const envelope = await callGate(env, key, coords, "miss", sourceFromRequest(request));
     await writeEnvelope(cache, request, key, envelope);
     return browser(envelope.payload);
   } catch (error) {
@@ -358,7 +365,7 @@ export class WeatherGate {
     });
   }
 
-  async refresh({ key, lat, lon, state }) {
+  async refresh({ key, lat, lon, state, source }) {
     const now = Date.now();
     const stored = await this.state.storage.get(`weather:${key}`);
     const storedIsValid = validEnvelope(stored, key);
@@ -370,6 +377,14 @@ export class WeatherGate {
       throw new Error("OpenWeather API key is not configured. Please check your environment variables.");
     }
     const reservation = await this.reserveAttempt();
+    // One fixed-field attribution event per actual reservation or budget denial.
+    // No key hash: do not join client network provenance to a reversible city key.
+    // Never let logging change the weather outcome or forward raw request metadata.
+    try {
+      observabilityFor(this.env).weatherUnkeyed({ event: "weather_source_attribution",
+        source_state: reservation.reserved ? "reserved" : "budget_denied",
+        cache_state: state === "stale" ? "stale_refresh" : "miss", source });
+    } catch {}
     if (!reservation.reserved) {
       observabilityFor(this.env).weather({ event: "weather_budget_exhausted", cache_state: state === "stale" ? "stale_refresh" : "miss", reserved_budget_used: reservation.used, reserved_budget_limit: reservation.limit }, key);
       if (stale) return stale;
