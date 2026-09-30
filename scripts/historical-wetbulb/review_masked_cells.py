@@ -17,16 +17,19 @@ def distance_km(lat1,lon1,lat2,lon2):
     return 12742.0176*math.asin(min(1,math.sqrt(v)))
 
 
-def candidate_report(city,manifest,*,max_km=15):
+def candidate_report(city,manifest,*,max_km=15,origin_manifest=None):
+    origin=origin_manifest if origin_manifest is not None else manifest
     if (not isinstance(max_km,(float,int)) or not math.isfinite(max_km) or max_km<=0 or max_km>30
         or manifest.get('schemaVersion')!=1 or manifest.get('researchOnly') is not True
+        or origin.get('schemaVersion')!=1 or origin.get('researchOnly') is not True
+        or manifest.get('sourceSelection')!=origin.get('sourceSelection')
         or not isinstance(manifest.get('files'),dict)
         or not isinstance(city.get('actualEra5LandCell'),list)
         or not isinstance(city.get('requestCoordinate'),list)
         or len(city['requestCoordinate'])!=2 or len(city['actualEra5LandCell'])!=2):
         raise ValueError('Invalid private masked-cell review input')
     target=','.join(f'{x:.1f}' for x in city['actualEra5LandCell'])
-    if target not in manifest.get('maskedCells',[]):
+    if target not in origin.get('maskedCells',[]):
         raise ValueError('Requested source cell is not explicitly masked')
     selection=manifest.get('sourceSelection',{})
     start,end=selection.get('start',''),selection.get('end','')
@@ -57,13 +60,16 @@ def main():
     parser.add_argument('--cohort',required=True,type=Path)
     parser.add_argument('--rank',required=True,type=int)
     parser.add_argument('--tile-manifest',required=True,type=Path)
+    parser.add_argument('--origin-manifest',type=Path,help='Required when candidate tile differs from the masked origin tile')
     parser.add_argument('--max-km',type=float,default=15)
     opts=parser.parse_args()
     cohort=json.loads(opts.cohort.read_text())
     matches=[row for row in cohort['rows'] if row['rank']==opts.rank]
     if len(matches)!=1 or not cohort.get('researchOnly'):
         parser.error('Missing or unverified research cohort rank')
-    report=candidate_report(matches[0],json.loads(opts.tile_manifest.read_text()),max_km=opts.max_km)
+    origin=json.loads(opts.origin_manifest.read_text()) if opts.origin_manifest else None
+    report=candidate_report(matches[0],json.loads(opts.tile_manifest.read_text()),
+        max_km=opts.max_km,origin_manifest=origin)
     print(json.dumps(report,separators=(',',':')))
 
 if __name__=='__main__':main()
