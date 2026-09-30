@@ -38,6 +38,9 @@ python3 scripts/historical-wetbulb/run_pilot_year.py --mapped-cohort /PRIVATE/to
 python3 scripts/historical-wetbulb/run_top10_backfill.py --mapped-cohort /PRIVATE/top50-mapped.json --survey-root /PRIVATE/top50-mask-audit-1950 --out /PRIVATE/top50-ten-unmasked-jobs --start-year 1950 --end-year 2025 --max-new-jobs 760
 # A separately authorized run adds --execute and runs one cell/year at a time;
 # it stops on metadata drift, a masked/missing cell, incomplete local date or low disk.
+# After a rank has every yearly checkpoint, audit and package its whole period
+# into a separate private research-only asset (no page or release write):
+node --experimental-strip-types scripts/historical-wetbulb/merge-private-years.mjs --mapped-cohort /PRIVATE/top50-mapped.json --jobs /PRIVATE/top50-ten-unmasked-jobs --rank 2 --start-year 1950 --end-year 2025 --out /PRIVATE/top50-research-periods --execute
 ```
 
 `run_top10_backfill.py` leaves the six masked ranks entirely out of this run. It checks all 50 research mask classifications before choosing the fixed first 10 valid routes, verifies each prior checkpoint on resume, and retains source and annual outputs privately. A source `.zmetadata` digest can change without cell/tile identity changing: refresh the *private* mapping only after confirming every ranked identity, grid cell and tile remain byte-equivalent; existing checkpoints from a different mapping must not be reused. The ten-city results remain `researchOnly`, not publishable model records, until full-period and source-chunk provenance checks succeed.
