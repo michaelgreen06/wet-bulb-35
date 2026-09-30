@@ -34,7 +34,13 @@ node scripts/historical-wetbulb/build-cohort.mjs --inventory=scripts/resolved_ci
 python3 scripts/historical-wetbulb/map_arco_cohort.py --cohort /PRIVATE/top50.json --out /PRIVATE/top50-mapped.json
 # Preview exactly one rank/year; --execute is a separate explicit bounded research action.
 python3 scripts/historical-wetbulb/run_pilot_year.py --mapped-cohort /PRIVATE/top50-mapped.json --rank 29 --year 1951 --out /PRIVATE/top50-pilot-jobs
+# Preview a fixed first-ten-valid, 1950–2025 private run (ranks 2–9, 11–12).
+python3 scripts/historical-wetbulb/run_top10_backfill.py --mapped-cohort /PRIVATE/top50-mapped.json --survey-root /PRIVATE/top50-mask-audit-1950 --out /PRIVATE/top50-ten-unmasked-jobs --start-year 1950 --end-year 2025 --max-new-jobs 760
+# A separately authorized run adds --execute and runs one cell/year at a time;
+# it stops on metadata drift, a masked/missing cell, incomplete local date or low disk.
 ```
+
+`run_top10_backfill.py` leaves the six masked ranks entirely out of this run. It checks all 50 research mask classifications before choosing the fixed first 10 valid routes, verifies each prior checkpoint on resume, and retains source and annual outputs privately. A source `.zmetadata` digest can change without cell/tile identity changing: refresh the *private* mapping only after confirming every ranked identity, grid cell and tile remain byte-equivalent; existing checkpoints from a different mapping must not be reused. The ten-city results remain `researchOnly`, not publishable model records, until full-period and source-chunk provenance checks succeed.
 
 `download_cds.py` accepts a point or a ≤0.1° research area, at most 367 UTC dates and an approved CDS cost ≤500; pending jobs return a job ID for `--resume-job`. Never run parallel unbounded loops against CDS. The GeoNames city-index CLI consumes the exact route index from `scripts/probe-location-route-identity.mjs` and writes a private 0600 index. Source ZIPs and normalized rows are not tracked in Git.
 
