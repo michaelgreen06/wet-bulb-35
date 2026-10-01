@@ -22,7 +22,7 @@
     "test:hono-binding-probe": "node --test tests/hono-binding-probe.test.mjs",
     "test:hono-page-renderer": "node --test tests/hono-page-renderer.test.mjs tests/legacy-city-route-redirects.test.mjs",
     "test:tier1-cities": "node --test tests/tier1-city-prominence.test.mjs tests/sitemap-seo-phase2.test.mjs",
-    "test:weather-edge": "node --test tests/weather-edge.test.mjs",
+    "test:weather-edge": "node --test tests/weather-edge.test.mjs tests/weather-source-context.test.mjs tests/wrangler-tail-sanitizer.test.mjs tests/audit-weather-sources.test.mjs",
     "test:staging-parity": "node --test tests/staging-parity-gate.test.mjs",
     "test:detached-process-registry": "node --test tests/detached-process-registry.test.mjs",
     "test:production-release-monitor": "node --test tests/production-release-monitor.test.mjs",

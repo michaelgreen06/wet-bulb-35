@@ -52,3 +52,27 @@ test("sanitizer drops malformed messages and schemas that are not exact", () => 
   sanitizer.end();
   assert.deepEqual(emitted, []);
 });
+
+test("sanitizer permits only exact coarse source attribution and drops untrusted additions", () => {
+  const emitted = [];
+  const sanitizer = createWranglerTailSanitizer({ emit: (line) => emitted.push(JSON.parse(line)) });
+  const safe = { event: "weather_source_attribution", deployment_version: "unit-v1", cache_state: "miss",
+    source_state: "reserved", asn: 13335, country: "US",
+    ua_family: "chrome", ua_major: 151, referrer_class: "city_page", verified_bot: false };
+  const invalid = [
+    { ...safe, ip: "198.51.100.10" },
+    { ...safe, canonical_key_hash: "c".repeat(64) },
+    { ...safe, asn: 2 ** 40 },
+    { ...safe, country: "US?private" },
+    { ...safe, ua_family: "Mozilla/5.0 Chrome/151" },
+    { ...safe, ua_major: 999 },
+    { ...safe, referrer_class: "https://secret.example/private" },
+    { ...safe, verified_bot: "false" },
+  ];
+  sanitizer.write(JSON.stringify({ logs: [
+    { level: "log", message: [JSON.stringify(safe)] },
+    ...invalid.map((event) => ({ level: "log", message: [JSON.stringify(event)] })),
+  ] }));
+  sanitizer.end();
+  assert.deepEqual(emitted, [safe]);
+});
