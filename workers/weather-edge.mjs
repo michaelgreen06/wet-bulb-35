@@ -1,7 +1,12 @@
 import { refreshForecast, validForecastGateRequest } from "./forecast-edge.ts";
+import { CRAWLER_USER_AGENT_PATTERNS } from "../lib/crawler-user-agent-patterns.mjs";
 
 export const BROWSER_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-revalidate";
-export const BOT_PATTERN = /(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|bytespider|crawler|spider|bot)/i;
+// Applies only to the weather endpoint. A user-agent is a claim, not proof of
+// Google/Meta ownership; falsely claiming one cannot consume the provider budget.
+// Keep the explicit alternatives for fetchers without "bot", "spider", or "crawler"
+// in their bare user-agent names. HTML pages remain indexable for every agent.
+export const BOT_PATTERN = /(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|bytespider|crawler|spider|bot|meta-(?:webindexer|external(?:ads|agent|fetcher))|facebookexternalhit|googleother|google-(?:inspectiontool|safety|agent|gemininotebook|pinpoint|read-aloud|site-verification|cws)|googlemessages|googleproducer|mediapartners-google|apis-google|feedfetcher-google|chatgpt-user|claude-user|perplexity-user)/i;
 const CACHE_ENVELOPE_VERSION = 1;
 const ERROR_INVALID = { error: "Valid lat and lon are required." };
 const ERROR_REFRESH = { error: "Failed to refresh weather data." };
@@ -114,7 +119,17 @@ function observabilityFor(env) {
     });
 }
 
-export function isBlockedBot(userAgent) { return Boolean(userAgent && BOT_PATTERN.test(userAgent)); }
+// Compile only when a browser-like weather request first arrives: HTML rendering
+// never needs this corpus. Bound untrusted UA length before running regexes.
+// A match protects provider budget; it does not verify the claimed bot identity.
+let crawlerMatchers;
+export function isBlockedBot(userAgent) {
+  if (!userAgent) return false;
+  const ua = String(userAgent).slice(0, 512);
+  if (BOT_PATTERN.test(ua)) return true;
+  crawlerMatchers ??= CRAWLER_USER_AGENT_PATTERNS.map((pattern) => new RegExp(pattern, "i"));
+  return crawlerMatchers.some((pattern) => pattern.test(ua));
+}
 
 export function parseWeatherCoordinates(searchParams) {
   const rawLat = searchParams.get("lat");
