@@ -1,0 +1,18 @@
+# Weather API crawler-agent coverage audit (October 1, 2026)
+
+Scope: Cloudflare zone HTTP request aggregates for `www.wetbulb35.com`, September 29 00:00 UTC–October 1 12:11 UTC. All raw user-agent strings were inspected **in memory only**. No IPs, URLs with queries, full user agents or location coordinates are kept in this report. Request counts are not unique visitors or actual provider attempts.
+
+- 91,778 city HTML requests; 5,659 `/api/weather` requests in the examined window.
+- The observed named city-request UA claims were AhrefsBot, Amazonbot, Applebot, Bingbot, Bytespider, ChatGPT-User, DotBot, DuckDuckBot, Google-InspectionTool, Googlebot, MJ12bot, Meta-ExternalAgent, PerplexityBot, PetalBot, SemrushBot, TikTokSpider, and facebookexternalhit. **Only one claimed `Google-InspectionTool` request lacked a match in the original server-side weather skip regex.** None of the 5,659 weather requests bore those named UA claims; the addition therefore does not explain or retroactively prevent the recent provider-budget exhaustion.
+- Cloudflare grouped 13 weather requests into a nonempty verified-bot category despite UA strings with none of the audited named labels. The UA-only skip cannot attribute or stop these based on crawler *name*. A nonempty verified-bot category is not a provider-attempt count; no network/operator identity was established.
+
+The updated server-side `/api/weather` check explicitly includes those documented automated fetchers whose bare UA names do not contain `bot`, `spider`, or `crawler`: GoogleOther, Google-InspectionTool, Google-Safety, Mediapartners-Google, APIs-Google, user-triggered Google fetchers, Meta's web indexer, ads agent, external agent/fetcher and link-preview fetcher, plus ChatGPT-User, Claude-User, and Perplexity-User. The original generic and named UA rules remain. A match returns `204` **before cache, Durable Object and OpenWeather access**; it does not deny HTML or alter robots.txt. The HTML JavaScript's older UA test may still make a cheap weather API request for a new name; the server blocks the provider call. The retired Vercel implementation is unchanged.
+
+**Identity limit:** a `Googlebot` user-agent is just text supplied by the requester; it is *not proof* the request came from Google. Verify origin using Google's published IP ranges or reverse DNS *and* forward confirmation for a specific IP; Cloudflare's verified-bot classification is different from UA matching. Skipping weather for anyone who *claims* a known crawler UA is safe for the provider budget, but neither the claim nor this code proves who the caller is. No fixed list can cover unknown, browser-spoofing or newly named bots. In particular `Google-Extended` is a robots.txt product-control token, **not an HTTP user agent**, and should not be added as a crawler UA. Per-requester limits and/or a provider-call challenge remain separate work.
+
+First-party references checked:
+- Google: https://developers.google.com/crawling/docs/crawlers-fetchers/verify-google-requests ; https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers ; https://developers.google.com/crawling/docs/crawlers-fetchers/google-special-case-crawlers ; https://developers.google.com/crawling/docs/crawlers-fetchers/google-user-triggered-fetchers
+- Meta: https://developers.facebook.com/docs/sharing/webmasters/crawler/
+- OpenAI: https://platform.openai.com/docs/bots
+- Anthropic: https://support.claude.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler
+- Perplexity: https://docs.perplexity.ai/docs/resources/perplexity-crawlers
