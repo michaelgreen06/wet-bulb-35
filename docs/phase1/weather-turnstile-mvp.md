@@ -1,0 +1,21 @@
+# Weather-only Turnstile MVP (PR implementation; inactive by default)
+
+Scope: protect only **provider-triggering current-weather misses** on `/api/weather`. HTML pages and the separate forecast endpoint remain public. No per-requester counters or WAF rate-limit rules are included. The existing OpenWeather 2,000-attempt UTC daily cap is unchanged. Do not merge or deploy this PR without separate authorization and the agreed backup/restore gate.
+
+## Request flow
+
+- Known bot UAs still receive `204` before other work. Valid coordinates are required before cache lookup. Fresh cached weather is served to everyone; stale cached weather is served without an automatic background provider refresh while the gate is enforced. Once stale expires, an edge cache miss requires verification. A per-POP edge miss might still find a fresh Durable Object value; this minimal design may challenge unnecessarily in that case but does not spend an OpenWeather attempt before verification.
+- Without a token, an enforced cache miss returns `403 {"code":"verification_required","sitekey":"<public-site-key>"}` with `Cache-Control: no-store`. This does not call Siteverify or OpenWeather. The page then lazily loads the official Turnstile script, runs a Managed widget with `execution: execute` and `appearance: interaction-only`, and retries the same URL once with the resulting token in `x-weather-turnstile` (never a URL parameter). Most visitors should not need to click; Cloudflare can show a checkbox. A failed challenge leaves the current weather unavailable but never blocks the city page.
+- The Worker POSTs the token and the secret to Cloudflare's Siteverify endpoint (timeout/failure deny). It requires `success: true`, the explicit expected hostname, and `action: weather_refresh`. Cloudflare tokens are single-use and expire after five minutes. No IP is sent to Siteverify and no token, full URL, coordinates, or untrusted upstream error body is logged. After a successful verification, the original WeatherGate handles the miss and global provider budget. A successful token does **not** grant a session or unlimited calls.
+
+## Activation (separate approval; not performed by the PR)
+
+The implementation is disabled unless `WEATHER_TURNSTILE_MODE=enforce`. The other required Worker bindings are `WEATHER_TURNSTILE_SITE_KEY` (public sitekey), `WEATHER_TURNSTILE_HOSTNAME` (the exact, reviewed site hostname) and `WEATHER_TURNSTILE_SECRET_KEY` (secret binding, never in Git or chat). Use separately reviewed staging and production widgets and hostname restrictions. Missing/invalid configuration while enforcement is selected returns a controlled `503` on misses, never silently permits an upstream call. The default (unset or `off`) preserves current weather behavior, including stale background refreshes; no Wrangler config, secret, Cloudflare resource, route, DNS, or production Worker is changed by this PR.
+
+Staging gates: use Cloudflare's published dummy keys for deterministic local tests only; actual staging uses its own widget and secret after approval. Check fresh/stale/cold cache, Siteverify success/failure/timeout, token replay, direct API calls, an interactive challenge on a narrow mobile viewport, and unsupported/blocked widget-script behavior. Observe fixed-schema `weather_turnstile_required`/`weather_turnstile_failure` counts and weather provider attempts. Validate the separate forecast endpoint and indexable HTML remain unaffected. Do not enable enforcement until the new client asset is deployed and old cached `app.js` copies have aged out; an old client cannot handle the verification response. For the first rollout, monitor error rate and cache misses before deciding whether to keep enforcement enabled.
+
+## Limits
+
+Turnstile is not proof of humanity: a sophisticated or human-assisted crawler can still obtain one-use tokens and spend the budget. An IP-keyed per-requester budget would be a separate, reviewed change. The MVP deliberately serves stale data without an automatic refresh until its existing stale TTL expires; then the browser runs the challenge on a miss. Cache hits remain free and unrestricted.
+
+Cloudflare documentation reviewed: `Turnstile / Validate the token`, `Turnstile widgets`, `Embed the widget / Widget configurations`, `Troubleshooting / Test your Turnstile implementation` (October 2026).
