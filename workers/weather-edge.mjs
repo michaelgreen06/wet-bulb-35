@@ -1,4 +1,5 @@
 import { refreshForecast, validForecastGateRequest } from "./forecast-edge.ts";
+import { CRAWLER_USER_AGENT_PATTERNS } from "../lib/crawler-user-agent-patterns.mjs";
 
 export const BROWSER_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-revalidate";
 // Applies only to the weather endpoint. A user-agent is a claim, not proof of
@@ -118,7 +119,17 @@ function observabilityFor(env) {
     });
 }
 
-export function isBlockedBot(userAgent) { return Boolean(userAgent && BOT_PATTERN.test(userAgent)); }
+// Compile only when a browser-like weather request first arrives: HTML rendering
+// never needs this corpus. Bound untrusted UA length before running regexes.
+// A match protects provider budget; it does not verify the claimed bot identity.
+let crawlerMatchers;
+export function isBlockedBot(userAgent) {
+  if (!userAgent) return false;
+  const ua = String(userAgent).slice(0, 512);
+  if (BOT_PATTERN.test(ua)) return true;
+  crawlerMatchers ??= CRAWLER_USER_AGENT_PATTERNS.map((pattern) => new RegExp(pattern, "i"));
+  return crawlerMatchers.some((pattern) => pattern.test(ua));
+}
 
 export function parseWeatherCoordinates(searchParams) {
   const rawLat = searchParams.get("lat");

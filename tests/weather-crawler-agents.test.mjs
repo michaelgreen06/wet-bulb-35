@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { isBlockedBot, weatherResponse } from "../workers/weather-edge.mjs";
+import { CRAWLER_USER_AGENT_PATTERNS } from "../lib/crawler-user-agent-patterns.mjs";
 
 // Bare agent names: do not accidentally match `bot` or `crawler` in the URL appended
 // to a full UA. These are publicly documented HTTP agents or observed UA claims.
@@ -37,4 +38,22 @@ test("unrecognized published HTTP agents are denied before the cache, Durable Ob
     assert.equal(response.status, 204, `${name} should not trigger weather refresh`);
   }
   assert.equal(gateCalls, 0);
+});
+
+test("pinned public crawler corpus catches named crawlers beyond the hand-maintained list", () => {
+  assert.equal(CRAWLER_USER_AGENT_PATTERNS.length, 1456);
+  assert.equal(new Set(CRAWLER_USER_AGENT_PATTERNS).size, CRAWLER_USER_AGENT_PATTERNS.length);
+  assert.equal(CRAWLER_USER_AGENT_PATTERNS.some((p) => p === "Google-Extended"), false);
+  for (const pattern of CRAWLER_USER_AGENT_PATTERNS) {
+    assert.doesNotThrow(() => new RegExp(pattern, "i"));
+    assert.equal(new RegExp(pattern, "i").test(""), false, `empty UA should not match ${pattern}`);
+  }
+  for (const name of ["Nutch", "Qwantify", "ia_archiver", "Sogou", "HeadlessChrome", "Dataprovider.com"]) {
+    assert.equal(isBlockedBot(name), true, `${name} is a published crawler agent`);
+  }
+  // A generic HTTP library is not necessarily a crawler. Keep real API consumers
+  // and the existing release-monitor probes out of any overbroad corpus rule.
+  for (const ua of ["curl/8.4.0", "python-requests/2.32", "Scrapy/2.0", "Mozilla/5.0 Chrome/151.0 Safari/537.36"]) {
+    assert.equal(isBlockedBot(ua), false, `${ua} is not a named crawler in this policy`);
+  }
 });
