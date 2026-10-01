@@ -31,6 +31,9 @@ test("query is dry, bounded, and rejects partial or malformed Cloudflare results
   assert.equal(found.length, 1);
   assert.deepEqual(Object.keys(found[0]).sort(), ["$metadata", "source"]);
   for (const sensitive of ["12.34", "198.51.100.10", "token=secret"]) assert.equal(JSON.stringify(found).includes(sensitive), false);
+  const mixed = await querySourceEvents({ accountId: "a".repeat(32), token: "private-token", start, end,
+    fetchImpl: async () => Response.json({ success: true, result: { run: { status: "COMPLETED" }, events: { count: 2, events: [row({ ...base, ip: "198.51.100.10" }), row(base)] } } }) });
+  assert.equal(mixed.length, 1, "needle matches that fail the strict schema are skipped, not fatal");
   assert.equal(payload.dry, true);
   assert.equal(payload.view, "events");
   assert.equal(payload.parameters.needle.value, "weather_source_attribution");

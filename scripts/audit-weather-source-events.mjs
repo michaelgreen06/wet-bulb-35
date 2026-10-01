@@ -50,7 +50,7 @@ export async function querySourceEvents({ accountId, token, start, end, fetchImp
   return events.flatMap((item) => {
     if (item?.$metadata?.service !== WORKER) return [];
     const source = validateApplicationLog(item?.source);
-    if (source?.event !== "weather_source_attribution") throw new Error("Unexpected source attribution schema");
+    if (source?.event !== "weather_source_attribution") return [];
     return [{ source, $metadata: { service: WORKER } }];
   });
 }
