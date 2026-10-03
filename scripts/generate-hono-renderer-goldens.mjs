@@ -20,7 +20,9 @@ const options = {
 };
 
 export function normalizeHtml(html) {
-  return html.replace(/© \d{4} Wet Bulb Temperature Monitor/g, "© <YEAR> Wet Bulb Temperature Monitor");
+  return html
+    .replace(/© \d{4} Wet Bulb Temperature Monitor/g, "© <YEAR> Wet Bulb Temperature Monitor")
+    .replace(/\/assets\/app\.js\?v=[a-f0-9]+/g, "/assets/app.js");
 }
 
 export function normalizedSha256(html) {

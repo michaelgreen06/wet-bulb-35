@@ -44,3 +44,7 @@ FORECAST_TIMEOUT_MS = "5000"
 FORECAST_DAILY_ATTEMPT_LIMIT = "2000"
 OPEN_METEO_API_MODE = "public-noncommercial"
 HTML_CACHE_EVENT_SAMPLE_RATE = "0"
+# Approved weather-only Turnstile rollout. Sitekey is public; secret is a Worker secret binding.
+WEATHER_TURNSTILE_MODE = "enforce"
+WEATHER_TURNSTILE_SITE_KEY = "0x4AAAAAAFMwptzi6zlQEwXr"
+WEATHER_TURNSTILE_HOSTNAME = "www.wetbulb35.com"
