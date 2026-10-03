@@ -4,6 +4,8 @@
 
 This document records a proposed deterministic content-enrichment pipeline. It does not authorize source downloads, production changes, ranking changes, deployment, or automatic publication. Each implementation phase requires a reviewed pull request. Raw third-party datasets stay outside Git; only compact derived records, provenance, templates, and validation code belong in the repository.
 
+For the **ranked all-location data priorities**, crawl/indexing prerequisites, and staged measurement plan, see [All-location city enrichment priorities](all-location-enrichment-priorities.md). The Top-50/100/200 investment levels below do not by themselves define an all-city rollout order.
+
 ## Objective
 
 Add useful, city-specific climate and geographic context to priority pages without LLM-written facts, duplicated filler, invented precision, or implying that SEO priority equals physical danger.
