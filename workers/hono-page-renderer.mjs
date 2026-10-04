@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { pageHtml, renderBrowsePage, renderCountryPage, renderHomePage, renderStatePage } from "../lib/page-renderer.mjs";
 import { expandNearby } from "../lib/nearby.mjs";
+import { createClimateExpander, validCell, validClimateTuple } from "../lib/climate-classes.mjs";
 import { forecastResponse } from "./forecast-edge.ts";
 import { createObservability, weatherResponse } from "./weather-edge.mjs";
 export { WeatherGate } from "./weather-edge.mjs";
@@ -30,15 +31,18 @@ async function readAssetJson(request, assets, pathname) {
   try { return await response.json(); } catch { throw new InternalMetadataError(); }
 }
 function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID === undefined ? DEFAULT_GA_MEASUREMENT_ID : env.GOOGLE_ANALYTICS_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial" }; }
-function indexCountryShard(country, rows, factsSnapshot = null) {
+function indexCountryShard(country, rows, factsSnapshot = null, climateCells = null) {
   const states = new Map();
   const stateSlugs = new Map((country.states || []).map((state) => [state.name, state.slug]));
+  const expandClimate = climateCells ? createClimateExpander(climateCells) : null;
   for (const row of rows) {
     if (!Array.isArray(row) || typeof row[1] !== "string" || typeof row[4] !== "string") continue;
-    const [name, stateName, latitude, longitude, outputCitySlug, nearby, facts] = row;
+    const [name, stateName, latitude, longitude, outputCitySlug, nearby, facts, climateTuple] = row;
+    const climate = expandClimate ? expandClimate(climateTuple) : null;
     if (!states.has(stateName)) states.set(stateName, []);
     states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug, nearby: expandNearby(country.countrySlug, stateSlugs.get(stateName), nearby),
       ...(factsSnapshot && facts ? { locationFacts: { id: facts[0], population: facts[1], timeZone: facts[2], elevationM: facts[3], elevationSource: facts[4], snapshot: factsSnapshot } } : {}),
+      ...(climate ? { climate } : {}),
     });
   }
   for (const cities of states.values()) cities.sort((a, b) => a.name.localeCompare(b.name) || a.outputCitySlug.localeCompare(b.outputCitySlug));
@@ -156,7 +160,11 @@ function validManifest(value) {
       && typeof city.countryName === "string" && /^\/wetbulb-temperature\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+\/$/.test(city.path)));
   const factsSourceValid = value?.factsSource === undefined || (value.factsSource && /^\d{4}-\d{2}-\d{2}$/.test(value.factsSource.snapshot)
     && /^[a-f0-9]{64}$/.test(value.factsSource.sha256));
-  return value && value.v === 1 && Array.isArray(value.countries) && popularCitiesValid && factsSourceValid && value.countries.every((country) => country && typeof country.country === "string"
+  const climateSourceValid = value?.climateSource === undefined || (value.climateSource && /^[a-f0-9]{64}$/.test(value.climateSource.inventorySha256)
+    && /^[a-f0-9]{64}$/.test(value.climateSource.beckSha256)
+    && (value.climateSource.nasaPower === null || (value.climateSource.nasaPower && /^\d{4}-\d{2}-\d{2}$/.test(value.climateSource.nasaPower.accessedDate)
+      && /^v2\.\d+\.\d+$/.test(value.climateSource.nasaPower.apiVersion) && /^[a-f0-9]{64}$/.test(value.climateSource.nasaPower.sourceLockSha256))));
+  return value && value.v === 1 && Array.isArray(value.countries) && popularCitiesValid && factsSourceValid && climateSourceValid && value.countries.every((country) => country && typeof country.country === "string"
     && typeof country.countrySlug === "string" && typeof country.file === "string" && Array.isArray(country.states)
     && country.states.every((state) => state && typeof state.name === "string" && typeof state.slug === "string"));
 }
@@ -169,10 +177,12 @@ function validFactRow(facts) {
     && typeof timeZone === "string" && timeZone.length > 0 && timeZone.length <= 80
     && (elevation === null ? source === null : Number.isInteger(elevation) && elevation >= -1000 && elevation <= 9000 && (source === "elevation" || source === "dem"));
 }
-function validShard(value, hasFacts = false) {
+function validShard(value, hasFacts = false, hasClimate = false) {
+  if (hasClimate && !(Array.isArray(value?.c) && value.c.every(validCell))) return false;
   return value && value.v === 1 && Array.isArray(value.r) && value.r.every((row) => Array.isArray(row)
     && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string"
-    && (hasFacts ? row.length === 7 && validNearby(row[5]) && validFactRow(row[6]) : row.length >= 5 && row.length <= 6 && (row.length < 6 || validNearby(row[5]))));
+    && (hasClimate ? row.length === 8 && validNearby(row[5]) && validFactRow(row[6]) && validClimateTuple(row[7], value.c.length)
+      : hasFacts ? row.length === 7 && validNearby(row[5]) && validFactRow(row[6]) : row.length >= 5 && row.length <= 6 && (row.length < 6 || validNearby(row[5]))));
 }
 function validNearby(value) {
   return Array.isArray(value) && value.every((entry) => Array.isArray(entry) && entry.length === 5 && /^[a-z0-9-]*$/.test(entry[0])
@@ -242,7 +252,7 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     }
     return manifestPromise;
   }
-  async function shard(request, assets, country, factsSource = null) {
+  async function shard(request, assets, country, factsSource = null, climateSource = null) {
     const cached = parsedShards.get(country.file);
     if (cached) {
       touchParsedShard(country.file, cached);
@@ -252,8 +262,8 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     if (inFlight) return inFlight;
     const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${country.file}`)
       .then((countryShard) => {
-        if (!validShard(countryShard, Boolean(factsSource))) throw new InternalMetadataError();
-        return indexCountryShard(country, countryShard.r, factsSource?.snapshot);
+        if (!validShard(countryShard, Boolean(factsSource), Boolean(climateSource))) throw new InternalMetadataError();
+        return indexCountryShard(country, countryShard.r, factsSource?.snapshot, climateSource ? countryShard.c : null);
       })
       .then((index) => {
         if (!index) return null;
@@ -308,7 +318,7 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     if (parts.length === 2) return { kind: "country", country };
     const stateRecord = country.states?.find((item) => item.slug === parts[2]);
     if (!stateRecord || typeof stateRecord.name !== "string") return null;
-    const countryIndex = await shard(request, assets, country, index.factsSource);
+    const countryIndex = await shard(request, assets, country, index.factsSource, index.climateSource);
     if (!countryIndex) return null;
     const state = stateFromIndex(country, stateRecord, countryIndex);
     if (!state?.cities.length) return null;

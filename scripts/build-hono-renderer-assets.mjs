@@ -10,14 +10,15 @@ import { createRouteIdentityIndex } from "./probe-location-route-identity.mjs";
 import { validateLegacyRedirectArtifact } from "./generate-legacy-city-route-redirects.mjs";
 import { loadCityPopulation } from "../lib/city-population.mjs";
 import { loadLocationFacts } from "../lib/location-facts.mjs";
+import { loadClimateContext } from "../lib/climate-context.mjs";
 import { clientRuntimeSource } from "../lib/page-renderer.mjs";
 
-export function buildHonoRendererAssets({ sourceCities, outDir, placesApiKey = "", publicDir = "public", tier1Manifest = null, population = null, locationFacts = null, legacyArtifactPath = "scripts/legacy-city-route-redirects.v1.json" }) {
+export function buildHonoRendererAssets({ sourceCities, outDir, placesApiKey = "", publicDir = "public", tier1Manifest = null, population = null, locationFacts = null, climateContext = null, legacyArtifactPath = "scripts/legacy-city-route-redirects.v1.json" }) {
   const legacyArtifact = legacyArtifactPath
     ? JSON.parse(fs.readFileSync(path.resolve(legacyArtifactPath), "utf8"))
     : null;
   if (legacyArtifact) validateLegacyRedirectArtifact({ artifact: legacyArtifact, currentCities: sourceCities });
-  const result = buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest, population, locationFacts });
+  const result = buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest, population, locationFacts, climateContext });
   const root = path.resolve(outDir);
   const identity = createRouteIdentityIndex(sourceCities);
   const manifestPath = path.join(root, "locations/route-manifest.json");
@@ -68,6 +69,6 @@ function main() {
   }));
   const source = args.get("source") ?? "scripts/resolved_cities.json";
   const out = args.get("out") ?? "worker-assets";
-  console.log(JSON.stringify(buildHonoRendererAssets({ sourceCities: JSON.parse(fs.readFileSync(source, "utf8")), outDir: out, placesApiKey: process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY ?? "", tier1Manifest: JSON.parse(fs.readFileSync("scripts/tier1-city-manifest.json", "utf8")), population: loadCityPopulation(), locationFacts: loadLocationFacts() })));
+  console.log(JSON.stringify(buildHonoRendererAssets({ sourceCities: JSON.parse(fs.readFileSync(source, "utf8")), outDir: out, placesApiKey: process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY ?? "", tier1Manifest: JSON.parse(fs.readFileSync("scripts/tier1-city-manifest.json", "utf8")), population: loadCityPopulation(), locationFacts: loadLocationFacts(), climateContext: loadClimateContext() })));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
