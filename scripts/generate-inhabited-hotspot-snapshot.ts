@@ -40,6 +40,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isoUtc(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(value) && Number.isFinite(Date.parse(value));
 }
+/** Python writes microsecond timestamps; snapshots store whole UTC seconds (truncated, never later). */
+function wholeSecondUtc(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)) return null;
+  const parsed = Date.parse(value.replace(/(\.\d{3})\d+Z$/, "$1Z"));
+  return Number.isFinite(parsed) ? new Date(Math.floor(parsed / 1_000) * 1_000).toISOString().replace(".000Z", "Z") : null;
+}
 function cellId(latitude: number, longitude: number): string {
   return `${latitude.toFixed(4)}:${longitude.toFixed(4)}`;
 }
@@ -222,17 +228,13 @@ export async function refineAllHotspotCandidates({
  * The download must describe the same initialization the candidates were discovered from.
  */
 export function applyDownloadTiming(discovery: HotspotDiscoveryMetadata, download: unknown): HotspotDiscoveryMetadata {
-  if (!isRecord(download) || download.initialization !== discovery.initialization
-    || typeof download.retrievedAt !== "string" || !isoUtc(download.retrievedAt)
-    || (download.firstSeenReadyAt !== undefined && download.firstSeenReadyAt !== null
-      && (typeof download.firstSeenReadyAt !== "string" || !isoUtc(download.firstSeenReadyAt)))) {
+  const retrievedAt = isRecord(download) ? wholeSecondUtc(download.retrievedAt) : null;
+  const hasFirstSeen = isRecord(download) && download.firstSeenReadyAt !== undefined && download.firstSeenReadyAt !== null;
+  const firstSeenReadyAt = hasFirstSeen ? wholeSecondUtc((download as Record<string, unknown>).firstSeenReadyAt) : null;
+  if (!isRecord(download) || download.initialization !== discovery.initialization || !retrievedAt || (hasFirstSeen && !firstSeenReadyAt)) {
     throw new TypeError("ECMWF download metadata does not match the discovered initialization.");
   }
-  return {
-    ...discovery,
-    retrievedAt: download.retrievedAt,
-    firstSeenReadyAt: (download.firstSeenReadyAt as string | null | undefined) ?? null,
-  };
+  return { ...discovery, retrievedAt, firstSeenReadyAt };
 }
 
 /**

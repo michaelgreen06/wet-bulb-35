@@ -40,7 +40,15 @@ max(3 / 10, 3 / 10 × 5 / 14) × 1 = 0.3
 minimum charge per location = 1.0 call
 ```
 
-The Worker explicitly uses `models=best_match`, `timezone=auto`, and `forecast_days=5`. It never requests Open-Meteo's precomputed wet bulb field.
+The Worker explicitly uses `models=ecmwf_ifs025` (ECMWF IFS 0.25°, the same named model as the Top-50 hotspot products), `timezone=auto`, and `forecast_days=5`. It never requests Open-Meteo's precomputed wet bulb field.
+
+### Model run attribution
+
+- After each forecast response, the Worker reads Open-Meteo's static `ecmwf_ifs025` metadata file. This is not a weighted forecast call and reserves no budget.
+- The run's initialization is recorded only when that run was available, plus a ten-minute settling margin for Open-Meteo's redundant servers, before the forecast request started. Otherwise the run is labeled "initialization time not confirmed".
+- A metadata failure never blocks the forecast.
+- Each day carries a run ID, and the notes list every run and its initialization.
+- Top-50 locations may combine their snapshot's pinned run with the latest run (see the hotspot MVP document). Each day names its run, so different runs are never presented as one.
 
 ## Request and cache boundaries
 
@@ -55,7 +63,13 @@ The existing WeatherGate Durable Object handles a distinct `/forecast` operation
 - three hours of freshness; and
 - twelve hours of stale availability.
 
-Normalized Open-Meteo observations and Romps results are stored under separate versioned keys. Formula revisions can therefore reuse still-fresh provider data. The public Cache API stores only validated result envelopes. Browser responses remain `private, no-store`.
+Normalized Open-Meteo observations and Romps results are stored under separate versioned keys. Formula revisions can therefore reuse still-fresh provider data. Version 3 keys separate IFS entries from earlier `best_match` entries, and validators reject `best_match` payloads, so expiry never silently reverts models. The public Cache API stores only validated result envelopes. Browser responses remain `private, no-store`.
+
+The five local dates must start on the location's current date:
+- A provider response that starts on a past local date is rejected.
+- A cached or stale result stops being served once its first date has passed, even inside the fresh or stale TTL. The Worker then refreshes, or shows the unavailable state if the refresh fails.
+- The three-hour fresh and twelve-hour stale bounds are unchanged.
+- Every one of the 120 hourly rows must be complete. Missing late steps fail closed.
 
 Known crawlers receive `204` before route resolution, cache lookup, or provider access. Server-side HTML rendering never fetches a forecast.
 

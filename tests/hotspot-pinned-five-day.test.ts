@@ -115,10 +115,21 @@ describe("pinned Top-50 five-day data", () => {
     expect(warnings[0]).toMatch(/Pinned five-day refinement skipped/);
   });
 
+  it("allows generation to finish just after a window that began after retrieval", () => {
+    const base = snapshot();
+    expect(validateHotspotSnapshot({ ...base, generatedAt: "2026-10-04T14:03:00Z" }).success).toBe(true);
+    expect(validateHotspotSnapshot({ ...base, generatedAt: "2026-10-04T13:20:00Z" }).success).toBe(false);
+    const legacy = { ...base, discovery: { ...base.discovery, retrievedAt: undefined, firstSeenReadyAt: undefined }, generatedAt: "2026-10-04T14:03:00Z" };
+    expect(validateHotspotSnapshot(JSON.parse(JSON.stringify(legacy))).success).toBe(false);
+  });
+
   it("records retrieval and first-ready times only for the matching initialization", () => {
     const discovery = snapshot().discovery;
     expect(applyDownloadTiming(discovery, { initialization: RUN, retrievedAt: "2026-10-04T13:30:00Z", firstSeenReadyAt: null })).toMatchObject({ firstSeenReadyAt: null });
     expect(() => applyDownloadTiming(discovery, { initialization: "2026-10-04T00:00:00Z", retrievedAt: "2026-10-04T13:30:00Z" })).toThrow(/does not match/);
+    // Python's microsecond timestamps are truncated to whole seconds, never rounded later.
+    expect(applyDownloadTiming(discovery, { initialization: RUN, retrievedAt: "2026-10-04T13:30:05.999911Z", firstSeenReadyAt: "2026-10-04T13:25:00.5Z" }))
+      .toMatchObject({ retrievedAt: "2026-10-04T13:30:05Z", firstSeenReadyAt: "2026-10-04T13:25:00Z" });
   });
 
   it("adds pinned days in the full generation path with one extra request for published locations", async () => {

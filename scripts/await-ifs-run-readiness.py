@@ -53,7 +53,7 @@ class RetryLater(Exception):
 
 
 def iso(value: dt.datetime) -> str:
-    return value.astimezone(dt.UTC).isoformat().replace("+00:00", "Z")
+    return value.astimezone(dt.UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def parse_iso(value: str) -> dt.datetime:

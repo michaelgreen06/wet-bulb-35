@@ -194,12 +194,17 @@ def validate_publication(publication: Any, model: dict[str, Any]) -> None:
     retrieved = _parse_utc_timestamp(publication["retrievedAt"], "publication retrievedAt")
     generated = _parse_utc_timestamp(publication["generatedAt"], "publication generatedAt")
     start = _parse_utc_timestamp(model["validTimeBounds"]["start"], "snapshot valid-time start")
-    if not initialization <= retrieved <= generated < start:
-        raise ValueError("publication times must follow initialization and precede the forecast window")
+    # The window starts after retrieval; generation itself may finish shortly after the window begins.
+    if not initialization <= retrieved < start or generated < retrieved:
+        raise ValueError("publication times must follow initialization and retrieval must precede the forecast window")
     if publication["firstSeenReadyAt"] is not None:
         first_seen = _parse_utc_timestamp(publication["firstSeenReadyAt"], "publication firstSeenReadyAt")
         if not initialization <= first_seen <= retrieved:
             raise ValueError("first-ready time must fall between initialization and retrieval")
+
+
+def _whole_second(value: Any, label: str) -> str:
+    return _iso_utc(_parse_utc_timestamp(value, label).replace(microsecond=0))
 
 
 def add_publication_metadata(document: dict[str, Any], download: dict[str, Any], generated_at: dt.datetime) -> dict[str, Any]:
@@ -209,8 +214,8 @@ def add_publication_metadata(document: dict[str, Any], download: dict[str, Any],
         **document,
         "publication": {
             "generatedAt": _iso_utc(generated_at),
-            "retrievedAt": download.get("retrievedAt"),
-            "firstSeenReadyAt": download.get("firstSeenReadyAt"),
+            "retrievedAt": _whole_second(download.get("retrievedAt"), "download retrievedAt"),
+            "firstSeenReadyAt": None if download.get("firstSeenReadyAt") is None else _whole_second(download["firstSeenReadyAt"], "download firstSeenReadyAt"),
         },
     }
     validate_snapshot_document(published)

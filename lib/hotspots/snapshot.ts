@@ -97,7 +97,14 @@ export const HotspotSnapshotSchema = z.object({
     fiveDay: pinnedFiveDay.optional(),
   }).strict()).min(1).max(HOTSPOT_MAX_PUBLISHED_CELLS),
 }).strict().superRefine((snapshot, context) => {
-  if (Date.parse(snapshot.generatedAt) >= Date.parse(snapshot.validFrom)) {
+  // The window starts at the next full hour after grid retrieval; generation may finish shortly after
+  // it begins. Snapshots without a recorded retrieval keep the original generatedAt rule.
+  if (snapshot.discovery.retrievedAt) {
+    if (Date.parse(snapshot.generatedAt) < Date.parse(snapshot.discovery.retrievedAt)
+      || Date.parse(snapshot.generatedAt) >= Date.parse(snapshot.validTo)) {
+      context.addIssue({ code: "custom", message: "generatedAt must follow retrieval and precede validTo" });
+    }
+  } else if (Date.parse(snapshot.generatedAt) >= Date.parse(snapshot.validFrom)) {
     context.addIssue({ code: "custom", message: "generatedAt must precede validFrom for a future-only forecast" });
   }
   if (Date.parse(snapshot.validFrom) >= Date.parse(snapshot.validTo)) {

@@ -74,7 +74,7 @@ class GlobalGridHotspotSnapshotTests(unittest.TestCase):
     def test_publication_metadata_records_retrieval_and_first_ready_times(self):
         document = HOTSPOTS.add_publication_metadata(
             self._late_document(),
-            {"initialization": "2026-09-21T18:00:00Z", "retrievedAt": "2026-09-21T23:20:00Z", "firstSeenReadyAt": "2026-09-21T23:05:00Z"},
+            {"initialization": "2026-09-21T18:00:00Z", "retrievedAt": "2026-09-21T23:20:00.734120Z", "firstSeenReadyAt": "2026-09-21T23:05:00Z"},
             HOTSPOTS.dt.datetime(2026, 9, 21, 23, 30, tzinfo=HOTSPOTS.dt.timezone.utc),
         )
         self.assertEqual(document["publication"], {
@@ -89,6 +89,9 @@ class GlobalGridHotspotSnapshotTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "does not match"):
             HOTSPOTS.add_publication_metadata(late, {"initialization": "2026-09-21T12:00:00Z", "retrievedAt": "2026-09-21T23:20:00Z"},
                                               HOTSPOTS.dt.datetime(2026, 9, 21, 23, 30, tzinfo=HOTSPOTS.dt.timezone.utc))
+        # Generation finishing after the window began is allowed when retrieval preceded it.
+        HOTSPOTS.add_publication_metadata(late, {"initialization": "2026-09-21T18:00:00Z", "retrievedAt": "2026-09-21T23:59:00Z", "firstSeenReadyAt": None},
+                                          HOTSPOTS.dt.datetime(2026, 9, 22, 0, 4, tzinfo=HOTSPOTS.dt.timezone.utc))
         with self.assertRaisesRegex(ValueError, "precede the forecast window"):
             HOTSPOTS.add_publication_metadata(late, {"initialization": "2026-09-21T18:00:00Z", "retrievedAt": "2026-09-22T01:00:00Z", "firstSeenReadyAt": None},
                                               HOTSPOTS.dt.datetime(2026, 9, 22, 1, 5, tzinfo=HOTSPOTS.dt.timezone.utc))
