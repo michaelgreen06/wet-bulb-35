@@ -1,0 +1,40 @@
+name = "wetbulb35-admin-dashboard"
+main = "workers/admin-dashboard.mjs"
+compatibility_date = "2026-09-08"
+
+# Prepared for issue #53 only; NOT deployed and NOT publicly routable.
+# No routes, custom domains, workers.dev URL, or preview URLs. Attach the custom domain
+# admin.wetbulb35.com only in a separately approved release, AFTER the Cloudflare Access
+# application (approved-email one-time PIN) covers the entire hostname.
+workers_dev = false
+preview_urls = false
+
+# Read-only access to the production WeatherGate counters via its internal /budget path.
+[durable_objects]
+bindings = [{ name = "WEATHER_GATE", class_name = "WeatherGate", script_name = "wetbulb35-weather-production" }]
+
+# Private sanitized panel documents (status/v1/panel/<id>). Requires an approved namespace:
+# [[kv_namespaces]]
+# binding = "ADMIN_STATUS"
+# id = "<approved-namespace-id>"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[observability]
+enabled = true
+redact_query_string = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+persist = true
+
+[vars]
+ADMIN_HOSTNAME = "admin.wetbulb35.com"
+# Set from the approved Access application; empty values fail closed (HTTP 503, no data).
+ADMIN_ACCESS_TEAM_DOMAIN = ""
+ADMIN_ACCESS_AUD = ""
+# ADMIN_ALLOWED_EMAILS is a Worker secret (comma-separated), never committed: set it with
+# `wrangler secret put ADMIN_ALLOWED_EMAILS --config wrangler.admin-dashboard.toml` from the
+# approved list only. It must match the Access policy's email include rule.

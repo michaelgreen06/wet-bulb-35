@@ -1,0 +1,66 @@
+{
+  "_comment": "Deterministic test fixtures (fixture=true). Values are synthetic, not real WetBulb35 metrics. Reference time: 2026-10-04T12:00:00Z.",
+  "site": {
+    "schemaVersion": 1, "panel": "site", "status": "ok", "reason": null, "fixture": true,
+    "collectedAt": "2026-10-04T11:55:00Z",
+    "lastAttempt": { "at": "2026-10-04T11:55:00Z", "outcome": "success", "reason": null },
+    "data": { "checks": [
+      { "id": "homepage", "path": "/", "outcome": "ok", "httpStatus": 200, "latencyMs": 111, "checkedAt": "2026-10-04T11:55:00Z" },
+      { "id": "city", "path": "/wetbulb-temperature/fixture-country/fixture-region/fixture-city/", "outcome": "ok", "httpStatus": 200, "latencyMs": 222, "checkedAt": "2026-10-04T11:55:00Z" },
+      { "id": "snapshot", "path": "/api/inhabited-hotspots", "outcome": "not_published", "httpStatus": 404, "latencyMs": 33, "checkedAt": "2026-10-04T11:55:00Z" }
+    ] }
+  },
+  "top50": {
+    "schemaVersion": 1, "panel": "top50", "status": "ok", "reason": null, "fixture": true,
+    "collectedAt": "2026-10-04T11:50:00Z",
+    "lastAttempt": { "at": "2026-10-04T11:50:00Z", "outcome": "success", "reason": null },
+    "data": {
+      "products": {
+        "inhabited": { "availability": "published", "schemaVersion": 1, "initialization": "2026-10-04T06:00:00Z", "retrievedAt": "2026-10-04T10:05:00Z", "generatedAt": "2026-10-04T10:20:00Z", "validFrom": "2026-10-04T11:00:00Z", "validTo": "2026-10-05T11:00:00Z", "published": 11 },
+        "unfiltered": { "availability": "published", "schemaVersion": 1, "initialization": "2026-10-04T06:00:00Z", "retrievedAt": "2026-10-04T10:05:00Z", "generatedAt": "2026-10-04T10:21:00Z", "validFrom": "2026-10-04T13:00:00Z", "validTo": "2026-10-05T13:00:00Z", "published": 22 }
+      },
+      "scheduledBudget": { "used": 333, "limit": 4444 },
+      "lastCycle": { "at": "2026-10-04T10:00:00Z", "outcome": "success" },
+      "latestFailure": { "at": "2026-10-03T15:15:00Z", "outcome": "failure" }
+    }
+  },
+  "budgets": {
+    "schemaVersion": 1, "panel": "budgets", "status": "ok", "reason": null, "fixture": true,
+    "collectedAt": "2026-10-04T11:58:00Z",
+    "lastAttempt": { "at": "2026-10-04T11:58:00Z", "outcome": "success", "reason": null },
+    "data": {
+      "day": "2026-10-04", "resetAt": "2026-10-05T00:00:00Z",
+      "currentConditions": { "used": 12, "limit": 2000, "lastError": { "at": "2026-10-04T09:00:00Z", "outcome": "upstream_http", "upstreamStatus": 429 } },
+      "fiveDay": { "used": 34, "limit": 2000, "lastError": null }
+    }
+  },
+  "search": {
+    "schemaVersion": 1, "panel": "search", "status": "ok", "reason": null, "fixture": true,
+    "collectedAt": "2026-10-04T06:00:00Z",
+    "lastAttempt": { "at": "2026-10-04T06:00:00Z", "outcome": "success", "reason": null },
+    "data": {
+      "dataThrough": "2026-10-01",
+      "windows": {
+        "last7": { "start": "2026-09-25", "end": "2026-10-01", "clicks": 70, "impressions": 700 },
+        "prior7": { "start": "2026-09-18", "end": "2026-09-24", "clicks": 50, "impressions": 500 },
+        "last28": { "start": "2026-09-04", "end": "2026-10-01", "clicks": 280, "impressions": 2800 },
+        "prior28": { "start": "2026-08-07", "end": "2026-09-03", "clicks": 0, "impressions": 0 }
+      },
+      "sample": { "requested": 2, "inspected": 2, "results": [
+        { "path": "/", "outcome": "ok", "verdict": "PASS", "coverageState": "Submitted and indexed", "lastCrawlDate": "2026-09-30" },
+        { "path": "/wetbulb-temperature/fixture-country/fixture-region/fixture-city/", "outcome": "failed", "verdict": null, "coverageState": null, "lastCrawlDate": null }
+      ] }
+    }
+  },
+  "ga4": {
+    "schemaVersion": 1, "panel": "ga4", "status": "ok", "reason": null, "fixture": true,
+    "collectedAt": "2026-10-04T06:00:00Z",
+    "lastAttempt": { "at": "2026-10-04T06:00:00Z", "outcome": "success", "reason": null },
+    "data": {
+      "latestDataDate": "2026-10-03", "completeThrough": "2026-10-02",
+      "dailySessions": [ { "date": "2026-10-01", "sessions": 10 }, { "date": "2026-10-02", "sessions": 0 }, { "date": "2026-10-03", "sessions": 3 } ],
+      "last7Sessions": 77, "prior7Sessions": 70, "productEventsLast7": 5,
+      "spikeMonitor": { "lastEvaluatedDate": "2026-10-03" }, "weeklyReport": { "lastReportDate": "2026-09-28" }
+    }
+  }
+}
