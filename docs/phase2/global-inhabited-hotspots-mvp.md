@@ -54,7 +54,8 @@ The page does not claim a measured value, official record, city-center precision
 
 - One scheduled job starts 6 h 35 min after each IFS initialization (`35 0,6,12,18 * * *`), before ECMWF's documented 7–9 hour dissemination delay ends.
 - `scripts/await-ifs-run-readiness.py` polls for at most 285 minutes, every five minutes plus up to one minute of jitter. It honors `Retry-After` and backs off exponentially on 429/5xx/transport errors.
-- Each poll HEADs only the Azure mirror's `.index` files (the downloader's mirror). It checks the last bracketing step first, then every step covering the 24 future hours from the next full UTC hour, plus the step-0 land-sea mask.
+- Each poll reads only the Azure mirror's `.index` files (the downloader's mirror; about 40 KB each), never GRIB data. It parses their JSON rows: every step covering the 24 future hours from the next full UTC hour must list `2t`, `2d`, and `sp` for that exact run and step with a nonempty byte range, and step 0 must list `lsm`. An index that exists but lacks a required row is not ready. The last bracketing step is checked first.
+- If retrieval of a ready cycle still fails, the downloader (`--retry-until`) retries every five minutes plus jitter until the same deadline. It then warns, generates nothing, and keeps the prior immutable snapshots.
 - A cycle is usable only after Open-Meteo's static `ecmwf_ifs025` metadata also reports that initialization (or a newer one) available for at least ten minutes. That confirms Single Runs refinement can pin the identical run.
 - Newest-first: an older cycle is never selected over a newer complete one. Cycles at or older than the currently published snapshot are skipped.
 - The first poll that saw the run usable is recorded as `firstSeenReadyAt`, separately from `initialization` and the grid `retrievedAt`. Readiness is never inferred from the scheduler start time.

@@ -1,5 +1,6 @@
 import datetime as dt
 import importlib.util
+import json
 import random
 import unittest
 from pathlib import Path
@@ -33,34 +34,46 @@ def metadata(initialization: dt.datetime, available: dt.datetime):
     }
 
 
-class Mirror:
-    """Fake ECMWF mirror listing complete cycles, optionally from a given time."""
+def index_body(run: dt.datetime, step: int, params) -> str:
+    """ECMWF index rows in the live JSON-lines format, including unrelated fields."""
+    rows = [{"domain": "g", "date": f"{run:%Y%m%d}", "time": f"{run:%H}00", "expver": "0001", "class": "od", "type": "fc",
+             "stream": "oper", "step": str(step), "levtype": "sfc", "param": param, "_offset": index * 1000, "_length": 900}
+            for index, param in enumerate(["10u", *params, "tp"])]
+    return "\n".join(json.dumps(row) for row in rows) + "\n"
 
-    def __init__(self, clock: Clock, ready_from: dict[dt.datetime, dt.datetime], missing_steps=()):
+
+class Mirror:
+    """Fake ECMWF mirror serving index files for complete cycles, optionally from a given time."""
+
+    def __init__(self, clock: Clock, ready_from: dict[dt.datetime, dt.datetime], missing_steps=(), absent_fields=None):
         self.clock = clock
         self.ready_from = ready_from
         self.missing_steps = set(missing_steps)
+        # {(step): {params}} listed in an index that otherwise exists (HTTP 200).
+        self.absent_fields = absent_fields or {}
         self.calls: list[str] = []
         self.status_override: tuple[int, dict[str, str]] | None = None
 
     def __call__(self, url: str):
         self.calls.append(url)
         if self.status_override:
-            status = self.status_override
+            status, headers = self.status_override
             self.status_override = None
-            return status
+            return status, headers, ""
         stamp = url.rsplit("/", 1)[1]
         run = dt.datetime.strptime(stamp[:14], "%Y%m%d%H%M%S").replace(tzinfo=UTC)
         step = int(stamp.split("-")[1].rstrip("h"))
         ready_at = self.ready_from.get(run)
         if ready_at is None or self.clock.now < ready_at or step in self.missing_steps:
-            return 404, {}
-        return 200, {}
+            return 404, {}, ""
+        params = ["2t", "2d", "sp", *(["lsm"] if step == 0 else [])]
+        params = [param for param in params if param not in self.absent_fields.get(step, set())]
+        return 200, {}, index_body(run, step, params)
 
 
 def run_poll(clock, mirror, read_metadata, deadline_hours=4, published=None, logs=None):
     return MODULE.poll(
-        head=mirror,
+        fetch_index=mirror,
         read_metadata=read_metadata,
         base_url="https://mirror.test/ecmwf",
         deadline=clock.now + dt.timedelta(hours=deadline_hours),
@@ -130,6 +143,50 @@ class ReadinessTests(unittest.TestCase):
         self.assertFalse(result["ready"])
         self.assertLessEqual(clock.now, dt.datetime(2026, 10, 4, 14, 0, tzinfo=UTC))
         self.assertGreaterEqual(result["checks"], 2)
+
+    def test_existing_indexes_missing_a_required_field_are_not_ready(self):
+        """Regression: every index returns 200, but one required row is not yet listed."""
+        run = dt.datetime(2026, 10, 4, 6, tzinfo=UTC)
+        clock = Clock(dt.datetime(2026, 10, 4, 13, 0, tzinfo=UTC))
+        steps = MODULE.required_steps(run, clock.now)
+        logs: list[str] = []
+        mirror = Mirror(clock, {run: clock.now}, absent_fields={steps[3]: {"2d"}})
+        result = run_poll(clock, mirror, lambda: metadata(run, run), deadline_hours=0.5, logs=logs)
+        self.assertFalse(result["ready"])
+        self.assertTrue(all(url.endswith(".index") for url in mirror.calls))
+        self.assertTrue(any(f"step {steps[3]}: index lacks 2d" in line for line in logs))
+
+        # The step-0 land-sea mask is required even when step 0 is not a forecast step.
+        clock = Clock(dt.datetime(2026, 10, 4, 13, 0, tzinfo=UTC))
+        mirror = Mirror(clock, {run: clock.now}, absent_fields={0: {"lsm"}})
+        self.assertNotIn(0, steps)
+        self.assertFalse(run_poll(clock, mirror, lambda: metadata(run, run), deadline_hours=0.5)["ready"])
+
+    def test_fields_become_ready_once_the_index_lists_every_row(self):
+        run = dt.datetime(2026, 10, 4, 6, tzinfo=UTC)
+        clock = Clock(dt.datetime(2026, 10, 4, 13, 0, tzinfo=UTC))
+        steps = MODULE.required_steps(run, clock.now)
+        mirror = Mirror(clock, {run: clock.now}, absent_fields={steps[-1]: {"sp"}})
+        original = mirror.__call__
+
+        def fill_later(url):
+            if clock.now >= dt.datetime(2026, 10, 4, 13, 20, tzinfo=UTC):
+                mirror.absent_fields = {}
+            return original(url)
+
+        result = run_poll(clock, fill_later, lambda: metadata(run, run))
+        self.assertTrue(result["ready"])
+        self.assertGreaterEqual(MODULE.parse_iso(result["firstSeenReadyAt"]), dt.datetime(2026, 10, 4, 13, 20, tzinfo=UTC))
+
+    def test_index_rows_must_match_the_run_step_and_have_bytes(self):
+        run = dt.datetime(2026, 10, 4, 6, tzinfo=UTC)
+        other_run = index_body(run - dt.timedelta(hours=6), 12, ["2t", "2d", "sp"])
+        other_step = index_body(run, 15, ["2t", "2d", "sp"])
+        empty = index_body(run, 12, ["2t"]).replace('"_length": 900', '"_length": 0')
+        self.assertEqual(MODULE.listed_params(other_run, run, 12), set())
+        self.assertEqual(MODULE.listed_params(other_step, run, 12), set())
+        self.assertEqual(MODULE.listed_params(empty + "not json\n", run, 12), set())
+        self.assertEqual(MODULE.listed_params(index_body(run, 12, ["2t", "2d", "sp"]), run, 12), {"10u", "2t", "2d", "sp", "tp"})
 
     def test_superseded_runs_prefer_the_newest_complete_cycle(self):
         older = dt.datetime(2026, 10, 4, 0, tzinfo=UTC)

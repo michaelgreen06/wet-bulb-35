@@ -2,12 +2,13 @@
 """Poll, within a bounded window, for the newest usable ECMWF IFS cycle.
 
 A cycle is usable only when:
-- the public ECMWF Open Data mirror lists index files for every forecast step that brackets
-  the next 24 future hours, plus the step-0 land-sea mask; and
+- the public ECMWF Open Data mirror's index for every forecast step that brackets the next
+  24 future hours lists 2t, 2d, and sp rows for that exact run and step, and the step-0
+  index lists the land-sea mask (an index file can exist before all of its rows); and
 - Open-Meteo reports the same (or a newer) ``ecmwf_ifs025`` initialization as available and
   settled, so pinned Single Runs refinement can use the identical run.
 
-Only lightweight index HEAD requests and Open-Meteo's static model metadata are fetched.
+Only lightweight index files (about 40 KB each) and Open-Meteo's static model metadata are fetched.
 Readiness is never inferred from the scheduler's start time. The first poll that observed
 the cycle usable is recorded separately from initialization and later retrieval times.
 """
@@ -40,7 +41,10 @@ EARLIEST_RELEASE = dt.timedelta(hours=5)
 LOOKBACK = dt.timedelta(hours=30)
 NOT_READY_EXIT = 3
 
-HeadFunction = Callable[[str], tuple[int, dict[str, str]]]
+IndexFunction = Callable[[str], tuple[int, dict[str, str], str]]
+FORECAST_PARAMS = frozenset({"2t", "2d", "sp"})
+MASK_PARAM = "lsm"
+MAX_INDEX_BYTES = 1_000_000
 MetadataFunction = Callable[[], tuple[int, dict[str, str], Any]]
 
 
@@ -95,26 +99,53 @@ def required_steps(run: dt.datetime, now: dt.datetime) -> list[int]:
     return DOWNLOAD.covering_steps(run, start, end)
 
 
-def index_urls(base_url: str, run: dt.datetime, steps: list[int]) -> list[str]:
-    """ECMWF Open Data index paths; 06/18Z cycles are published under the ``oper`` stream."""
+def index_requirements(base_url: str, run: dt.datetime, steps: list[int]) -> list[tuple[str, int, frozenset[str]]]:
+    """Index URL, step, and required params; 06/18Z cycles are published under the ``oper`` stream."""
     stamp = run.strftime("%Y%m%d%H%M%S")
     prefix = f"{base_url.rstrip('/')}/{run:%Y%m%d}/{run:%H}z/ifs/0p25/oper/{stamp}"
+    required = {step: set(FORECAST_PARAMS) for step in steps}
+    required.setdefault(0, set()).add(MASK_PARAM)
     # The last step is checked first: it is the latest to be disseminated.
-    ordered = [steps[-1], *[step for step in steps[:-1]]]
-    urls = [f"{prefix}-{step}h-oper-fc.index" for step in ordered]
-    if 0 not in steps:
-        urls.append(f"{prefix}-0h-oper-fc.index")
-    return urls
+    ordered = [steps[-1], *steps[:-1], *([0] if 0 not in steps else [])]
+    return [(f"{prefix}-{step}h-oper-fc.index", step, frozenset(required[step])) for step in ordered]
 
 
-def ecmwf_ready(head: HeadFunction, base_url: str, run: dt.datetime, steps: list[int], now: dt.datetime) -> bool:
-    for url in index_urls(base_url, run, steps):
-        status, headers = head(url)
+def index_urls(base_url: str, run: dt.datetime, steps: list[int]) -> list[str]:
+    return [url for url, _step, _params in index_requirements(base_url, run, steps)]
+
+
+def listed_params(index_text: str, run: dt.datetime, step: int) -> set[str]:
+    """Surface fields an ECMWF index lists for exactly this run and step, with a nonempty byte range."""
+    params: set[str] = set()
+    for line in index_text.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if (isinstance(row, dict)
+                and row.get("date") == f"{run:%Y%m%d}" and row.get("time") == f"{run:%H}00"
+                and row.get("type") == "fc" and row.get("stream") == "oper" and row.get("levtype") == "sfc"
+                and str(row.get("step")) == str(step)
+                and isinstance(row.get("_length"), int) and row["_length"] > 0
+                and isinstance(row.get("param"), str)):
+            params.add(row["param"])
+    return params
+
+
+def ecmwf_ready(fetch_index: IndexFunction, base_url: str, run: dt.datetime, steps: list[int], now: dt.datetime,
+                log: Callable[[str], None] = lambda _message: None) -> bool:
+    for url, step, required in index_requirements(base_url, run, steps):
+        status, headers, text = fetch_index(url)
         if status in (429, 503):
             raise RetryLater(f"ECMWF mirror returned {status}", retry_after_seconds(headers, now))
         if status >= 500:
             raise RetryLater(f"ECMWF mirror returned {status}")
         if status != 200:
+            return False
+        missing = required - listed_params(text, run, step)
+        if missing:
+            # An index can be published before all of its field rows.
+            log(f"{iso(run)} step {step}: index lacks {', '.join(sorted(missing))}.")
             return False
     return True
 
@@ -133,7 +164,7 @@ def open_meteo_ready(metadata: Any, run: dt.datetime, now: dt.datetime) -> tuple
 
 def poll(
     *,
-    head: HeadFunction,
+    fetch_index: IndexFunction,
     read_metadata: MetadataFunction,
     base_url: str,
     deadline: dt.datetime,
@@ -160,7 +191,7 @@ def poll(
                     steps = required_steps(run, now)
                 except ValueError:
                     continue
-                if not ecmwf_ready(head, base_url, run, steps, now):
+                if not ecmwf_ready(fetch_index, base_url, run, steps, now, log):
                     continue
                 ecmwf_first_seen.setdefault(iso(run), iso(now))
                 status, headers, metadata = read_metadata()
@@ -196,8 +227,8 @@ def poll(
         sleep(wait)
 
 
-class MirrorHead:
-    """HEADs index files on the same mirror the downloader uses (Azure needs a short-lived SAS token)."""
+class MirrorIndex:
+    """Reads index files on the same mirror the downloader uses (Azure needs a short-lived SAS token)."""
 
     def __init__(self, source: str):
         self.source = source
@@ -214,14 +245,20 @@ class MirrorHead:
     def base_url(self) -> str:
         return self.client().url
 
-    def __call__(self, url: str) -> tuple[int, dict[str, str]]:
+    def __call__(self, url: str) -> tuple[int, dict[str, str], str]:
         for attempt in range(2):
-            response = self.client().session.head(url, timeout=20, allow_redirects=True)
-            if response.status_code == 403 and self.source == "azure" and attempt == 0:
-                self._client = None  # expired SAS token
-                continue
-            return response.status_code, dict(response.headers)
-        return 403, {}
+            response = self.client().session.get(url, timeout=20, allow_redirects=True, stream=True)
+            try:
+                if response.status_code == 403 and self.source == "azure" and attempt == 0:
+                    self._client = None  # expired SAS token
+                    continue
+                body = response.raw.read(MAX_INDEX_BYTES + 1, decode_content=True) if response.status_code == 200 else b""
+                if len(body) > MAX_INDEX_BYTES:
+                    raise ValueError(f"ECMWF index exceeds {MAX_INDEX_BYTES} bytes: {url}")
+                return response.status_code, dict(response.headers), body.decode("utf-8", errors="replace")
+            finally:
+                response.close()
+        return 403, {}, ""
 
 
 def _http_metadata(url: str, timeout: float = 20) -> tuple[int, dict[str, str], Any]:
@@ -244,11 +281,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--jitter-seconds", type=float, default=60)
     args = parser.parse_args(argv)
     published = parse_iso(args.published_initialization) if args.published_initialization else None
-    head = MirrorHead(args.source)
+    fetch_index = MirrorIndex(args.source)
     result = poll(
-        head=head,
+        fetch_index=fetch_index,
         read_metadata=lambda: _http_metadata(args.open_meteo_metadata_url),
-        base_url=head.base_url,
+        base_url=fetch_index.base_url,
         deadline=parse_iso(args.deadline),
         published_initialization=published,
         interval_seconds=args.interval_seconds,

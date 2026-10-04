@@ -98,6 +98,7 @@ jobs:
         run: |
           # Bounded: stop well inside the job timeout; the next cycle's schedule retries.
           DEADLINE=$(date -u -d "+285 minutes" +%Y-%m-%dT%H:%M:%SZ)
+          echo "deadline=$DEADLINE" >> "$GITHUB_OUTPUT"
           PUBLISHED="${{ steps.current.outputs.initialization }}"
           set +e
           .venv-hotspots/bin/python scripts/await-ifs-run-readiness.py \
@@ -117,17 +118,33 @@ jobs:
           fi
 
       - name: Download the selected complete public ECMWF run
+        id: download
         if: steps.readiness.outputs.ready == 'true'
+        env:
+          DEADLINE: ${{ steps.readiness.outputs.deadline }}
         run: |
+          # Transient retrieval failures retry within the same bounded window; exhaustion only warns.
+          set +e
           .venv-hotspots/bin/python scripts/download-ecmwf-hotspot-grid.py \
             --readiness .hotspots/readiness.json \
+            --retry-until "$DEADLINE" \
             --source azure \
             --forecast-output .hotspots/ecmwf-forecast.grib2 \
             --land-mask-output .hotspots/ecmwf-land-mask.grib2 \
             --metadata-output .hotspots/ecmwf-download.json
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -eq 0 ]; then
+            echo "downloaded=true" >> "$GITHUB_OUTPUT"
+          elif [ "$STATUS" -eq 3 ]; then
+            echo "::warning::The ready IFS cycle could not be retrieved before $DEADLINE; the prior snapshot is retained."
+            echo "downloaded=false" >> "$GITHUB_OUTPUT"
+          else
+            exit "$STATUS"
+          fi
 
       - name: Discover candidate cities on the native model grid
-        if: steps.readiness.outputs.ready == 'true'
+        if: steps.download.outputs.downloaded == 'true'
         run: |
           STEPS=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.steps.join(','))")
           WINDOW_START=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.windowStart)")
@@ -145,7 +162,7 @@ jobs:
             --dilation-rings 1
 
       - name: Refine every candidate hourly and validate the snapshot
-        if: steps.readiness.outputs.ready == 'true'
+        if: steps.download.outputs.downloaded == 'true'
         env:
           OPEN_METEO_API_MODE: ${{ vars.OPEN_METEO_API_MODE || 'public-noncommercial' }}
           OPEN_METEO_BASE_URL: ${{ vars.OPEN_METEO_BASE_URL }}
@@ -160,7 +177,7 @@ jobs:
             --batch-size 100
 
       - name: Rank every global model-grid cell from the same initialization
-        if: steps.readiness.outputs.ready == 'true'
+        if: steps.download.outputs.downloaded == 'true'
         run: |
           STEPS=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.steps.join(','))")
           WINDOW_START=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.windowStart)")
@@ -174,7 +191,7 @@ jobs:
             --window-end "$WINDOW_END"
 
       - name: Verify both products use the polled initialization and window
-        if: steps.readiness.outputs.ready == 'true'
+        if: steps.download.outputs.downloaded == 'true'
         run: |
           .venv-hotspots/bin/python - <<'PY'
           import json
@@ -201,7 +218,7 @@ jobs:
           PY
 
       - name: Retain the validated snapshot as a workflow artifact
-        if: steps.readiness.outputs.ready == 'true'
+        if: steps.download.outputs.downloaded == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: global-hotspots-${{ github.run_id }}
@@ -215,7 +232,7 @@ jobs:
 
       - name: Guard the latest pointers against older or duplicate runs
         id: guard
-        if: steps.readiness.outputs.ready == 'true' && env.PUBLISH_INTENDED == 'true'
+        if: steps.download.outputs.downloaded == 'true' && env.PUBLISH_INTENDED == 'true'
         run: |
           INHABITED=$(GITHUB_OUTPUT= node scripts/hotspot-publish-guard.mjs --kind inhabited --candidate .hotspots/snapshot.json --current .hotspots/current-inhabited.json)
           GLOBAL_GRID=$(GITHUB_OUTPUT= node scripts/hotspot-publish-guard.mjs --kind global-grid --candidate .hotspots/global-grid-snapshot.json --current .hotspots/current-global-grid.json)
