@@ -2,15 +2,21 @@ import {
   ROMPS_METHOD_VERSION,
 } from "../lib/forecast/romps.ts";
 import {
+  OPEN_METEO_MODEL_METADATA_URL,
   OPEN_METEO_SCHEMA_VERSION,
   FORECAST_SCHEMA_VERSION,
   buildOpenMeteoForecastUrl,
   calculateFiveDayWetBulbForecast,
+  combinePinnedForecast,
+  isCurrentForecast,
   isOpenMeteoSource,
   isWetBulbForecast,
+  localDateAt,
   normalizeOpenMeteoForecast,
+  resolveModelInitialization,
   type ForecastLocation,
   type OpenMeteoSource,
+  type PinnedDailyForecast,
   type WetBulbForecast,
 } from "../lib/forecast/open-meteo.ts";
 
@@ -82,6 +88,9 @@ interface ForecastEnvironment {
 }
 
 export type ResolveForecastLocation = (path: string) => Promise<ForecastLocation | null>;
+/** Reads a published Top-50 snapshot's pinned daily maxima; never calls a forecast provider. */
+export type ResolvePinnedForecast = (path: string) => Promise<PinnedDailyForecast | null>;
+const METADATA_TIMEOUT_MS = 2_000;
 
 type ForecastTelemetryEvent = {
   event: "forecast_budget_exhausted" | "forecast_provider_call";
@@ -230,6 +239,7 @@ export async function forecastResponse(
   executionContext: ExecutionContextLike | undefined,
   resolveLocation: ResolveForecastLocation,
   injectedCache?: CacheLike,
+  resolvePinned?: ResolvePinnedForecast,
 ): Promise<Response> {
   if (request.method !== "GET") return json({ error: "Method not allowed." }, 405, { allow: "GET" });
   if (BOT_PATTERN.test(request.headers.get("user-agent") || "")) return new Response(null, { status: 204 });
@@ -247,23 +257,37 @@ export async function forecastResponse(
     return json({ error: "Forecast is not available for this location." }, 404);
   }
 
+  const now = Date.now();
+  let pinned: PinnedDailyForecast | null = null;
+  try { pinned = resolvePinned ? await resolvePinned(path) : null; } catch { pinned = null; }
+  if (pinned) {
+    // A published Top-50 run that covers all five current local dates needs no provider call.
+    const pinnedOnly = combinePinnedForecast(location, pinned, null, now);
+    if (pinnedOnly) return browser(pinnedOnly);
+  }
+  const respond = (payload: WetBulbForecast): Response => browser(
+    pinned ? combinePinnedForecast(location as ForecastLocation, pinned, payload, now) ?? payload : payload,
+  );
+
   const key = forecastKey(path);
   const cache = injectedCache ?? (globalThis as typeof globalThis & { caches?: { default?: CacheLike } }).caches?.default;
-  const cached = await readCache(cache, request, key);
-  const now = Date.now();
-  if (cached && now < cached.freshUntil) return browser(cached.payload);
+  const stored = await readCache(cache, request, key);
+  // Past local dates are never served as a five-day forecast, even inside the stale window.
+  const cached = stored && isCurrentForecast(stored.payload, now) ? stored : null;
+  if (cached && now < cached.freshUntil) return respond(cached.payload);
   if (cached && now < cached.staleUntil) {
     const refresh = callGate(env, key, location, "stale")
       .then((envelope) => writeCache(cache, request, key, envelope))
       .catch(() => undefined);
     executionContext?.waitUntil?.(refresh);
-    return browser(cached.payload);
+    return respond(cached.payload);
   }
 
   try {
     const envelope = await callGate(env, key, location, "miss");
+    if (!isCurrentForecast(envelope.payload, Date.now())) throw new Error(FORECAST_ERROR);
     await writeCache(cache, request, key, envelope);
-    return browser(envelope.payload);
+    return respond(envelope.payload);
   } catch {
     return json({ error: FORECAST_ERROR }, 500);
   }
@@ -292,6 +316,20 @@ async function reserveForecastAttempt(storage: Storage, limit: number): Promise<
   });
 }
 
+/**
+ * Labels the IFS run from Open-Meteo's lightweight model metadata, read after the forecast.
+ * This static file is not a weighted forecast call; any failure leaves the run unconfirmed.
+ */
+async function readModelInitialization(url: URL, requestStartedAt: number): Promise<string | null> {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(METADATA_TIMEOUT_MS) });
+    if (!response.ok) return null;
+    return resolveModelInitialization(await response.json(), requestStartedAt);
+  } catch {
+    return null;
+  }
+}
+
 function createEnvelope(key: string, source: OpenMeteoSource, storedAt: number, tunables: ForecastTunables): ForecastEnvelope {
   const payload = calculateFiveDayWetBulbForecast(source);
   const freshUntil = source.retrievedAt + tunables.freshSeconds * 1_000;
@@ -316,13 +354,16 @@ export async function refreshForecast(
   const tunables = forecastTunables(env);
   const now = Date.now();
   const storedResult = await storage.get(`forecast-result:${body.key}`);
-  const validResult = isForecastEnvelope(storedResult, body.key) ? storedResult : null;
+  const validResult = isForecastEnvelope(storedResult, body.key) && isCurrentForecast(storedResult.payload, now) ? storedResult : null;
   if (validResult && now < validResult.freshUntil) return validResult;
   const staleResult = validResult && now < validResult.staleUntil ? validResult : null;
 
   const rawKey = sourceKey(body.location.path);
   const storedSource = await storage.get(`forecast-source:${rawKey}`);
-  const sourceRecord = isSourceRecord(storedSource, rawKey) ? storedSource : null;
+  const sourceRecord = isSourceRecord(storedSource, rawKey)
+    && storedSource.source.hourly[0].localTime.slice(0, 10) === localDateAt(storedSource.source.utcOffsetSeconds, now)
+    ? storedSource
+    : null;
   let source = sourceRecord && now < sourceRecord.freshUntil ? sourceRecord.source : null;
 
   if (!source) {
@@ -355,8 +396,7 @@ export async function refreshForecast(
     const startedAt = Date.now();
     let outcome: ForecastTelemetryEvent["outcome"] = "exception";
     let upstreamStatus: number | null = null;
-    try {
-      const url = buildOpenMeteoForecastUrl(body.location);
+    const approvedUrl = (url: URL): URL => {
       if (apiMode === "customer-commercial") {
         url.host = "customer-api.open-meteo.com";
         url.searchParams.set("apikey", apiKey as string);
@@ -370,6 +410,11 @@ export async function refreshForecast(
       if (url.hostname.startsWith("customer-") && apiMode !== "customer-commercial") {
         throw new Error("Open-Meteo customer endpoint requires an API key.");
       }
+      return url;
+    };
+    try {
+      const url = approvedUrl(buildOpenMeteoForecastUrl(body.location));
+      const requestStartedAt = Date.now();
       const response = await fetch(url, { signal: controller.signal });
       upstreamStatus = response.status;
       if (!response.ok) {
@@ -380,7 +425,8 @@ export async function refreshForecast(
       try {
         upstream = await response.json();
         const retrievedAt = Date.now();
-        source = normalizeOpenMeteoForecast(upstream, body.location, retrievedAt);
+        const modelInitialization = await readModelInitialization(approvedUrl(new URL(OPEN_METEO_MODEL_METADATA_URL)), requestStartedAt);
+        source = normalizeOpenMeteoForecast(upstream, body.location, retrievedAt, modelInitialization);
         const record: ForecastSourceRecord = {
           v: FORECAST_SOURCE_RECORD_VERSION,
           key: rawKey,

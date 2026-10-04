@@ -6,12 +6,14 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   HotspotProviderError,
+  fetchPinnedDailyForecasts,
   refineHotspotCandidates,
   type HotspotCandidate,
   type HotspotOpenMeteoOptions,
   type HotspotRefinement,
 } from "../lib/hotspots/open-meteo.ts";
 import {
+  attachPinnedFiveDay,
   createHotspotSnapshot,
   validateHotspotSnapshot,
   type HotspotDiscoveryMetadata,
@@ -215,6 +217,73 @@ export async function refineAllHotspotCandidates({
   return refinements;
 }
 
+/**
+ * Applies the downloader's retrieval and first-ready times to discovery metadata.
+ * The download must describe the same initialization the candidates were discovered from.
+ */
+export function applyDownloadTiming(discovery: HotspotDiscoveryMetadata, download: unknown): HotspotDiscoveryMetadata {
+  if (!isRecord(download) || download.initialization !== discovery.initialization
+    || typeof download.retrievedAt !== "string" || !isoUtc(download.retrievedAt)
+    || (download.firstSeenReadyAt !== undefined && download.firstSeenReadyAt !== null
+      && (typeof download.firstSeenReadyAt !== "string" || !isoUtc(download.firstSeenReadyAt)))) {
+    throw new TypeError("ECMWF download metadata does not match the discovered initialization.");
+  }
+  return {
+    ...discovery,
+    retrievedAt: download.retrievedAt,
+    firstSeenReadyAt: (download.firstSeenReadyAt as string | null | undefined) ?? null,
+  };
+}
+
+/**
+ * Adds same-run daily maxima for the published locations only. This auxiliary step is
+ * warning-only: on failure the ranking still publishes and city pages use the latest IFS run.
+ */
+export async function addPinnedFiveDay({
+  snapshot,
+  fetchImplementation = fetch,
+  options,
+  attempts = 3,
+  retryDelayMs = 2_000,
+  warn = (message: string) => console.warn(message),
+}: {
+  snapshot: HotspotSnapshot;
+  fetchImplementation?: FetchImplementation;
+  options: Pick<HotspotOpenMeteoOptions, "baseUrl" | "apiKey" | "timeoutMs">;
+  attempts?: number;
+  retryDelayMs?: number;
+  warn?: (message: string) => void;
+}): Promise<HotspotSnapshot> {
+  const candidates: HotspotCandidate[] = snapshot.hotspots.map((hotspot) => ({
+    path: hotspot.path,
+    name: hotspot.name,
+    state: hotspot.state,
+    country: hotspot.country,
+    latitude: hotspot.latitude,
+    longitude: hotspot.longitude,
+    selectionReason: hotspot.selectionReason,
+    grid: hotspot.grid ? { ...hotspot.grid } : null,
+  }));
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const pinned = await fetchPinnedDailyForecasts(candidates, fetchImplementation, {
+        ...options,
+        modelInitialization: snapshot.discovery.initialization,
+      });
+      return attachPinnedFiveDay(snapshot, pinned);
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) {
+        const providerDelay = error instanceof HotspotProviderError && error.status === 429 ? (error.retryAfterMs ?? 60_000) : 0;
+        await wait(Math.max(providerDelay, retryDelayMs * 2 ** (attempt - 1)));
+      }
+    }
+  }
+  warn(`Pinned five-day refinement skipped: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
+  return snapshot;
+}
+
 export async function generateHotspotSnapshot({
   candidateDocument,
   cityManifest,
@@ -225,6 +294,8 @@ export async function generateHotspotSnapshot({
   fetchImplementation = fetch,
   options,
   generatedAt = new Date().toISOString().replace(".000Z", "Z"),
+  downloadMetadata,
+  pinnedFiveDay = false,
 }: {
   candidateDocument: unknown;
   cityManifest: unknown;
@@ -235,13 +306,16 @@ export async function generateHotspotSnapshot({
   fetchImplementation?: FetchImplementation;
   options: HotspotOpenMeteoOptions;
   generatedAt?: string;
+  downloadMetadata?: unknown;
+  pinnedFiveDay?: boolean;
 }): Promise<HotspotSnapshot> {
   const parsed = parseCandidateDocument(candidateDocument);
+  if (downloadMetadata !== undefined) parsed.discovery = applyDownloadTiming(parsed.discovery, downloadMetadata);
   const manifest = parseCityManifest(cityManifest);
   const controls = selectExcludedControls(manifest, parsed.candidates, parsed.discovery.initialization, excludedControlSampleSize);
   const candidates = [...parsed.candidates, ...controls];
   if (!Number.isSafeInteger(dailyLocationLimit) || dailyLocationLimit <= 0 || candidates.length > dailyLocationLimit) {
-    throw new RangeError("Hotspot candidate and validation-control count exceeds the configured daily location limit.");
+    throw new RangeError("Hotspot candidate and validation-control count exceeds the configured per-run location limit.");
   }
   const window = discoveryHourlyWindow(parsed.discovery);
   assertDiscoveryCoversWindow(parsed.discovery, window);
@@ -252,7 +326,9 @@ export async function generateHotspotSnapshot({
     fetchImplementation,
     options: { ...options, ...window, modelInitialization: parsed.discovery.initialization },
   });
-  return createHotspotSnapshot({ generatedAt, refinements, corpusCount: manifest.length, discovery: parsed.discovery });
+  const snapshot = createHotspotSnapshot({ generatedAt, refinements, corpusCount: manifest.length, discovery: parsed.discovery });
+  if (!pinnedFiveDay) return snapshot;
+  return addPinnedFiveDay({ snapshot, fetchImplementation, options });
 }
 
 function parseArgs(argv = process.argv.slice(2)): Map<string, string> {
@@ -294,16 +370,21 @@ async function main(): Promise<void> {
     timeoutMs: Number(process.env.HOTSPOT_OPEN_METEO_TIMEOUT_MS) || 30_000,
   };
   const candidateDocument = JSON.parse(fs.readFileSync(path.resolve(candidatePath), "utf8"));
+  const downloadMetadataPath = args.get("download-metadata");
+  const downloadMetadata = downloadMetadataPath ? JSON.parse(fs.readFileSync(path.resolve(downloadMetadataPath), "utf8")) : undefined;
   const cityManifest = JSON.parse(fs.readFileSync(path.resolve(manifestPath), "utf8"));
   const snapshot = await generateHotspotSnapshot({
     candidateDocument,
     cityManifest,
     batchSize: Number(args.get("batch-size") ?? process.env.HOTSPOT_BATCH_SIZE) || 100,
-    dailyLocationLimit: Number(process.env.HOTSPOT_DAILY_LOCATION_LIMIT) || 5_000,
+    // Runs follow every IFS cycle, so the ceiling applies per run; the daily name remains a legacy fallback.
+    dailyLocationLimit: Number(process.env.HOTSPOT_RUN_LOCATION_LIMIT ?? process.env.HOTSPOT_DAILY_LOCATION_LIMIT) || 5_000,
     excludedControlSampleSize: Number(args.get("excluded-control-sample") ?? process.env.HOTSPOT_EXCLUDED_SAMPLE_SIZE) || 100,
     interBatchDelayMs: Number(args.get("inter-batch-delay-ms") ?? process.env.HOTSPOT_INTER_BATCH_DELAY_MS) || 20_000,
     options,
     generatedAt: args.get("generated-at") ?? new Date().toISOString().replace(".000Z", "Z"),
+    downloadMetadata,
+    pinnedFiveDay: args.get("pinned-five-day") === "true",
   });
   const validation = validateHotspotSnapshot(snapshot);
   if (!validation.success) throw new TypeError(`Hotspot snapshot validation failed: ${validation.error.message}`);
@@ -319,6 +400,7 @@ async function main(): Promise<void> {
     recallWarning: snapshot.validation.recallWarning,
     refined: snapshot.counts.refined,
     published: snapshot.counts.published,
+    pinnedFiveDay: snapshot.hotspots.filter((hotspot) => hotspot.fiveDay).length,
     output: resolvedOutput,
   }));
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHotspotSnapshot } from "../lib/hotspots/snapshot";
 import { renderBrowsePage, renderHotspotPage } from "../lib/page-renderer.mjs";
 import { createHonoPageRenderer } from "../workers/hono-page-renderer.mjs";
@@ -49,14 +49,26 @@ function env() {
   };
 }
 
+const ACTIVE_NOW = Date.parse("2026-09-22T12:00:00Z");
+const EXPIRED_NOW = Date.parse("2026-09-24T00:00:00Z");
+
 describe("global hotspot page", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(ACTIVE_NOW);
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
   it("server-renders ranking values, city links, provenance, and crawlable metadata", () => {
     const html = renderHotspotPage(snapshot(), { siteUrl: "https://www.wetbulb35.com", googleAnalyticsId: "" });
-    expect(html).toContain("Global inhabited wet bulb forecast hotspots");
+    expect(html).toContain("Top 50 inhabited wet bulb forecast hotspots");
     expect(html).toContain("30.4°C");
     expect(html).toContain("/wetbulb-temperature/bangladesh/dhaka-division/dhaka/");
     expect(html).toContain("130,686");
-    expect(html).toContain("ECMWF Open Data and Open-Meteo");
+    expect(html).toContain("ECMWF Open Data (CC BY 4.0) and Open-Meteo");
+    expect(html).toContain("ECMWF IFS run initialized");
+    // The window is fixed at publication; nothing describes it as a rolling "next 24 hours".
+    expect(html).not.toMatch(/during the next 24 hours|next-24-hour forecast/i);
     expect(html).toContain('<link rel="canonical" href="https://www.wetbulb35.com/wetbulb-temperature/forecast/global-hotspots/">');
     expect(html).not.toContain("data-hotspot-api");
   });
@@ -67,10 +79,40 @@ describe("global hotspot page", () => {
     expect(renderBrowsePage(siteData, { hotspotEnabled: false })).not.toContain("/wetbulb-temperature/forecast/global-hotspots/");
   });
 
-  it("clearly labels an expired last-known-good snapshot", () => {
-    const html = renderHotspotPage(snapshot(), { now: Date.parse("2026-09-24T00:00:00Z") });
-    expect(html).toContain("This archived forecast window ended");
-    expect(html).toContain("not a current next-24-hour forecast");
+  it("labels an upcoming window by its fixed bounds", () => {
+    const html = renderHotspotPage(snapshot(), { now: Date.parse("2026-09-22T00:45:00Z") });
+    expect(html).toContain('data-hotspot-window-state="upcoming"');
+    expect(html).toContain("It begins at Sep 22, 2026, 1:00 AM UTC");
+    expect(html).not.toContain("(passed)");
+  });
+
+  it("labels a partially elapsed window as the original window and never calls a passed peak upcoming", () => {
+    const html = renderHotspotPage(snapshot(), { now: Date.parse("2026-09-22T14:00:00Z") });
+    expect(html).toContain('data-hotspot-window-state="active"');
+    expect(html).toContain("original fixed forecast window Sep 22, 2026, 1:00 AM UTC – Sep 23, 2026, 1:00 AM UTC");
+    expect(html).toContain("not a rolling next-24-hours forecast");
+    const asmaraRow = html.slice(html.indexOf(">Asmara<"));
+    expect(asmaraRow.slice(0, asmaraRow.indexOf("</tr>"))).toContain("(passed)");
+    const dhakaRow = html.slice(html.indexOf(">Dhaka<"));
+    expect(dhakaRow.slice(0, dhakaRow.indexOf("</tr>"))).not.toContain("(passed)");
+  });
+
+  it("stops presenting an expired ranking and keeps only its original window bounds", () => {
+    const html = renderHotspotPage(snapshot(), { now: EXPIRED_NOW, hotspotEnabled: true });
+    expect(html).toContain("No current forecast ranking is available");
+    expect(html).toContain('data-hotspot-unavailable="expired"');
+    expect(html).toContain("Sep 23, 2026, 1:00 AM UTC) has ended");
+    expect(html).not.toContain("30.4°C");
+    expect(html).not.toContain("/wetbulb-temperature/bangladesh/dhaka-division/dhaka/");
+    expect(html).toContain('<link rel="canonical" href="https://www.wetbulb35.com/wetbulb-temperature/forecast/global-hotspots/">');
+  });
+
+  it("links to the unfiltered grid page only while that product is enabled", () => {
+    const enabled = renderHotspotPage(snapshot(), { globalGridHotspotEnabled: true });
+    expect(enabled).toContain('href="/wetbulb-temperature/forecast/global-grid-hotspots/"');
+    expect(enabled).toContain("Unfiltered global grid-cell hotspots");
+    expect(enabled).toContain("not a ranking of inhabited locations");
+    expect(renderHotspotPage(snapshot(), { globalGridHotspotEnabled: false })).not.toContain("/wetbulb-temperature/forecast/global-grid-hotspots/");
   });
 
   it("serves the canonical HTML and JSON routes without any weather-provider call", async () => {
@@ -90,5 +132,32 @@ describe("global hotspot page", () => {
 
     const hidden = await app.fetch(new Request("https://example.test/wetbulb-temperature/forecast/global-hotspots/"), {});
     expect(hidden.status).toBe(404);
+  });
+
+  it("keeps the URL with an unavailable state for expired and unpublished snapshots", async () => {
+    const app = createHonoPageRenderer({ cache: () => new FakeCache() });
+    const warnings: string[] = [];
+    const warn = vi.spyOn(console, "warn").mockImplementation((message) => { warnings.push(String(message)); });
+    vi.setSystemTime(EXPIRED_NOW);
+    const expired = await app.fetch(new Request("https://example.test/wetbulb-temperature/forecast/global-hotspots/"), env());
+    expect(expired.status).toBe(503);
+    expect(expired.headers.get("retry-after")).toBe("900");
+    expect(expired.headers.get("cache-control")).toBe("no-store");
+    const expiredHtml = await expired.text();
+    expect(expiredHtml).toContain("No current forecast ranking is available");
+    expect(expiredHtml).not.toContain("30.4°C");
+    expect(expiredHtml).toContain('aria-current="page"');
+    const expiredApi = await app.fetch(new Request("https://example.test/api/inhabited-hotspots"), env());
+    expect(expiredApi.status).toBe(503);
+    expect(await expiredApi.json()).toMatchObject({ status: "expired", validTo: "2026-09-23T01:00:00Z" });
+    expect(warnings.some((line) => line.includes("hotspot_snapshot_expired"))).toBe(true);
+    warn.mockRestore();
+
+    const unpublished = await app.fetch(new Request("https://example.test/wetbulb-temperature/forecast/global-hotspots/"), {
+      ...env(),
+      HOTSPOT_SNAPSHOTS: { async get() { return null; } },
+    });
+    expect(unpublished.status).toBe(503);
+    expect(await unpublished.text()).toContain('data-hotspot-unavailable="unpublished"');
   });
 });

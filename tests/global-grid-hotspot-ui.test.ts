@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderGlobalGridHotspotPage } from "../lib/page-renderer.mjs";
 import { createHonoPageRenderer } from "../workers/hono-page-renderer.mjs";
 
@@ -27,10 +27,17 @@ function env() {
 }
 
 describe("global-grid hotspot page", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-09-22T12:00:00Z"));
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
   it("renders grid-only ECMWF rankings and safe Google Maps coordinate links", () => {
     const html = renderGlobalGridHotspotPage(snapshot(), { siteUrl: "https://www.wetbulb35.com", googleAnalyticsId: "" });
     expect(html).toContain("Global ECMWF grid-cell wet bulb forecast hotspots");
-    expect(html).toContain("global ECMWF 0.25° three-hourly model grid cells including land and ocean");
+    expect(html).toContain("unfiltered ranking covers global ECMWF 0.25° model grid cells including land and ocean");
+    expect(html).toContain("interval: three-hourly");
     expect(html).toContain("no inhabited-location filter");
     expect(html).toContain('href="https://www.google.com/maps/search/?api=1&amp;query=23.75%2C90.5"');
     expect(html).toContain('target="_blank" rel="noopener noreferrer"');
@@ -54,5 +61,24 @@ describe("global-grid hotspot page", () => {
 
     const hidden = await app.fetch(new Request("https://example.test/wetbulb-temperature/forecast/global-grid-hotspots/"), {});
     expect(hidden.status).toBe(404);
+  });
+
+  it("links back to inhabited rankings only while that product is enabled", () => {
+    expect(renderGlobalGridHotspotPage(snapshot(), { hotspotEnabled: true })).toContain("Top 50 inhabited hotspots: the separate hourly ranking");
+    expect(renderGlobalGridHotspotPage(snapshot(), { hotspotEnabled: false })).not.toContain('href="/wetbulb-temperature/forecast/global-hotspots/"');
+  });
+
+  it("marks passed peaks and replaces an expired ranking with an unavailable state", async () => {
+    expect(renderGlobalGridHotspotPage(snapshot(), { now: Date.parse("2026-09-22T16:00:00Z") })).toContain("(passed)");
+    const expiredHtml = renderGlobalGridHotspotPage(snapshot(), { now: Date.parse("2026-09-23T01:00:00Z") });
+    expect(expiredHtml).toContain('data-hotspot-unavailable="expired"');
+    expect(expiredHtml).not.toContain("30.4°C");
+
+    vi.setSystemTime(Date.parse("2026-09-23T02:00:00Z"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const page = await createHonoPageRenderer().fetch(new Request("https://example.test/wetbulb-temperature/forecast/global-grid-hotspots/"), env());
+    expect(page.status).toBe(503);
+    expect(await page.text()).not.toContain("30.4°C");
+    warn.mockRestore();
   });
 });
