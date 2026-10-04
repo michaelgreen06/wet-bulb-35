@@ -1,4 +1,4 @@
-import { refreshForecast, validForecastGateRequest } from "./forecast-edge.ts";
+import { forecastTunables, refreshForecast, validForecastGateRequest } from "./forecast-edge.ts";
 
 export const BROWSER_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-revalidate";
 export const BOT_PATTERN = /(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|bytespider|crawler|spider|bot)/i;
@@ -12,6 +12,8 @@ const PASS_COOKIE = "wb35_weather_pass";
 const PASS_SECONDS = 86400;
 
 const OBSERVABILITY_UNKNOWN_VERSION = "unknown";
+const PROVIDER_ERROR_KEYS = { weather: "provider-error:weather", forecast: "provider-error:forecast" };
+const PROVIDER_ERROR_OUTCOMES = new Set(["timeout", "upstream_http", "invalid_payload", "exception"]);
 
 function deploymentVersion(env) {
   const id = env?.CF_VERSION_METADATA?.id;
@@ -396,7 +398,8 @@ export class WeatherGate {
   async fetch(request) {
     if (request.method !== "POST") return new Response("Not found", { status: 404 });
     const pathname = new URL(request.url).pathname;
-    if (pathname !== "/refresh" && pathname !== "/forecast" && pathname !== "/peek") return new Response("Not found", { status: 404 });
+    if (pathname !== "/refresh" && pathname !== "/forecast" && pathname !== "/peek" && pathname !== "/budget") return new Response("Not found", { status: 404 });
+    if (pathname === "/budget") return json(await this.budgetSummary());
     let body;
     try { body = await request.json(); } catch { return json(ERROR_INVALID, 400); }
 
@@ -414,7 +417,10 @@ export class WeatherGate {
           this.state.storage,
           this.env,
           body,
-          (event) => observer.forecast?.(event),
+          (event) => Promise.all([
+            event?.event === "forecast_provider_call" && event.outcome !== "success" ? this.recordProviderError("forecast", event) : null,
+            observer.forecast?.(event),
+          ]),
         ).finally(() => this.inFlight.delete(body.key)));
       }
       try {
@@ -441,6 +447,41 @@ export class WeatherGate {
       && body.lat >= -90 && body.lat <= 90 && body.lon >= -180 && body.lon <= 180
       && body.key === weatherKey({ lat: body.lat, lon: body.lon })
       && (body.state === "miss" || body.state === "stale");
+  }
+
+  /**
+   * Read-only internal counter summary for the private admin collector. Reachable only through
+   * the Durable Object binding; it never calls a provider or reserves an attempt.
+   */
+  async budgetSummary() {
+    const now = Date.now();
+    const day = new Date(now).toISOString().slice(0, 10);
+    const count = (value) => Number.isSafeInteger(value) && value >= 0 ? value : 0;
+    const [weatherUsed, forecastUsed, weatherError, forecastError] = await Promise.all([
+      this.state.storage.get(`attempts:${day}`),
+      this.state.storage.get(`forecast-attempts:${day}`),
+      this.state.storage.get(PROVIDER_ERROR_KEYS.weather),
+      this.state.storage.get(PROVIDER_ERROR_KEYS.forecast),
+    ]);
+    const date = new Date(now);
+    return {
+      v: 1,
+      day,
+      resetAt: new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1)).toISOString(),
+      weather: { used: count(weatherUsed), limit: weatherTunables(this.env).dailyAttempts, lastError: weatherError ?? null },
+      forecast: { used: count(forecastUsed), limit: forecastTunables(this.env).dailyAttempts, lastError: forecastError ?? null },
+    };
+  }
+
+  /** Stores only a timestamp, a fixed outcome code, and the HTTP status; never a provider body. */
+  async recordProviderError(kind, { outcome, upstream_status: upstreamStatus }) {
+    try {
+      await this.state.storage.put(PROVIDER_ERROR_KEYS[kind], {
+        at: new Date().toISOString(),
+        outcome: PROVIDER_ERROR_OUTCOMES.has(outcome) ? outcome : "exception",
+        upstreamStatus: Number.isSafeInteger(upstreamStatus) && upstreamStatus >= 100 && upstreamStatus <= 599 ? upstreamStatus : null,
+      });
+    } catch {}
   }
 
   async reserveAttempt() {
@@ -519,6 +560,7 @@ export class WeatherGate {
       throw error instanceof Error ? error : new Error("Failed to fetch weather data. Please check your internet connection and try again.");
     } finally {
       clearTimeout(timer);
+      if (outcome !== "success") await this.recordProviderError("weather", { outcome, upstream_status: upstreamStatus });
       await observabilityFor(this.env).weather({
         event: "weather_provider_call",
         outcome,

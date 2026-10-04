@@ -34,6 +34,8 @@
     "test:apex-redirect": "node --test tests/apex-redirect.test.mjs",
     "test:gsc-tracker": "python3 -m unittest tests/test_gsc_tracker.py",
     "test:analytics-events": "node --test tests/analytics-events.test.mjs",
+    "test:admin-dashboard": "node --test tests/admin-dashboard.test.mjs && python3 -m unittest tests/test_admin_status_collector.py",
+    "dry-run:admin-dashboard": "./node_modules/.bin/wrangler deploy --dry-run --config wrangler.admin-dashboard.toml --outdir .wrangler/admin-dashboard-dry-run",
     "test:ga4-reporting": "python3 -m unittest tests/test_wetbulb_ga4.py tests/test_generate_ga4_weekly_report.py tests/test_check_ga4_traffic_spike.py",
     "check:staging-parity": "node scripts/staging-parity-gate.mjs",
     "generate:hono-renderer-goldens": "node scripts/generate-hono-renderer-goldens.mjs",
