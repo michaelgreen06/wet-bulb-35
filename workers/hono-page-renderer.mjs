@@ -30,14 +30,16 @@ async function readAssetJson(request, assets, pathname) {
   try { return await response.json(); } catch { throw new InternalMetadataError(); }
 }
 function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID === undefined ? DEFAULT_GA_MEASUREMENT_ID : env.GOOGLE_ANALYTICS_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial" }; }
-function indexCountryShard(country, rows) {
+function indexCountryShard(country, rows, factsSnapshot = null) {
   const states = new Map();
   const stateSlugs = new Map((country.states || []).map((state) => [state.name, state.slug]));
   for (const row of rows) {
     if (!Array.isArray(row) || typeof row[1] !== "string" || typeof row[4] !== "string") continue;
-    const [name, stateName, latitude, longitude, outputCitySlug, nearby] = row;
+    const [name, stateName, latitude, longitude, outputCitySlug, nearby, facts] = row;
     if (!states.has(stateName)) states.set(stateName, []);
-    states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug, nearby: expandNearby(country.countrySlug, stateSlugs.get(stateName), nearby) });
+    states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug, nearby: expandNearby(country.countrySlug, stateSlugs.get(stateName), nearby),
+      ...(factsSnapshot && facts ? { locationFacts: { id: facts[0], population: facts[1], timeZone: facts[2], elevationM: facts[3], elevationSource: facts[4], snapshot: factsSnapshot } } : {}),
+    });
   }
   for (const cities of states.values()) cities.sort((a, b) => a.name.localeCompare(b.name) || a.outputCitySlug.localeCompare(b.outputCitySlug));
   return new Map([...states].map(([stateName, cities]) => [stateName, {
@@ -152,13 +154,25 @@ function validManifest(value) {
     && (value.popularCities.length === 0 || value.popularCities.length === 40)
     && value.popularCities.every((city) => city && typeof city.name === "string" && typeof city.stateName === "string"
       && typeof city.countryName === "string" && /^\/wetbulb-temperature\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+\/$/.test(city.path)));
-  return value && value.v === 1 && Array.isArray(value.countries) && popularCitiesValid && value.countries.every((country) => country && typeof country.country === "string"
+  const factsSourceValid = value?.factsSource === undefined || (value.factsSource && /^\d{4}-\d{2}-\d{2}$/.test(value.factsSource.snapshot)
+    && /^[a-f0-9]{64}$/.test(value.factsSource.sha256));
+  return value && value.v === 1 && Array.isArray(value.countries) && popularCitiesValid && factsSourceValid && value.countries.every((country) => country && typeof country.country === "string"
     && typeof country.countrySlug === "string" && typeof country.file === "string" && Array.isArray(country.states)
     && country.states.every((state) => state && typeof state.name === "string" && typeof state.slug === "string"));
 }
-function validShard(value) {
+function validFactRow(facts) {
+  if (facts === null) return true;
+  if (!Array.isArray(facts) || facts.length !== 5) return false;
+  const [id, population, timeZone, elevation, source] = facts;
+  return Number.isSafeInteger(id) && id > 0
+    && (population === null || (Number.isSafeInteger(population) && population > 0))
+    && typeof timeZone === "string" && timeZone.length > 0 && timeZone.length <= 80
+    && (elevation === null ? source === null : Number.isInteger(elevation) && elevation >= -1000 && elevation <= 9000 && (source === "elevation" || source === "dem"));
+}
+function validShard(value, hasFacts = false) {
   return value && value.v === 1 && Array.isArray(value.r) && value.r.every((row) => Array.isArray(row)
-    && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string" && (row.length < 6 || validNearby(row[5])));
+    && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string"
+    && (hasFacts ? row.length === 7 && validNearby(row[5]) && validFactRow(row[6]) : row.length >= 5 && row.length <= 6 && (row.length < 6 || validNearby(row[5]))));
 }
 function validNearby(value) {
   return Array.isArray(value) && value.every((entry) => Array.isArray(entry) && entry.length === 5 && /^[a-z0-9-]*$/.test(entry[0])
@@ -228,7 +242,7 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     }
     return manifestPromise;
   }
-  async function shard(request, assets, country) {
+  async function shard(request, assets, country, factsSource = null) {
     const cached = parsedShards.get(country.file);
     if (cached) {
       touchParsedShard(country.file, cached);
@@ -238,8 +252,8 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     if (inFlight) return inFlight;
     const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${country.file}`)
       .then((countryShard) => {
-        if (!validShard(countryShard)) throw new InternalMetadataError();
-        return indexCountryShard(country, countryShard.r);
+        if (!validShard(countryShard, Boolean(factsSource))) throw new InternalMetadataError();
+        return indexCountryShard(country, countryShard.r, factsSource?.snapshot);
       })
       .then((index) => {
         if (!index) return null;
@@ -294,7 +308,7 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     if (parts.length === 2) return { kind: "country", country };
     const stateRecord = country.states?.find((item) => item.slug === parts[2]);
     if (!stateRecord || typeof stateRecord.name !== "string") return null;
-    const countryIndex = await shard(request, assets, country);
+    const countryIndex = await shard(request, assets, country, index.factsSource);
     if (!countryIndex) return null;
     const state = stateFromIndex(country, stateRecord, countryIndex);
     if (!state?.cities.length) return null;
