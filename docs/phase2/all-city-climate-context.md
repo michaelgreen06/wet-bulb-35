@@ -36,8 +36,12 @@ Source hash drift; inventory drift or coordinates with more than five decimals; 
 | — excluded: 3×3 modal share < 0.67 | 3,609 | 2.8% |
 | — excluded: centre ≠ 3×3 modal class | 1,309 | 1.0% |
 | — excluded: centre cell NoData (coast/water) | 1,126 | 0.9% |
-| NASA POWER monthly wet bulb shown | _pending fetch_ | |
+| NASA POWER monthly wet bulb shown | 130,324 | 99.7% |
 | — excluded: exact MERRA-2 cell-edge tie | 362 | 0.3% |
+| — excluded: fill or invalid NASA value | 0 | 0% |
+| **Both shown** | **124,305** | **95.1%** |
+| **At least one shown** | **130,661** | **99.98%** |
+| Neither (no climate section) | 25 | 0.02% |
 
 Köppen coverage is 123,335 of 129,313 GeoNames-matched routes and 1,307 of 1,373 unmatched or ambiguous routes. All Popular-40 routes pass both sources.
 
@@ -58,8 +62,20 @@ Every excluded path, grouped by reason, is listed in `data/climate-context.v1.js
 - The validated artifact is folded into existing private country shards at build time. Each row gets `[koppenClass|null, localCellIndex|null]`, and each shard carries only the NASA cells its rows use (`c`).
 - The Worker validates every shard row and cell before indexing. The manifest records `climateSource` (inventory hash, Beck hash, NASA lock hash, API version). The runtime never imports the 9 MB artifact or calls NASA or Beck.
 - A new build guard rejects any shard over 24 MiB (Cloudflare's limit is 25 MiB).
-- Measured with Köppen only: total shards 67.76 → 69.04 MB; largest `united-states.json` 8.14 → 8.31 MB; Node retained heap with the three largest shards parsed rose 143.4 → 146.2 MB.
+- Measured on the full inventory:
+  - Total shards: 67.76 → 69.71 MB (+2.9%).
+  - Largest shard `united-states.json`: 8.14 → 8.40 MB.
+  - Node retained heap with the three largest shards parsed: 143.4 → 146.6 MB (+2.2%).
+  - Expanded climate objects are memoized and frozen per shard. Without that, routes sharing a class and cell each got their own copy and the heap rose to 159.3 MB.
 - Pre-existing note: the baseline 143 MB is Node `heapUsed` for three cached shards, not a workerd measurement. Isolate headroom deserves a separate check before any deploy.
+
+## Snapshot and reproducibility
+
+- NASA snapshot: October 3–4, 2026 (lock `accessedDate` 2026-10-04, UTC); API v2.10.0 throughout.
+- 17,263 requests at 0.5 req/s, one in flight, with zero retries, 429s or 5xx. Latency p50 265 ms, p95 314 ms.
+- About 80 MB of raw responses plus the journal and lock are kept privately outside Git.
+- All 200 route-coordinate validation responses equal their assigned cell. All 40 Popular routes reproduce the pilot's rounded monthly values and peak months exactly.
+- Two generator runs were byte-identical: `9bfe72baf74dff2560cedb71a18b6da006259a77babdaf7bb78930d2dc2927c0`, 9.80 MB.
 
 ## Regeneration
 

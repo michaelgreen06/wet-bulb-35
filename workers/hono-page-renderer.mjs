@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { pageHtml, renderBrowsePage, renderCountryPage, renderHomePage, renderStatePage } from "../lib/page-renderer.mjs";
 import { expandNearby } from "../lib/nearby.mjs";
-import { expandClimate, validCell, validClimateTuple } from "../lib/climate-classes.mjs";
+import { createClimateExpander, validCell, validClimateTuple } from "../lib/climate-classes.mjs";
 import { forecastResponse } from "./forecast-edge.ts";
 import { createObservability, weatherResponse } from "./weather-edge.mjs";
 export { WeatherGate } from "./weather-edge.mjs";
@@ -34,10 +34,11 @@ function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAUL
 function indexCountryShard(country, rows, factsSnapshot = null, climateCells = null) {
   const states = new Map();
   const stateSlugs = new Map((country.states || []).map((state) => [state.name, state.slug]));
+  const expandClimate = climateCells ? createClimateExpander(climateCells) : null;
   for (const row of rows) {
     if (!Array.isArray(row) || typeof row[1] !== "string" || typeof row[4] !== "string") continue;
     const [name, stateName, latitude, longitude, outputCitySlug, nearby, facts, climateTuple] = row;
-    const climate = climateCells ? expandClimate(climateTuple, climateCells) : null;
+    const climate = expandClimate ? expandClimate(climateTuple) : null;
     if (!states.has(stateName)) states.set(stateName, []);
     states.get(stateName).push({ name, resolvedAdmin1Code: stateName, resolvedCountryName: country.country, latitude, longitude, outputCitySlug, nearby: expandNearby(country.countrySlug, stateSlugs.get(stateName), nearby),
       ...(factsSnapshot && facts ? { locationFacts: { id: facts[0], population: facts[1], timeZone: facts[2], elevationM: facts[3], elevationSource: facts[4], snapshot: factsSnapshot } } : {}),

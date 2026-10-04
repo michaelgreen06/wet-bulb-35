@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { pageHtml, routePathForCity } from "../lib/page-renderer.mjs";
+import { createClimateExpander } from "../lib/climate-classes.mjs";
 import { BECK_ZIP_SHA256, expandClimate, inventorySha256, KOPPEN_CLASSES, loadClimateContext, validateClimateContext } from "../lib/climate-context.mjs";
 import { buildHonoBindingAssets } from "../scripts/build-hono-binding-assets.mjs";
 import { createRouteIdentityIndex } from "../scripts/probe-location-route-identity.mjs";
@@ -56,6 +57,11 @@ test("compact tuples expand to labelled classes and tenths with tied peaks", () 
   assert.equal(climate.nasaPower.monthlyC[10], 27);
   assert.equal(expandClimate([null, null], []), null);
   assert.equal(KOPPEN_CLASSES.length, 31);
+  const expand = createClimateExpander([cellRow]);
+  assert.equal(expand([26, 0]), expand([26, 0]));
+  assert.notEqual(expand([26, 0]), expand([26, null]));
+  assert.ok(Object.isFrozen(expand([26, 0]).nasaPower.monthlyC));
+  assert.equal(expand([null, null]), null);
 });
 
 test("non-Popular pages render only the climate values that passed generation gates", () => {
