@@ -60,5 +60,32 @@ class CoveringStepsTests(unittest.TestCase):
         start, end = MODULE.hourly_window(dt.datetime(2026, 9, 22, 15, 15, 42, tzinfo=dt.UTC))
         self.assertEqual(start, dt.datetime(2026, 9, 22, 16, tzinfo=dt.UTC))
         self.assertEqual(end, dt.datetime(2026, 9, 23, 15, tzinfo=dt.UTC))
+class ReadinessFileTests(unittest.TestCase):
+    def _write(self, payload):
+        import json
+        import tempfile
+
+        directory = tempfile.mkdtemp()
+        path = Path(directory) / "readiness.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
+    def test_ready_cycle_is_loaded(self):
+        readiness = MODULE.load_readiness(self._write({
+            "ready": True, "initialization": "2026-10-04T06:00:00Z", "date": "2026-10-04", "time": 6,
+            "firstSeenReadyAt": "2026-10-04T13:20:00Z",
+        }))
+        self.assertEqual((readiness["date"], readiness["time"]), ("2026-10-04", 6))
+
+    def test_not_ready_or_inconsistent_files_are_rejected(self):
+        with self.assertRaises(ValueError):
+            MODULE.load_readiness(self._write({"ready": False}))
+        with self.assertRaises(ValueError):
+            MODULE.load_readiness(self._write({
+                "ready": True, "initialization": "2026-10-04T06:00:00Z", "date": "2026-10-04", "time": 6,
+                "firstSeenReadyAt": "2026-10-04T05:00:00Z",
+            }))
+
+
 if __name__ == "__main__":
     unittest.main()

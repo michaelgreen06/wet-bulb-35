@@ -53,6 +53,18 @@ def covering_steps(run: dt.datetime, window_start: dt.datetime, window_end: dt.d
     return list(range(start, end + 1, 3))
 
 
+def load_readiness(path: Path) -> dict:
+    """Read the bounded readiness poll result that selected this cycle."""
+    readiness = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(readiness, dict) or readiness.get("ready") is not True:
+        raise ValueError("readiness file does not describe a ready ECMWF cycle")
+    initialization = dt.datetime.fromisoformat(str(readiness.get("initialization", "")).replace("Z", "+00:00"))
+    first_seen = dt.datetime.fromisoformat(str(readiness.get("firstSeenReadyAt", "")).replace("Z", "+00:00"))
+    if initialization.tzinfo is None or initialization.hour not in (0, 6, 12, 18) or first_seen < initialization:
+        raise ValueError("readiness file has an invalid initialization or first-ready time")
+    return readiness
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", type=parse_date)
@@ -62,7 +74,15 @@ def main() -> None:
     parser.add_argument("--metadata-output", type=Path)
     parser.add_argument("--reference-time", help="UTC ISO timestamp used to choose covering steps; defaults to now")
     parser.add_argument("--source", default="ecmwf", choices=("ecmwf", "aws", "azure"))
+    parser.add_argument("--readiness", type=Path, help="readiness poll output; selects its cycle and records its first-ready time")
     args = parser.parse_args()
+    readiness = None
+    if args.readiness:
+        if args.date is not None or args.time is not None:
+            parser.error("--readiness cannot be combined with --date/--time")
+        readiness = load_readiness(args.readiness)
+        args.date = readiness["date"]
+        args.time = int(readiness["time"])
 
     reference_override: dt.datetime | None = None
     if args.reference_time:
@@ -138,7 +158,11 @@ def main() -> None:
         "hourlySteps": [int((window_start - selected).total_seconds() // 3600) + offset for offset in range(24)],
         "forecastBytes": args.forecast_output.stat().st_size,
         "landMaskBytes": args.land_mask_output.stat().st_size,
+        "firstSeenReadyAt": readiness["firstSeenReadyAt"] if readiness else None,
+        "openMeteoAvailableAt": readiness.get("openMeteoAvailableAt") if readiness else None,
     }
+    if readiness and readiness["initialization"] != metadata["initialization"]:
+        raise RuntimeError("ECMWF retrieval initialization does not match the readiness poll")
     if args.metadata_output:
         args.metadata_output.parent.mkdir(parents=True, exist_ok=True)
         temporary = args.metadata_output.with_name(f".{args.metadata_output.name}.tmp-{os.getpid()}")
