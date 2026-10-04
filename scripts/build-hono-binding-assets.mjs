@@ -9,8 +9,11 @@ import { tier1ByCanonicalPath } from "../lib/page-renderer.mjs";
 import { compactNearby, computeNearby } from "../lib/nearby.mjs";
 import { loadCityPopulation } from "../lib/city-population.mjs";
 import { loadLocationFacts, validateLocationFacts } from "../lib/location-facts.mjs";
+import { loadClimateContext, validateClimateContext } from "../lib/climate-context.mjs";
 
 const GENERATOR_ID = "wetbulb35-hono-assets";
+// Cloudflare Workers static assets reject files over 25 MiB; keep headroom.
+export const MAX_SHARD_BYTES = 24 * 1024 * 1024;
 const REPOSITORY_ROOT = fs.realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."));
 
 function realOutputPath(target) {
@@ -38,6 +41,21 @@ export function validateOutputDirectory(outDir) {
   return root;
 }
 
+function localClimateTuple(climateContext, route, cells) {
+  const [koppen, cell] = climateContext.byPath[route];
+  if (cell !== null && !cells.has(cell)) cells.set(cell, cells.size);
+  return [koppen, cell === null ? null : cells.get(cell)];
+}
+
+function climateSourceSummary(climateContext) {
+  const nasa = climateContext.sources.nasaPower;
+  return {
+    inventorySha256: climateContext.inventory.sha256,
+    beckSha256: climateContext.sources.beck.sha256,
+    nasaPower: nasa ? { accessedDate: nasa.accessedDate, apiVersion: nasa.apiVersion, sourceLockSha256: nasa.sourceLockSha256 } : null,
+  };
+}
+
 function parseArgs(argv = process.argv.slice(2)) {
   return new Map(argv.map((arg) => {
     const [key, value] = arg.split("=", 2);
@@ -45,10 +63,11 @@ function parseArgs(argv = process.argv.slice(2)) {
   }));
 }
 
-export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = null, population = null, locationFacts = null }) {
+export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = null, population = null, locationFacts = null, climateContext = null }) {
   const root = validateOutputDirectory(outDir);
   const identity = createRouteIdentityIndex(sourceCities);
   if (locationFacts) validateLocationFacts(locationFacts, identity.rows.map((row) => `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`));
+  if (climateContext) validateClimateContext(climateContext, identity.rows);
   const tier1 = tier1ByCanonicalPath(tier1Manifest);
   const nearby = computeNearby(identity.rows, { hubPaths: new Set(tier1.keys()), population });
   const resolvedTier1 = new Set();
@@ -66,6 +85,8 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
         file: `${row.countrySlug}.json`,
         states: new Map(),
         rows: [],
+        // Each shard carries only the NASA POWER cells its own rows reference.
+        cells: new Map(),
       });
     }
     const country = countries.get(row.countrySlug);
@@ -79,7 +100,8 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
       row.longitude,
       row.outputCitySlug,
       compactNearby(row, nearby.get(route) ?? []),
-      ...(locationFacts ? [locationFacts.byPath[route]] : []),
+      ...(locationFacts || climateContext ? [locationFacts ? locationFacts.byPath[route] : null] : []),
+      ...(climateContext ? [localClimateTuple(climateContext, route, country.cells)] : []),
     ]);
   }
 
@@ -106,12 +128,12 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
   fs.writeFileSync(path.join(locations, "route-manifest.json"), JSON.stringify({
     v: 1, generator: GENERATOR_ID, countries: manifest, popularCities,
     ...(locationFacts ? { factsSource: { snapshot: locationFacts.source.snapshot, sha256: locationFacts.source.sha256 } } : {}),
+    ...(climateContext ? { climateSource: climateSourceSummary(climateContext) } : {}),
   }));
   for (const country of countries.values()) {
-    fs.writeFileSync(
-      path.join(shards, country.file),
-      JSON.stringify({ v: 1, r: country.rows }),
-    );
+    const body = JSON.stringify({ v: 1, r: country.rows, ...(climateContext ? { c: [...country.cells.keys()].map((index) => climateContext.cells[index]) } : {}) });
+    if (Buffer.byteLength(body) > MAX_SHARD_BYTES) throw new Error(`Country shard exceeds the asset size limit: ${country.file}`);
+    fs.writeFileSync(path.join(shards, country.file), body);
   }
   return {
     files: manifest.length + 1,
@@ -128,7 +150,7 @@ function main() {
   const out = args.get("out") ?? "worker-assets";
   const sourceCities = JSON.parse(fs.readFileSync(source, "utf8"));
   const tier1Manifest = JSON.parse(fs.readFileSync("scripts/tier1-city-manifest.json", "utf8"));
-  console.log(JSON.stringify(buildHonoBindingAssets({ sourceCities, outDir: out, tier1Manifest, population: loadCityPopulation(), locationFacts: loadLocationFacts() })));
+  console.log(JSON.stringify(buildHonoBindingAssets({ sourceCities, outDir: out, tier1Manifest, population: loadCityPopulation(), locationFacts: loadLocationFacts(), climateContext: loadClimateContext() })));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
