@@ -191,7 +191,7 @@ const BODY = {
   top50(doc, evaluation, summary, panels) {
     const items = Object.entries(doc.data.products).map(([name, snapshot]) => [
       name === "inhabited" ? "Inhabited Top-50" : "Unfiltered global grid",
-      `${escapeHtml(SNAPSHOT_LABEL[evaluation.products[name].state])} · IFS init ${show(snapshot.initialization)} · retrieved ${show(snapshot.retrievedAt)} · published ${show(snapshot.generatedAt)} · valid ${show(snapshot.validFrom)} → ${show(snapshot.validTo)}`,
+      `${escapeHtml(SNAPSHOT_LABEL[evaluation.products[name].state])} · IFS init ${show(snapshot.initialization)} · first ready ${show(snapshot.firstSeenReadyAt)} · retrieved ${show(snapshot.retrievedAt)} · published ${show(snapshot.generatedAt)} · valid ${show(snapshot.validFrom)} → ${show(snapshot.validTo)}`,
     ]);
     items.push(["Latest cycle", doc.data.lastCycle ? `${escapeHtml(doc.data.lastCycle.outcome)} at ${escapeHtml(doc.data.lastCycle.at)}` : "unknown"]);
     items.push(["Latest failed/retrying cycle", doc.data.latestFailure ? `${escapeHtml(doc.data.latestFailure.outcome)} at ${escapeHtml(doc.data.latestFailure.at)}` : "none recorded"]);

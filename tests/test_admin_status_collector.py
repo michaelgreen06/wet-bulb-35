@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import json
+from email.message import Message
 import pathlib
 import shutil
 import sqlite3
@@ -118,8 +119,9 @@ class Top50Tests(unittest.TestCase):
             self.assertNotIn(leaked, encoded)
 
     def test_adaptable_fields_for_issue_50_and_expiry(self):
-        payload = snapshot(run={"initialization": "2026-10-04T00:00:00Z", "retrievedAt": "2026-10-04T07:00:00+00:00"})
-        meta, _ = status.extract_snapshot_meta(json.loads(payload))
+        payload = json.loads(snapshot(run={"initialization": "2026-10-04T00:00:00Z", "retrievedAt": "2026-10-04T07:00:00+00:00"}))
+        del payload["discovery"]  # Legacy fallback when #50's discovery field is absent.
+        meta, _ = status.extract_snapshot_meta(payload)
         self.assertEqual(meta["initialization"], "2026-10-04T00:00:00Z")
         self.assertEqual(meta["retrievedAt"], "2026-10-04T07:00:00Z")
         self.assertEqual(status.classify_snapshot(meta, datetime(2026, 10, 5, 11, tzinfo=timezone.utc), 36), "expired")
@@ -169,6 +171,39 @@ class Top50Tests(unittest.TestCase):
             result = subprocess.run([node, "--input-type=module", "-e", script, json.dumps(cases)], cwd=ROOT,
                                     capture_output=True, text=True, check=True)
             self.assertEqual(json.loads(result.stdout), python_states)
+
+    def test_issue_50_snapshot_metadata_both_products_and_expired_api(self):
+        inhabited = json.loads(snapshot())
+        inhabited["discovery"].update(retrievedAt="2026-10-04T09:30:00Z", firstSeenReadyAt="2026-10-04T09:25:00Z")
+        unfiltered = {"schemaVersion": 1, "model": {
+            "initialization": "2026-10-04T06:00:00Z", "retrievedAt": "2026-10-04T09:35:00Z",
+            "firstSeenReadyAt": "2026-10-04T09:25:00Z"},
+            "generatedAt": "2026-10-04T09:40:00Z", "validFrom": "2026-10-04T10:00:00Z",
+            "validTo": "2026-10-04T11:00:00Z", "counts": {"published": 3}}
+        fetch = self.fetch((200, "application/json", json.dumps(inhabited).encode(), 5),
+                           (503, "application/json", json.dumps({"status": "expired", "initialization": "2026-10-04T06:00:00Z",
+                             "validFrom": "2026-10-04T10:00:00Z", "validTo": "2026-10-04T11:00:00Z", "error": SECRET}).encode(), 5),
+                           (404, "", b"", 5))
+        state, data = status.collect_top50(ORIGIN, fetch=fetch, now=NOW, environ={"HOTSPOT_RUN_LOCATION_LIMIT": "2000", "ADMIN_TOP50_MAX_INIT_AGE_HOURS": "15"})
+        self.assertEqual(state, "down")
+        self.assertEqual(data["products"]["inhabited"]["firstSeenReadyAt"], "2026-10-04T09:25:00Z")
+        self.assertEqual(data["products"]["inhabited"]["retrievedAt"], "2026-10-04T09:30:00Z")
+        self.assertEqual(data["products"]["unfiltered"]["initialization"], "2026-10-04T06:00:00Z")
+        self.assertEqual(status.classify_snapshot(data["products"]["unfiltered"], NOW, 15), "expired")
+        self.assertEqual(data["scheduledBudget"]["limit"], 2000)
+        self.assertNotIn(SECRET, json.dumps(data))
+        direct, _ = status.extract_snapshot_meta(unfiltered)
+        self.assertEqual(direct["firstSeenReadyAt"], "2026-10-04T09:25:00Z")
+
+        def expired_http_error(request, timeout):
+            raise urllib.error.HTTPError(request.full_url, 503, "expired", Message(), io.BytesIO(json.dumps({
+                "status": "expired", "validFrom": "2026-10-04T10:00:00Z", "validTo": "2026-10-04T11:00:00Z",
+            }).encode()))
+        code, _, body, _ = status.http_get(f"{ORIGIN}/api/global-grid-hotspots", opener=expired_http_error)
+        self.assertEqual(code, 503)
+        self.assertEqual(json.loads(body)["status"], "expired")
+        _, _, other_body, _ = status.http_get(f"{ORIGIN}/api/forecast", opener=expired_http_error)
+        self.assertEqual(other_body, b"")
 
     def test_in_progress_cycle_is_reported_as_retrying(self):
         fetch = self.fetch((404, "", b"", 5), (404, "", b"", 5), runs(

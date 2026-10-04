@@ -15,6 +15,7 @@ import sys
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
@@ -46,8 +47,9 @@ TOP50_SOURCES = {"inhabited": "/api/inhabited-hotspots", "unfiltered": "/api/glo
 # field locations here; missing fields are reported as unknown rather than inferred.
 TOP50_FIELD_PATHS = {
     "schemaVersion": ("schemaVersion",),
-    "initialization": ("initialization", "run.initialization", "source.initialization", "discovery.initialization"),
-    "retrievedAt": ("retrievedAt", "run.retrievedAt", "source.retrievedAt", "discovery.retrievedAt"),
+    "initialization": ("discovery.initialization", "model.initialization", "initialization", "run.initialization", "source.initialization"),
+    "retrievedAt": ("discovery.retrievedAt", "model.retrievedAt", "retrievedAt", "run.retrievedAt", "source.retrievedAt"),
+    "firstSeenReadyAt": ("discovery.firstSeenReadyAt", "model.firstSeenReadyAt"),
     "generatedAt": ("generatedAt",),
     "validFrom": ("validFrom",),
     "validTo": ("validTo",),
@@ -128,7 +130,15 @@ def http_get(url: str, timeout: float = 15.0, opener: Callable[..., Any] = urlli
     try:
         response = opener(request, timeout=timeout)
     except urllib.error.HTTPError as error:
-        return error.code, "", b"", int((time.monotonic() - started) * 1000)
+        # Issue #50 returns bounded, metadata-only 503 bodies for expired snapshot routes.
+        # Ignore all other error bodies (including provider or Google responses).
+        with error:
+            body = b""
+            if error.code == 503 and urllib.parse.urlsplit(url).path in TOP50_SOURCES.values():
+                body = error.read(MAX_BODY_BYTES + 1)
+                if len(body) > MAX_BODY_BYTES:
+                    body = b""
+        return error.code, "", body, int((time.monotonic() - started) * 1000)
     with response:
         body = response.read(MAX_BODY_BYTES + 1)
         if len(body) > MAX_BODY_BYTES:
@@ -168,6 +178,12 @@ def _html_validator(path: str, origin: str):
 def _snapshot_validator(status, content_type, body):
     if status == 404:
         return "not_published"
+    if status == 503:
+        try:
+            if json.loads(body).get("status") == "expired":
+                return "expired"
+        except (ValueError, AttributeError):
+            pass
     if status != 200:
         return "http_error"
     try:
@@ -221,7 +237,7 @@ def extract_snapshot_meta(payload: Any) -> tuple[dict[str, Any], int | None]:
     meta = {
         "availability": "published",
         "schemaVersion": count(first("schemaVersion")),
-        **{field: utc_iso_or_none(first(field)) for field in ("initialization", "retrievedAt", "generatedAt", "validFrom", "validTo")},
+        **{field: utc_iso_or_none(first(field)) for field in ("initialization", "retrievedAt", "firstSeenReadyAt", "generatedAt", "validFrom", "validTo")},
         "published": count(first("published")) if first("published") is not None else
         (len(payload["hotspots"]) if isinstance(payload.get("hotspots"), list) else None),
     }
@@ -293,6 +309,18 @@ def collect_top50(origin: str = DEFAULT_ORIGIN, fetch=http_get, now: datetime | 
         status, _, body, _ = fetch(origin + path)
         if status == 404:
             products[product] = {"availability": "not_published"}
+        elif status == 503:
+            try:
+                expired = json.loads(body)
+                if not isinstance(expired, dict) or expired.get("status") != "expired":
+                    raise ValueError("not an expired snapshot")
+                meta, _ = extract_snapshot_meta(expired)
+                expired_at = _parse_utc(meta["validTo"])
+                if meta["availability"] != "published" or expired_at is None or expired_at > now:
+                    raise ValueError("invalid expired snapshot")
+                products[product] = meta
+            except (ValueError, TypeError, AttributeError):
+                products[product] = {"availability": "unavailable"}
         elif status != 200:
             products[product] = {"availability": "unavailable"}
         else:
@@ -308,7 +336,7 @@ def collect_top50(origin: str = DEFAULT_ORIGIN, fetch=http_get, now: datetime | 
                                                      environ.get("ADMIN_GITHUB_READ_TOKEN"))
     except Exception:  # noqa: BLE001 - cycle history is supplementary
         last_cycle, latest_failure = None, None
-    limit = environ.get("HOTSPOT_DAILY_LOCATION_LIMIT", "")
+    limit = environ.get("HOTSPOT_RUN_LOCATION_LIMIT") or environ.get("HOTSPOT_DAILY_LOCATION_LIMIT", "")
     max_age = float(environ.get("ADMIN_TOP50_MAX_INIT_AGE_HOURS") or 36)
     states = [classify_snapshot(meta, now, max_age) for meta in products.values()]
     if any(state in ("expired", "invalid") for state in states):

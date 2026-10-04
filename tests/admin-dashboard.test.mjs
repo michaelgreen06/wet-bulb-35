@@ -265,6 +265,15 @@ test("Top-50 snapshots are classified at view time and an expired ranking is nev
   assert.equal(classifyTop50Snapshot(inhabited, Date.parse("2026-10-04T21:00:01Z"), sixHourly).state, "behind");
 });
 
+test("issue #50 readiness timestamp is projected without exposing rankings", () => {
+  const source = clone(FIXTURES.top50);
+  source.data.products.inhabited.firstSeenReadyAt = "2026-10-04T09:25:00Z";
+  source.data.products.inhabited.hotspots = [{ email: "private@example.test" }];
+  const projected = projectPanel("top50", source);
+  assert.equal(projected.data.products.inhabited.firstSeenReadyAt, "2026-10-04T09:25:00Z");
+  assert.doesNotMatch(JSON.stringify(projected), /private@example\.test|hotspots/);
+});
+
 test("budget collector reads only WeatherGate /budget and preserves the prior result on failure", async () => {
   const store = kv();
   const requests = [];

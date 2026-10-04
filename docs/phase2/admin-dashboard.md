@@ -2,7 +2,13 @@
 
 ## Status
 
-Code and tests only. **Not deployed, not routable.** No Cloudflare Access application, DNS record, Worker route/custom domain, KV namespace, or secret has been created. Each of those is a separate approval gate below.
+Staging uses a separate `wetbulb35-admin-dashboard-staging` Worker at
+`https://wetbulb35-admin-dashboard-staging.mgdevstuff.workers.dev/`, behind a
+Cloudflare Access app allowing only `wetbulbwatch@gmail.com` via email one-time
+PIN. Its KV namespace is staging-only; the Wrangler staging config is local and
+ignored by Git. **PR #59 remains unmerged; no production Worker, DNS, custom
+domain, or site schedule has been changed.** The production config below remains
+route-free and fail-closed until a separate release authorization.
 
 ## Architecture
 
@@ -42,18 +48,20 @@ scripts/run-admin-status.sh                  wetbulb35-admin-dashboard Worker
 
 `workers/forecast-edge.ts` is unchanged, avoiding overlap with issue #50.
 
-## Issue #50 integration (required before staging)
+## Issue #50 integration (implemented for staging; live snapshots still pending)
 
-#50 keeps OpenWeather for current conditions and moves five-day and Top-50 to explicit IFS. Before staging:
+#50 keeps OpenWeather for current conditions and moves five-day and Top-50 to explicit IFS. The dashboard's staging integration is:
 
-1. Add #50's final run/readiness field locations to `TOP50_FIELD_PATHS` in `scripts/admin_status.py` (the first present path wins; missing fields render as unknown, never inferred).
-2. Set `ADMIN_TOP50_MAX_INIT_AGE_HOURS` (Worker var and collector env) to #50's overdue-cycle threshold (e.g. 15 h for 6-hourly cycles; default 36 h matches PR #29's daily run).
-3. Set `ADMIN_TOP50_WORKFLOW` if #50 renames the workflow, and `HOTSPOT_DAILY_LOCATION_LIMIT` to the approved per-run cap.
-4. Re-run `npm run test:admin-dashboard` against a real #50 snapshot's metadata.
+1. Collector extracts #50's `discovery` / `model` initialization, retrieval and first-ready timestamps; it recognizes #50's metadata-only HTTP 503 for an expired ranking, never claiming it is current. Tests cover both snapshot shapes and the expired API response. No real #50 snapshot has been published, so live integration remains to be verified before release.
+2. Isolated staging sets `ADMIN_TOP50_MAX_INIT_AGE_HOURS=15` (both Worker and collector) for #50's six-hourly cycle; the production default of 36 hours is unchanged.
+3. The workflow name remains `global-inhabited-hotspots.yml`; the collector accepts `HOTSPOT_RUN_LOCATION_LIMIT=2000` with legacy daily-name fallback. This is a labeled per-run cap, not a vendor quota.
+4. The live Top-50 panel currently reports not published rather than inventing a ranking. Recheck against real #50 snapshots before production.
 
-## Access and exposure (prepared, not configured)
+## Access and exposure
 
-Primary control: a Cloudflare Access self-hosted application covering `admin.wetbulb35.com/*` (every path, API and asset), policy **Allow → Emails → approved list**, login method **One-time PIN** only. Configure it **before** attaching any route. Then:
+For a later production release, first configure a separate Cloudflare Access self-hosted application covering `admin.wetbulb35.com/*` (every path, API and asset), policy **Allow → Emails → approved list**, login method **One-time PIN** only. Configure it **before** attaching any route. Then:
+
+Staging instead has its own Access application on the exact `workers.dev` hostname, installed before that hostname was enabled; preview URLs are disabled. Staging has no WeatherGate binding or scheduled trigger, so budgets are **not collected** without a production Worker change. GSC is unconfigured and labeled unknown; site and GA4 are host-collected read-only aggregates. This is an isolated dashboard preview, not a full production-parity acceptance test.
 
 - `wrangler.admin-dashboard.toml` already sets `workers_dev = false`, `preview_urls = false` and has no routes, so no alternate hostname exists. The Worker also returns `404` for any host other than `ADMIN_HOSTNAME`.
 - The Worker independently verifies the `Cf-Access-Jwt-Assertion` token (RS256, team issuer, application audience, expiry) and the email allowlist; it returns `503` with no data until all of `ADMIN_ACCESS_TEAM_DOMAIN`, `ADMIN_ACCESS_AUD` and `ADMIN_ALLOWED_EMAILS` are set.
