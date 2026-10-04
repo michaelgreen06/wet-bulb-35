@@ -135,6 +135,41 @@ class Top50Tests(unittest.TestCase):
         self.assertEqual(state, "unknown")
         self.assertEqual(data["scheduledBudget"], {"used": None, "limit": None})
 
+    def test_missing_run_metadata_is_not_current_and_matches_worker(self):
+        """Regression (Hermes review of #59): published snapshot without initialization is not current."""
+        no_init = snapshot()
+        payload = json.loads(no_init)
+        del payload["discovery"]
+        fetch = self.fetch((200, "application/json", json.dumps(payload).encode(), 5), (404, "", b"", 5), (404, "", b"", 5))
+        state, data = status.collect_top50(ORIGIN, fetch=fetch, now=NOW, environ={})
+        self.assertIsNone(data["products"]["inhabited"]["initialization"])
+        self.assertEqual(status.classify_snapshot(data["products"]["inhabited"], NOW, 36), "run_unknown")
+        self.assertEqual(state, "degraded")
+
+        base = {"availability": "published", "initialization": "2026-10-04T06:00:00Z",
+                "validFrom": "2026-10-04T11:00:00Z", "validTo": "2026-10-05T11:00:00Z"}
+        cases = [
+            (base, "2026-10-04T12:00:00Z", 36), (base, "2026-10-04T10:00:00Z", 36), (base, "2026-10-05T11:00:00Z", 36),
+            (base, "2026-10-04T21:00:01Z", 15), ({**base, "initialization": None}, "2026-10-04T12:00:00Z", 36),
+            ({**base, "initialization": None}, "2026-10-05T12:00:00Z", 36),
+            ({**base, "initialization": "2026-10-04T11:30:00Z"}, "2026-10-04T12:00:00Z", 36),
+            ({**base, "validFrom": "2026-10-04T13:00:00Z", "initialization": "2026-10-04T12:30:00Z"}, "2026-10-04T12:00:00Z", 36),
+            ({**base, "validFrom": base["validTo"]}, "2026-10-04T12:00:00Z", 36), ({**base, "validTo": None}, "2026-10-04T12:00:00Z", 36),
+            ({"availability": "invalid"}, "2026-10-04T12:00:00Z", 36), ({"availability": "not_published"}, "2026-10-04T12:00:00Z", 36),
+            ({"availability": "unavailable"}, "2026-10-04T12:00:00Z", 36),
+        ]
+        python_states = [status.classify_snapshot(meta, datetime.fromisoformat(at.replace("Z", "+00:00")), hours) for meta, at, hours in cases]
+        self.assertEqual(python_states[:6], ["in_window", "upcoming", "expired", "behind", "run_unknown", "expired"])
+        node = shutil.which("node")
+        if node:
+            script = ("import { classifyTop50Snapshot } from './lib/admin/status-contract.mjs';"
+                      "const cases = JSON.parse(process.argv[1]);"
+                      "console.log(JSON.stringify(cases.map(([meta, at, hours]) => "
+                      "classifyTop50Snapshot(meta, Date.parse(at), { maxInitializationAgeHours: hours }).state)));")
+            result = subprocess.run([node, "--input-type=module", "-e", script, json.dumps(cases)], cwd=ROOT,
+                                    capture_output=True, text=True, check=True)
+            self.assertEqual(json.loads(result.stdout), python_states)
+
     def test_in_progress_cycle_is_reported_as_retrying(self):
         fetch = self.fetch((404, "", b"", 5), (404, "", b"", 5), runs(
             {"created_at": "2026-10-04T11:00:00Z", "status": "in_progress", "conclusion": None}))
@@ -205,6 +240,44 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(state, "degraded")
         self.assertNotIn(SECRET, json.dumps(data))
         self.assertEqual(len(status.gsc_sample_paths()), status.GSC_SAMPLE_SIZE)
+
+    def test_sparse_rows_anchor_to_complete_day_not_latest_row(self):
+        """Regression (Hermes review of #59): absent zero-impression days must not re-anchor windows."""
+        rows = [{"keys": ["2026-09-20"], "clicks": 40, "impressions": 400},
+                {"keys": ["2026-09-14"], "clicks": 10, "impressions": 100},
+                {"keys": ["2026-10-02"], "clicks": 99, "impressions": 999}]  # incomplete; must be dropped
+        service = FakeGsc(rows, {})
+        service.rows_metadata = {"firstIncompleteDate": "2026-10-02"}
+        original = service.searchanalytics
+
+        def analytics():
+            class Analytics:
+                def query(self, siteUrl, body):
+                    service.queries.append(body)
+                    return FakeRequest({"rows": rows, "metadata": service.rows_metadata})
+            return Analytics()
+        service.searchanalytics = analytics
+        state, data = status.collect_search(service, "sc-domain:wetbulb35.com", date(2026, 10, 4), lambda call: call(), sample=[])
+        self.assertEqual(service.queries[0]["dataState"], "all")
+        self.assertEqual((data["dataThrough"], data["completeThroughBasis"], data["latestDataDate"]), ("2026-10-01", "api_metadata", "2026-09-20"))
+        self.assertEqual(data["windows"]["last7"], {"start": "2026-09-25", "end": "2026-10-01", "clicks": 0, "impressions": 0})
+        self.assertEqual(data["windows"]["prior7"], {"start": "2026-09-18", "end": "2026-09-24", "clicks": 40, "impressions": 400})
+        self.assertEqual(data["windows"]["last28"]["clicks"], 50)
+        self.assertEqual(state, "degraded", "a collapse to zero on recent complete days is not ok")
+
+        service.rows_metadata = None
+        _, fallback = status.collect_search(service, "sc-domain:wetbulb35.com", date(2026, 10, 4), lambda call: call(), sample=[])
+        self.assertEqual((fallback["dataThrough"], fallback["completeThroughBasis"]), ("2026-10-01", "fixed_lag"))
+        service.rows_metadata = {"firstIncompleteDate": "2026-12-01"}
+        _, implausible = status.collect_search(service, "sc-domain:wetbulb35.com", date(2026, 10, 4), lambda call: call(), sample=[])
+        self.assertEqual((implausible["dataThrough"], implausible["completeThroughBasis"]), ("2026-10-01", "fixed_lag"))
+        service.searchanalytics = original
+
+    def test_no_rows_reports_zero_windows_not_unknown(self):
+        state, data = status.collect_search(FakeGsc([], {}), "sc-domain:wetbulb35.com", date(2026, 10, 4), lambda call: call(), sample=[])
+        self.assertEqual(state, "degraded")
+        self.assertIsNone(data["latestDataDate"])
+        self.assertEqual(data["windows"]["last28"], {"start": "2026-09-04", "end": "2026-10-01", "clicks": 0, "impressions": 0})
 
     def test_permission_failure_aborts_with_reason_code(self):
         service = FakeGsc([], {})

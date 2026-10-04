@@ -36,6 +36,8 @@ DEFAULT_GITHUB_REPO = "michaelgreen06/wet-bulb-35"
 DEFAULT_TOP50_WORKFLOW = "global-inhabited-hotspots.yml"
 USER_AGENT = "WetBulb35-AdminHealth/1.0 (private synthetic monitor bot)"
 GSC_SAMPLE_SIZE = 10
+# Used only when GSC omits metadata.firstIncompleteDate; final data usually lags 2-3 days.
+GSC_FALLBACK_FINAL_LAG_DAYS = 3
 MAX_BODY_BYTES = 2_000_000
 
 # Provider-free, read-only snapshot routes from PR #29.
@@ -228,18 +230,27 @@ def extract_snapshot_meta(payload: Any) -> tuple[dict[str, Any], int | None]:
     return meta, count(first("refined"))
 
 
+def _parse_utc(value: Any) -> datetime | None:
+    normalized = utc_iso_or_none(value)
+    return datetime.fromisoformat(normalized.replace("Z", "+00:00")) if normalized else None
+
+
 def classify_snapshot(meta: dict[str, Any], now: datetime, max_init_age_hours: float) -> str:
-    """Python mirror of classifyTop50Snapshot, used only for collector alerts."""
-    if meta.get("availability") != "published":
-        return meta.get("availability", "unavailable")
-    valid_from = datetime.fromisoformat(meta["validFrom"].replace("Z", "+00:00"))
-    valid_to = datetime.fromisoformat(meta["validTo"].replace("Z", "+00:00"))
+    """Python mirror of classifyTop50Snapshot (parity is tested), used for collector status and alerts."""
+    if meta.get("availability") in ("not_published", "unavailable"):
+        return meta["availability"]
+    valid_from, valid_to = _parse_utc(meta.get("validFrom")), _parse_utc(meta.get("validTo"))
+    if meta.get("availability") != "published" or not valid_from or not valid_to or valid_from >= valid_to:
+        return "invalid"
     if now >= valid_to:
         return "expired"
-    if meta.get("initialization"):
-        initialization = datetime.fromisoformat(meta["initialization"].replace("Z", "+00:00"))
-        if now - initialization > timedelta(hours=max_init_age_hours):
-            return "behind"
+    initialization = _parse_utc(meta.get("initialization"))
+    if not initialization:
+        return "run_unknown"
+    if initialization > valid_from or initialization > now:
+        return "invalid"
+    if now - initialization > timedelta(hours=max_init_age_hours):
+        return "behind"
     return "upcoming" if now < valid_from else "in_window"
 
 
@@ -302,7 +313,7 @@ def collect_top50(origin: str = DEFAULT_ORIGIN, fetch=http_get, now: datetime | 
     states = [classify_snapshot(meta, now, max_age) for meta in products.values()]
     if any(state in ("expired", "invalid") for state in states):
         status = "down"
-    elif any(state in ("behind", "unavailable") for state in states) or (latest_failure and latest_failure["outcome"] == "failure"
+    elif any(state in ("behind", "unavailable", "run_unknown") for state in states) or (latest_failure and latest_failure["outcome"] == "failure"
                                                                       and (not last_cycle or last_cycle["outcome"] != "success")):
         status = "degraded"
     elif all(state == "not_published" for state in states):
@@ -332,20 +343,39 @@ def _window(by_date: dict[str, tuple[int, int]], end: date, days: int) -> dict[s
             "clicks": sum(item[0] for item in selected), "impressions": sum(item[1] for item in selected)}
 
 
-def search_windows(rows: list[dict[str, Any]]) -> tuple[str | None, dict[str, Any] | None]:
-    """Days absent from a final-data date report have no impressions and count as zero."""
+def search_complete_through(response: dict[str, Any], today: date) -> tuple[date, str]:
+    """Latest complete GSC day: API metadata when supplied, otherwise a conservative fixed lag.
+
+    Never inferred from the newest row: the date dimension omits zero-impression days, so a
+    traffic collapse would otherwise silently re-anchor the windows to old data.
+    """
+    first_incomplete = (response.get("metadata") or {}).get("firstIncompleteDate")
+    try:
+        through = date.fromisoformat(first_incomplete) - timedelta(days=1)
+        if today - timedelta(days=GSC_FALLBACK_FINAL_LAG_DAYS + 7) <= through <= today - timedelta(days=1):
+            return through, "api_metadata"
+    except (TypeError, ValueError):
+        pass
+    return today - timedelta(days=GSC_FALLBACK_FINAL_LAG_DAYS), "fixed_lag"
+
+
+def search_windows(rows: list[dict[str, Any]], complete_through: date) -> tuple[str | None, dict[str, Any]]:
+    """Windows end at the explicit complete day; absent dates inside a window count as zero.
+
+    Rows after complete_through are incomplete and excluded. Returns the latest day that had any
+    search data (or None) separately so a collapse to zero stays visible.
+    """
     by_date = {}
     for row in rows:
-        day = date.fromisoformat(row["keys"][0]).isoformat()
-        by_date[day] = (int(row.get("clicks", 0)), int(row.get("impressions", 0)))
-    if not by_date:
-        return None, None
-    through = date.fromisoformat(max(by_date))
-    return through.isoformat(), {
-        "last7": _window(by_date, through, 7),
-        "prior7": _window(by_date, through - timedelta(days=7), 7),
-        "last28": _window(by_date, through, 28),
-        "prior28": _window(by_date, through - timedelta(days=28), 28),
+        day = date.fromisoformat(row["keys"][0])
+        if day <= complete_through:
+            by_date[day.isoformat()] = (int(row.get("clicks", 0)), int(row.get("impressions", 0)))
+    latest = max(by_date) if by_date else None
+    return latest, {
+        "last7": _window(by_date, complete_through, 7),
+        "prior7": _window(by_date, complete_through - timedelta(days=7), 7),
+        "last28": _window(by_date, complete_through, 28),
+        "prior28": _window(by_date, complete_through - timedelta(days=28), 28),
     }
 
 
@@ -355,9 +385,11 @@ def collect_search(service, site_url: str, today: date, call: Callable[[Callable
     sample = (sample or gsc_sample_paths())[:GSC_SAMPLE_SIZE]
     response = call(lambda: service.searchanalytics().query(siteUrl=site_url, body={
         "startDate": (today - timedelta(days=70)).isoformat(), "endDate": (today - timedelta(days=1)).isoformat(),
-        "dimensions": ["date"], "dataState": "final", "rowLimit": 100,
+        # "all" returns metadata.firstIncompleteDate; rows at or after it are dropped below.
+        "dimensions": ["date"], "dataState": "all", "rowLimit": 100,
     }).execute())
-    data_through, windows = search_windows(response.get("rows", []))
+    complete_through, basis = search_complete_through(response, today)
+    latest_data_date, windows = search_windows(response.get("rows", []), complete_through)
     results = []
     for path in sample:
         item = {"path": path, "outcome": "failed", "verdict": None, "coverageState": None, "lastCrawlDate": None}
@@ -375,13 +407,13 @@ def collect_search(service, site_url: str, today: date, call: Callable[[Callable
                 raise
         results.append(item)
     inspected = sum(item["outcome"] == "ok" for item in results)
-    if windows is None:
-        status = "unknown"
-    elif inspected < len(results) or any(item["verdict"] == "FAIL" for item in results):
+    no_recent_data = latest_data_date is None or (complete_through - date.fromisoformat(latest_data_date)).days > 2
+    if no_recent_data or inspected < len(results) or any(item["verdict"] == "FAIL" for item in results):
         status = "degraded"
     else:
         status = "ok"
-    return status, {"dataThrough": data_through, "windows": windows or {},
+    return status, {"dataThrough": complete_through.isoformat(), "completeThroughBasis": basis,
+                    "latestDataDate": latest_data_date, "windows": windows,
                     "sample": {"requested": len(sample), "inspected": inspected, "results": results}}
 
 

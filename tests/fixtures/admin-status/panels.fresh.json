@@ -39,7 +39,7 @@
     "collectedAt": "2026-10-04T06:00:00Z",
     "lastAttempt": { "at": "2026-10-04T06:00:00Z", "outcome": "success", "reason": null },
     "data": {
-      "dataThrough": "2026-10-01",
+      "dataThrough": "2026-10-01", "completeThroughBasis": "api_metadata", "latestDataDate": "2026-10-01",
       "windows": {
         "last7": { "start": "2026-09-25", "end": "2026-10-01", "clicks": 70, "impressions": 700 },
         "prior7": { "start": "2026-09-18", "end": "2026-09-24", "clicks": 50, "impressions": 500 },

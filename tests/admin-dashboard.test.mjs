@@ -152,6 +152,8 @@ test("authorized viewer gets noindex, no-store HTML with every card's source, wi
   assert.match(body, /internal safeguards, not vendor-reported quota/);
   assert.match(body, /not a vendor reset time/);
   assert.match(body, /not a sitewide indexed-page count/);
+  assert.match(body, /2026-10-01 \(Search Console metadata\)\. Days without rows count as zero\./);
+  assert.match(body, /<dt>Latest day with any search data<\/dt><dd>2026-10-01<\/dd>/);
   assert.match(body, /not global uptime/);
   assert.match(body, /\(partial\)/);
   assert.doesNotMatch(body, /<script|googletagmanager|gtag\(/i);
@@ -240,6 +242,23 @@ test("Top-50 snapshots are classified at view time and an expired ranking is nev
   const degradedSummary = await (await handleAdminRequest(new Request(`https://${HOST}/api/status`, { headers: { "cf-access-jwt-assertion": await jwt() } }),
     env({ ADMIN_STATUS: kv(degraded) }), { now: NOW, fetchImpl: fetchSpy().impl })).json();
   assert.equal(degradedSummary.panels.top50.evaluation.state, "degraded");
+
+  // Missing or inconsistent run metadata is never inferred as current (Hermes review of #59).
+  assert.deepEqual(classifyTop50Snapshot({ ...inhabited, initialization: null }, NOW), { state: "run_unknown", current: false });
+  assert.deepEqual(classifyTop50Snapshot({ ...inhabited, initialization: "2026-10-04T11:30:00Z" }, NOW), { state: "invalid", current: false });
+  assert.deepEqual(classifyTop50Snapshot({ ...inhabited, validFrom: "2026-10-04T13:00:00Z", initialization: "2026-10-04T12:30:00Z" }, NOW), { state: "invalid", current: false });
+  assert.equal(classifyTop50Snapshot({ ...inhabited, initialization: null }, Date.parse(inhabited.validTo)).state, "expired");
+  const missingRun = clone(FIXTURES);
+  delete missingRun._comment;
+  missingRun.top50.data.products.unfiltered.initialization = null;
+  const missingEnv = env({ ADMIN_STATUS: kv(missingRun) });
+  const missingSummary = await (await handleAdminRequest(new Request(`https://${HOST}/api/status`, { headers: { "cf-access-jwt-assertion": await jwt() } }),
+    missingEnv, { now: NOW, fetchImpl: fetchSpy().impl })).json();
+  assert.deepEqual(missingSummary.panels.top50.evaluation.products.unfiltered, { state: "run_unknown", current: false });
+  assert.equal(missingSummary.panels.top50.evaluation.state, "degraded");
+  const missingHtml = await (await handleAdminRequest(new Request(`https://${HOST}/`, { headers: { "cf-access-jwt-assertion": await jwt() } }),
+    missingEnv, { now: NOW, fetchImpl: fetchSpy().impl })).text();
+  assert.match(missingHtml, /Run metadata missing — not shown as current · IFS init unknown/);
 
   // The overdue-cycle threshold is adaptable for #50's 6-hourly cadence.
   const sixHourly = { maxInitializationAgeHours: 15 };

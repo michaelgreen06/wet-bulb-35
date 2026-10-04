@@ -156,6 +156,7 @@ const STATE_LABEL = {
 const SNAPSHOT_LABEL = {
   upcoming: "Current (window not yet started)", in_window: "Current for its original window (already begun)",
   behind: "Valid window, but a newer cycle is overdue", expired: "Expired — not current",
+  run_unknown: "Run metadata missing — not shown as current",
   invalid: "Invalid snapshot metadata", not_published: "Not published", unavailable: "Unavailable",
 };
 
@@ -214,7 +215,8 @@ const BODY = {
       : "unknown";
     const inspected = sample.results.map((item) => `<li>${show(item.path)}: ${item.outcome === "ok" ? `${show(item.verdict)} · ${show(item.coverageState)} · last crawl ${show(item.lastCrawlDate)}` : "inspection failed"}</li>`).join("");
     return rows([
-      ["Data through", show(doc.data.dataThrough)],
+      ["Complete data through", `${show(doc.data.dataThrough)} (${doc.data.completeThroughBasis === "api_metadata" ? "Search Console metadata" : doc.data.completeThroughBasis === "fixed_lag" ? "conservative fixed lag; Search Console gave no metadata" : "basis unknown"}). Days without rows count as zero.`],
+      ["Latest day with any search data", show(doc.data.latestDataDate)],
       ["Last 7 complete days", line(windows.last7, windows.prior7)],
       ["Last 28 complete days", line(windows.last28, windows.prior28)],
       ["URL Inspection sample", `${show(sample.inspected)} of ${show(sample.requested)} sampled canonical URLs inspected. Sample status only — not a sitewide indexed-page count; see Search Console's Page indexing report.<ul>${inspected}</ul>`],
