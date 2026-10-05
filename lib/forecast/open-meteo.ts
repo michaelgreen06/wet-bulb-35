@@ -169,7 +169,9 @@ export function buildPinnedOpenMeteoForecastUrl(
   url.searchParams.set("latitude", String(location.latitude));
   url.searchParams.set("longitude", String(location.longitude));
   url.searchParams.set("hourly", "temperature_2m,dew_point_2m,surface_pressure");
-  url.searchParams.set("forecast_hours", "145");
+  // Six days after initialization cannot cover five *future complete* local dates
+  // when the run arrives late; request seven days and validate the actual hours.
+  url.searchParams.set("forecast_hours", "169");
   url.searchParams.set("run", initialization.slice(0, 16));
   url.searchParams.set("timezone", "auto");
   url.searchParams.set("models", OPEN_METEO_MODEL);
@@ -400,7 +402,7 @@ export function isWetBulbForecast(value: unknown): value is WetBulbForecast {
 export function isCurrentForecast(forecast: WetBulbForecast, now: number): boolean {
   const today = localDateAt(forecast.utcOffsetSeconds, now);
   return forecast.runs.some((run) => run.id === "snapshot-pinned")
-    ? forecast.days[0]?.date > today
+    ? forecast.days[0]?.date === addDays(today, 1)
     : forecast.days[0]?.date === today;
 }
 
@@ -496,12 +498,12 @@ export function normalizePinnedOpenMeteoForecast(
   expectUnit(units, "surface_pressure", ["hPa"]);
   if (typeof value.timezone !== "string" || !validUtcOffset(value.utc_offset_seconds)) throw new TypeError("Pinned Open-Meteo timezone metadata is invalid.");
   const arrays = [hourly.time, hourly.temperature_2m, hourly.dew_point_2m, hourly.surface_pressure];
-  if (!arrays.every(Array.isArray) || arrays.some((items) => (items as unknown[]).length !== 145)) throw new TypeError("Pinned Open-Meteo forecast must contain the full run horizon.");
+  if (!arrays.every(Array.isArray) || arrays.some((items) => (items as unknown[]).length !== 169)) throw new TypeError("Pinned Open-Meteo forecast must contain the full run horizon.");
   const [times, temperatures, dewPoints, pressures] = arrays as unknown[][];
   const offset = value.utc_offset_seconds as number;
   const start = Date.parse(initialization);
   const byDate = new Map<string, Array<{ time: string; temperature: number; dewPoint: number; pressure: number }>>();
-  for (let index = 0; index < 145; index += 1) {
+  for (let index = 0; index < 169; index += 1) {
     const time = new Date(start + index * 3_600_000 + offset * 1_000).toISOString().slice(0, 16);
     if (times[index] !== time) throw new TypeError("Pinned Open-Meteo timestamps do not start at the requested initialization.");
     const temperature = temperatures[index]; const dewPoint = dewPoints[index]; const pressure = pressures[index];
@@ -522,7 +524,10 @@ export function normalizePinnedOpenMeteoForecast(
     }
     days.push({ date, maximumWetBulbC, peakLocalTime, runId: "snapshot-pinned" });
   }
-  if (days.length < FORECAST_DAYS || days.some((day, index) => index > 0 && day.date !== addDays(days[0].date, index))) throw new TypeError("Pinned IFS run does not cover five complete future local dates.");
+  if (days.length < FORECAST_DAYS || days[0]?.date !== addDays(today, 1)
+    || days.some((day, index) => index > 0 && day.date !== addDays(days[0].date, index))) {
+    throw new TypeError("Pinned IFS run does not cover five complete future local dates.");
+  }
   const forecast: WetBulbForecast = { schemaVersion: FORECAST_SCHEMA_VERSION, method: ROMPS_METHOD, methodVersion: ROMPS_METHOD_VERSION, phasePolicy: FORECAST_PHASE_POLICY, provider: OPEN_METEO_PROVIDER, providerModel: OPEN_METEO_MODEL, location: { ...location }, timezone: value.timezone, utcOffsetSeconds: offset, retrievedAt, runs: [{ id: "snapshot-pinned", model: OPEN_METEO_MODEL, initialization, retrievedAt }], days: days.slice(0, FORECAST_DAYS) };
   if (!isWetBulbForecast(forecast)) throw new TypeError("Pinned Open-Meteo forecast is malformed.");
   return forecast;

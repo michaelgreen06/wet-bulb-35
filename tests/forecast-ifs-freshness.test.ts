@@ -267,7 +267,7 @@ describe("Top-50 pinned-run reuse", () => {
     const url = "https://test/api/forecast?path=" + encodeURIComponent(location.path);
 
     const pinnedResponse = await app.fetch(new Request(url), { ...baseEnv, HOTSPOT_FEATURE_MODE: "enabled" });
-    expect(pinnedResponse.status).toBe(500);
+    expect(pinnedResponse.status).toBe(503);
     expect(gateCalls).toBe(1);
 
     const disabled = await app.fetch(new Request(url), baseEnv);

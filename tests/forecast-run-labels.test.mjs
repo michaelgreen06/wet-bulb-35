@@ -55,6 +55,13 @@ test("a single confirmed run is labeled once with its initialization", async () 
   assert.match(document.querySelector("[data-forecast-updated]").textContent, /Latest IFS run: initialized Sep 20, 12:00 AM UTC/);
 });
 
+test("on-view aligned forecast names the snapshot's pinned run, not the latest run", async () => {
+  const run = { id: "snapshot-pinned", model: "ecmwf_ifs025", initialization: "2026-09-20T00:00:00Z", retrievedAt: Date.parse("2026-09-20T15:00:00Z") };
+  const { document } = await renderWithPayload(payload([run], Array(5).fill("snapshot-pinned")));
+  assert.match(document.querySelector("[data-forecast-updated]").textContent, /Top 50 snapshot's pinned IFS run: initialized Sep 20, 12:00 AM UTC/);
+  assert.doesNotMatch(document.querySelector("[data-forecast-updated]").textContent, /Latest IFS run/);
+});
+
 test("days from different runs are labeled per day and never presented as one run", async () => {
   const runs = [
     { id: "top50-pinned", model: "ecmwf_ifs025", initialization: "2026-09-19T18:00:00Z", retrievedAt: Date.parse("2026-09-20T02:10:00Z") },

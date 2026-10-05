@@ -10,9 +10,9 @@ const end = "2026-10-06T10:00:00Z";
 const inhabited = { discovery: { initialization: start }, validFrom: from, validTo: end };
 const grid = { model: { initialization: start, validTimeBounds: { start: "2026-10-05T09:00:00Z", end: "2026-10-06T12:00:00Z" }, steps: [9, 12, 15] } };
 
-test("daily shared Open-Meteo budget includes forecast Worker and worst-case retry attempts, not OpenWeather", () => {
-  assert.equal(calculateDailyBudget({ locations: 1500 }), 6650);
-  assert.equal(calculateDailyBudget({ locations: 2000 }), 8150);
+test("daily shared Open-Meteo ceiling separates existing refinement from on-view city forecasts, without publication prefetch", () => {
+  assert.equal(calculateDailyBudget({ locations: 1500 }), 6500);
+  assert.equal(calculateDailyBudget({ locations: 2000 }), 8000);
   assert.throws(() => calculateDailyBudget({ locations: -1 }), /nonnegative/);
 });
 

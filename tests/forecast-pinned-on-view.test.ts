@@ -1,0 +1,99 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { forecastKey, forecastResponse, refreshForecast, SNAPSHOT_FORECAST_UNAVAILABLE } from "../workers/forecast-edge.ts";
+import { normalizePinnedOpenMeteoForecast } from "../lib/forecast/open-meteo.ts";
+
+const RUN = "2026-10-05T00:00:00Z";
+const NOW = Date.parse("2026-10-05T12:30:00Z");
+const ranked = { path: "/wetbulb-temperature/united-states/texas/houston/", name: "Houston", latitude: 29.7604, longitude: -95.3698 };
+const ordinary = { path: "/wetbulb-temperature/united-states/texas/beaumont/", name: "Beaumont", latitude: 30.0802, longitude: -94.1266 };
+
+function source(offsetSeconds = -18000) {
+  return {
+    latitude: ranked.latitude, longitude: ranked.longitude, elevation: 20,
+    timezone: offsetSeconds === -18000 ? "America/Chicago" : "Asia/Kolkata", utc_offset_seconds: offsetSeconds,
+    hourly_units: { time: "iso8601", temperature_2m: "°C", dew_point_2m: "°C", surface_pressure: "hPa" },
+    hourly: {
+      time: Array.from({ length: 169 }, (_, i) => new Date(Date.parse(RUN) + i * 3600000 + offsetSeconds * 1000).toISOString().slice(0, 16)),
+      temperature_2m: Array(169).fill(30), dew_point_2m: Array(169).fill(25), surface_pressure: Array(169).fill(1005),
+    },
+  };
+}
+function storage() {
+  const records = new Map<string, unknown>();
+  type Storage = { get(key: string): Promise<unknown>; put(key: string, val: unknown): Promise<void>; transaction<T>(callback: (transaction: Storage) => Promise<T>): Promise<T> };
+  const api: Storage = { async get(key: string) { return records.get(key); }, async put(key: string, val: unknown) { records.set(key, val); }, async transaction<T>(callback: (transaction: Storage) => Promise<T>) { return callback(api); } };
+  return { api, records };
+}
+class Cache {
+  records = new Map<string, Response>();
+  async match(key: string) { return this.records.get(key)?.clone(); }
+  async put(key: string, response: Response) { this.records.set(key, response.clone()); }
+}
+const env = { OPEN_METEO_API_MODE: "public-noncommercial", FORECAST_DAILY_ATTEMPT_LIMIT: "5" };
+const request = (path: string, userAgent = "Mozilla/5.0") => new Request(`https://test/api/forecast?path=${encodeURIComponent(path)}`, { headers: { "user-agent": userAgent } });
+
+beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(NOW); });
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); });
+
+describe("on-view snapshot-run equality", () => {
+  it("uses one exact-run request per viewed city, caches by run, and never calls the provider for crawlers", async () => {
+    const { api, records } = storage();
+    const cache = new Cache();
+    const urls: URL[] = [];
+    vi.stubGlobal("fetch", async (input: URL | RequestInfo) => { urls.push(new URL(String(input))); return Response.json(source()); });
+    let gateCalls = 0;
+    const gate = { WEATHER_GATE: { idFromName: () => "WeatherGate", get: () => ({ fetch: async (_url: string, options: RequestInit) => {
+      gateCalls++;
+      const body = JSON.parse(String(options.body));
+      return Response.json(await refreshForecast(api, env, body));
+    } }) } };
+    const resolver = async (path: string) => [ranked, ordinary].find((city) => city.path === path) ?? null;
+    const pinned = async () => RUN;
+    const bot = await forecastResponse(request(ranked.path, "Googlebot"), gate, undefined, resolver, cache, pinned);
+    expect(bot.status).toBe(204);
+    expect(gateCalls).toBe(0);
+    for (const city of [ranked, ordinary]) {
+      const first = await forecastResponse(request(city.path), gate, undefined, resolver, cache, pinned);
+      expect(first.status).toBe(200);
+      const forecast = await first.json();
+      expect(forecast.providerModel).toBe("ecmwf_ifs025");
+      expect(forecast.runs).toEqual([{ id: "snapshot-pinned", model: "ecmwf_ifs025", initialization: RUN, retrievedAt: NOW }]);
+      expect(forecast.days).toHaveLength(5);
+      expect(forecast.days[0].date).toBe("2026-10-06");
+      expect((await forecastResponse(request(city.path), gate, undefined, resolver, cache, pinned)).status).toBe(200);
+    }
+    expect(urls).toHaveLength(2);
+    expect(gateCalls).toBe(2);
+    for (const url of urls) {
+      expect(url.origin + url.pathname).toBe("https://single-runs-api.open-meteo.com/v1/forecast");
+      expect(url.searchParams.get("models")).toBe("ecmwf_ifs025");
+      expect(url.searchParams.get("run")).toBe("2026-10-05T00:00");
+      expect(url.searchParams.get("forecast_hours")).toBe("169");
+      expect(url.searchParams.get("latitude")?.includes(",")).toBe(false);
+    }
+    expect(records.get("forecast-attempts:2026-10-05")).toBe(2);
+    expect(forecastKey(ranked.path, RUN)).not.toBe(forecastKey(ranked.path, "2026-10-05T06:00:00Z"));
+  });
+
+  it("rejects a missing simultaneous hour and supports half-hour offsets", () => {
+    const halfHour = source(19800);
+    expect(normalizePinnedOpenMeteoForecast(halfHour, ranked, NOW, RUN).days[0].peakLocalTime).toMatch(/:30$/);
+    const incomplete = source();
+    incomplete.hourly.surface_pressure[100] = null as unknown as number;
+    expect(() => normalizePinnedOpenMeteoForecast(incomplete, ranked, NOW, RUN)).toThrow(/five complete future local dates/);
+  });
+
+  it("rejects a mismatched gate payload and an expired snapshot without a latest-run fallback", async () => {
+    const wrongRun = normalizePinnedOpenMeteoForecast(source(), ranked, NOW, RUN);
+    const key = forecastKey(ranked.path, RUN);
+    const envelope = { v: 1, key, payload: { ...wrongRun, runs: [{ ...wrongRun.runs[0], initialization: "2026-10-05T06:00:00Z" }] }, fetchedAt: NOW, storedAt: NOW, freshUntil: NOW + 10800000, staleUntil: NOW + 43200000 };
+    let calls = 0;
+    const gate = { WEATHER_GATE: { idFromName: () => "WeatherGate", get: () => ({ fetch: async () => { calls++; return Response.json(envelope); } }) } };
+    const bad = await forecastResponse(request(ranked.path), gate, undefined, async () => ranked, new Cache(), async () => RUN);
+    expect(bad.status).toBe(503);
+    expect(calls).toBe(1);
+    const expired = await forecastResponse(request(ranked.path), gate, undefined, async () => ranked, new Cache(), async () => SNAPSHOT_FORECAST_UNAVAILABLE);
+    expect(expired.status).toBe(503);
+    expect(calls).toBe(1);
+  });
+});

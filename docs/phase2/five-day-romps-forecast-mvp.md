@@ -44,11 +44,9 @@ The Worker explicitly uses `models=ecmwf_ifs025` (ECMWF IFS 0.25°, the same nam
 
 ### Model run attribution
 
-- After each forecast response, the Worker reads Open-Meteo's static `ecmwf_ifs025` metadata file. This is not a weighted forecast call and reserves no budget.
-- The run's initialization is recorded only when that run was available, plus a ten-minute settling margin for Open-Meteo's redundant servers, before the forecast request started. Otherwise the run is labeled "initialization time not confirmed".
-- A metadata failure never blocks the forecast.
-- Each day carries a run ID, and the notes list every run and its initialization.
-- Top-50 locations may combine their snapshot's pinned run with the latest run (see the hotspot MVP document). Each day names its run, so different runs are never presented as one.
+When the inhabited hotspot feature is enabled, the current snapshot supplies one exact IFS initialization for **every canonical city**. On a human forecast view and cache miss, the Worker requests only that city from Open-Meteo Single Runs with `models=ecmwf_ifs025`, `run=<snapshot initialization>`, `forecast_hours=169`, and `timezone=auto`. It requires simultaneous hourly temperature, dew point and pressure for five full *future* local dates; missing coverage returns an aligned-forecast-unavailable state rather than mixing in a newer run. The snapshot publication itself makes no five-day city forecast calls. Outside that gated feature, the existing explicit-model `forecast_days=5` path remains separate.
+
+For the ungated latest-model path, metadata run attribution may remain unconfirmed. The gated pinned path needs no metadata inference because `run=` is explicit, and its response is labeled with that initialization. Never present a different run as aligned with the Top-50 ranking.
 
 ## Request and cache boundaries
 
@@ -63,13 +61,7 @@ The existing WeatherGate Durable Object handles a distinct `/forecast` operation
 - three hours of freshness; and
 - twelve hours of stale availability.
 
-Normalized Open-Meteo observations and Romps results are stored under separate versioned keys. Formula revisions can therefore reuse still-fresh provider data. Version 3 keys separate IFS entries from earlier `best_match` entries, and validators reject `best_match` payloads, so expiry never silently reverts models. The public Cache API stores only validated result envelopes. Browser responses remain `private, no-store`.
-
-The five local dates must start on the location's current date:
-- A provider response that starts on a past local date is rejected.
-- A cached or stale result stops being served once its first date has passed, even inside the fresh or stale TTL. The Worker then refreshes, or shows the unavailable state if the refresh fails.
-- The three-hour fresh and twelve-hour stale bounds are unchanged.
-- Every one of the 120 hourly rows must be complete. Missing late steps fail closed.
+Normalized Open-Meteo observations and Romps results use versioned keys. Version 4 separates on-view run-keyed forecasts from earlier `best_match` and latest-IFS entries. The gated aligned path caches by canonical city and exact initialization, for three hours fresh and at most twelve hours stale, without substituting an older or newer run. The public Cache API stores validated envelopes; browser responses remain `private, no-store`. Ungated latest-model forecasts retain five dates beginning today; aligned forecasts require five complete local dates beginning tomorrow and reject incomplete hourly inputs.
 
 Known crawlers receive `204` before route resolution, cache lookup, or provider access. Server-side HTML rendering never fetches a forecast.
 

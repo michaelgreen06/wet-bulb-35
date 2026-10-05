@@ -158,12 +158,21 @@ function browser(payload: WetBulbForecast): Response {
   return json(payload, 200, { "cache-control": FORECAST_BROWSER_CACHE_CONTROL });
 }
 
-function isForecastEnvelope(value: unknown, expectedKey: string): value is ForecastEnvelope {
+function matchesRequestedRun(payload: WetBulbForecast, initialization: string | null): boolean {
+  return initialization === null
+    ? payload.runs.length === 1 && payload.runs[0].id === "latest"
+    : payload.runs.length === 1 && payload.runs[0].id === "snapshot-pinned"
+      && payload.runs[0].model === "ecmwf_ifs025" && payload.runs[0].initialization === initialization
+      && payload.days.every((day) => day.runId === "snapshot-pinned");
+}
+
+function isForecastEnvelope(value: unknown, expectedKey: string, initialization: string | null = null): value is ForecastEnvelope {
   if (value === null || typeof value !== "object") return false;
   const envelope = value as Record<string, unknown>;
   return envelope.v === FORECAST_CACHE_ENVELOPE_VERSION
     && envelope.key === expectedKey
     && isWetBulbForecast(envelope.payload)
+    && matchesRequestedRun(envelope.payload, initialization)
     && finiteNumber(envelope.fetchedAt)
     && finiteNumber(envelope.storedAt)
     && finiteNumber(envelope.freshUntil)
@@ -190,20 +199,20 @@ function forecastCacheUrl(request: Request, key: string): string {
   return new URL(`/__forecast_cache__/${encodeURIComponent(key)}`, request.url).toString();
 }
 
-async function readCache(cache: CacheLike | undefined, request: Request, key: string): Promise<ForecastEnvelope | null> {
+async function readCache(cache: CacheLike | undefined, request: Request, key: string, initialization: string | null): Promise<ForecastEnvelope | null> {
   if (!cache) return null;
   try {
     const response = await cache.match(forecastCacheUrl(request, key));
     if (!response?.ok) return null;
     const value: unknown = await response.json();
-    return isForecastEnvelope(value, key) ? value : null;
+    return isForecastEnvelope(value, key, initialization) ? value : null;
   } catch {
     return null;
   }
 }
 
-async function writeCache(cache: CacheLike | undefined, request: Request, key: string, envelope: ForecastEnvelope): Promise<void> {
-  if (!cache || !isForecastEnvelope(envelope, key)) return;
+async function writeCache(cache: CacheLike | undefined, request: Request, key: string, envelope: ForecastEnvelope, initialization: string | null): Promise<void> {
+  if (!cache || !isForecastEnvelope(envelope, key, initialization)) return;
   const remainingSeconds = Math.ceil((envelope.staleUntil - Date.now()) / 1_000);
   if (remainingSeconds <= 0) return;
   try {
@@ -230,7 +239,7 @@ async function callGate(
   });
   if (!response.ok) throw new Error(FORECAST_ERROR);
   const envelope: unknown = await response.json();
-  if (!isForecastEnvelope(envelope, key)) throw new Error(FORECAST_ERROR);
+  if (!isForecastEnvelope(envelope, key, body.modelInitialization ?? null)) throw new Error(FORECAST_ERROR);
   return envelope;
 }
 
@@ -268,13 +277,13 @@ export async function forecastResponse(
   const now = Date.now();
   const respond = (payload: WetBulbForecast): Response => browser(payload);
   const cache = injectedCache ?? (globalThis as typeof globalThis & { caches?: { default?: CacheLike } }).caches?.default;
-  const stored = await readCache(cache, request, key);
+  const stored = await readCache(cache, request, key, modelInitialization);
   // Past local dates are never served as a five-day forecast, even inside the stale window.
   const cached = stored && isCurrentForecast(stored.payload, now) ? stored : null;
   if (cached && now < cached.freshUntil) return respond(cached.payload);
   if (cached && now < cached.staleUntil) {
     const refresh = callGate(env, { key, location, state: "stale", modelInitialization })
-      .then((envelope) => writeCache(cache, request, key, envelope))
+      .then((envelope) => writeCache(cache, request, key, envelope, modelInitialization))
       .catch(() => undefined);
     executionContext?.waitUntil?.(refresh);
     return respond(cached.payload);
@@ -283,10 +292,12 @@ export async function forecastResponse(
   try {
     const envelope = await callGate(env, { key, location, state: "miss", modelInitialization });
     if (!isCurrentForecast(envelope.payload, Date.now())) throw new Error(FORECAST_ERROR);
-    await writeCache(cache, request, key, envelope);
+    await writeCache(cache, request, key, envelope, modelInitialization);
     return respond(envelope.payload);
   } catch {
-    return json({ error: FORECAST_ERROR }, 500);
+    return modelInitialization
+      ? json({ error: "Forecast unavailable: the hotspot snapshot's pinned IFS run does not provide five complete future local dates or is temporarily unavailable." }, 503)
+      : json({ error: FORECAST_ERROR }, 500);
   }
 }
 
@@ -354,7 +365,7 @@ export async function refreshForecast(
   const tunables = forecastTunables(env);
   const now = Date.now();
   const storedResult = await storage.get(`forecast-result:${body.key}`);
-  const validResult = isForecastEnvelope(storedResult, body.key) && isCurrentForecast(storedResult.payload, now) ? storedResult : null;
+  const validResult = isForecastEnvelope(storedResult, body.key, body.modelInitialization ?? null) && isCurrentForecast(storedResult.payload, now) ? storedResult : null;
   if (validResult && now < validResult.freshUntil) return validResult;
   const staleResult = validResult && now < validResult.staleUntil ? validResult : null;
 
