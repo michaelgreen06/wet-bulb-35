@@ -15,6 +15,7 @@ test("hosted R2 credential preflight is manual and metadata-only", () => {
   assert.match(source, /curl --fail-with-body --silent --show-error --max-time 15/);
   assert.match(source, /api\.cloudflare\.com\/client\/v4\/accounts\/\$CLOUDFLARE_ACCOUNT_ID\/r2\/buckets\/\$HOTSPOT_R2_BUCKET/);
   assert.match(source, /secrets\.WETBULB35_CLOUDFLARE_API_TOKEN/);
+  assert.match(source, /Authorization: Bearer \$CLOUDFLARE_API_TOKEN/);
   assert.match(source, /vars\.HOTSPOT_R2_BUCKET/);
   assert.doesNotMatch(source, /\br2 object (put|delete)\b|wrangler deploy|generate:hotspot-snapshot|await-ifs-run-readiness|OPEN_METEO_API_KEY|npm ci|POST|PUT|DELETE/);
   const script = source.split("        run: |\n")[1]?.replace(/^          /gm, "");
