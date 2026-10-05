@@ -211,8 +211,9 @@ export async function runGate({ production = DEFAULT_PRODUCTION, staging = DEFAU
     schema: 1, production, staging, weatherApiRequested: false,
     documentedHeaderNormalization: [...IGNORED_HEADERS].sort(), footerYearNormalized: true,
     internalHtmlCachePolicy: INTERNAL_HTML_CACHE_POLICY,
-    routes: records, redirectContracts, offlineInventory: offlineInventory(),
+    routes: records, redirectContracts,
     latency: { pathname: "/wetbulb-temperature/andorra/encamp/vila/", production: await latency(production, "/wetbulb-temperature/andorra/encamp/vila/"), staging: await latency(staging, "/wetbulb-temperature/andorra/encamp/vila/") },
+    offlineInventory: offlineInventory(),
   };
   result.summary = { total: records.length + redirectContracts.length, passed: records.filter((record) => record.pass).length + redirectContracts.filter((contract) => contract.pass).length, failed: records.filter((record) => !record.pass).length + redirectContracts.filter((contract) => !contract.pass).length };
   return result;

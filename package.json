@@ -56,7 +56,7 @@
     "test:static-prototype": "node --test tests/static-generator.test.mjs tests/vercel-ignore-build.test.mjs tests/nearby.test.mjs tests/city-population.test.mjs",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run",
+    "test": "vitest run --exclude '**/*.mjs' && node --test tests/*.test.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
