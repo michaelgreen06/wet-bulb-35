@@ -48,6 +48,9 @@ FORECAST_STALE_SECONDS = "43200"
 FORECAST_TIMEOUT_MS = "5000"
 FORECAST_DAILY_ATTEMPT_LIMIT = "2000"
 OPEN_METEO_API_MODE = "public-noncommercial"
+# Enable only after the hosted publisher verifies both private current aliases.
+HOTSPOT_FEATURE_MODE = "enabled"
+GLOBAL_GRID_HOTSPOT_FEATURE_MODE = "enabled"
 HTML_CACHE_EVENT_SAMPLE_RATE = "0"
 # Approved weather-only Turnstile rollout. Sitekey is public; secret is a Worker secret binding.
 WEATHER_TURNSTILE_MODE = "enforce"
