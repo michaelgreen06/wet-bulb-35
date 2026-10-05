@@ -1,6 +1,10 @@
 name: Global wet bulb hotspots
 
 on:
+  # Disposable branch-only rehearsal: no schedule, merge, or production publication.
+  push:
+    branches:
+      - test/hosted-hotspots-20261005
   schedule:
     # One daily publication attempt for the 00Z IFS cycle, starting at 06:35Z;
     # the bounded readiness check waits for a complete grid and matching point run.
@@ -17,12 +21,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: global-inhabited-hotspots
+  group: ${{ github.event_name == 'push' && 'global-inhabited-hotspots-hosted-test' || 'global-inhabited-hotspots' }}
   cancel-in-progress: false
 
 jobs:
   generate:
-    if: github.event_name == 'workflow_dispatch' || vars.GLOBAL_HOTSPOTS_ENABLED == 'true'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || vars.GLOBAL_HOTSPOTS_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
