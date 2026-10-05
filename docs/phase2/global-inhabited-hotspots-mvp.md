@@ -99,7 +99,7 @@ A snapshot is usable only within its original `validFrom`–`validTo` bounds; ti
 
 - After ranking, the generator makes one extra pinned Single Runs request for the published locations only: at most 50, `forecast_hours=145`, `timezone=auto`. It does not fetch 120 hours at every scan candidate.
 - Each published hotspot stores daily maxima for complete local dates covered by the same initialization (`hotspots[].fiveDay`). The schema rejects any other initialization.
-- This step is warning-only: on failure the ranking still publishes.
+- This step fails closed after bounded retries: if any of the 50 published locations lacks five complete local dates from the pinned initialization, the job retains the prior snapshot and alerts. It does not publish an unaligned ranking.
 - While the snapshot is current, `/api/forecast` for a Top-50 path reads the snapshot (never a provider):
   - It serves the pinned run alone, with no provider call, when that run covers all five current local dates.
   - Otherwise, each remaining day comes from the latest explicit IFS run, and every day is labeled with its run and initialization.
