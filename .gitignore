@@ -73,3 +73,8 @@ ga4-reader.json
 # Private enrichment inputs and local extraction work must never be committed.
 /enrichment-private/
 /sources/
+
+# Generated global-hotspot inputs and snapshots stay out of Git.
+/.hotspots/
+*.grib
+*.grib2

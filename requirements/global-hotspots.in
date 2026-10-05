@@ -1,0 +1,5 @@
+# Offline ECMWF native-grid candidate discovery.
+eccodes==2.48.0
+ecmwf-opendata==0.3.24
+heatindex==0.0.2
+numpy==2.2.6
