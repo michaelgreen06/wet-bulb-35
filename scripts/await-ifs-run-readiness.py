@@ -194,10 +194,11 @@ def point_ready(value: Any, now: dt.datetime) -> bool:
             local_hour = dt.datetime.strptime(local_text, "%Y-%m-%dT%H:%M")
         except ValueError:
             return False
-        if local_hour.minute != 0 or not all(isinstance(n, (int, float)) and not isinstance(n, bool)
-                                                and math.isfinite(n) for n in (temperature, dew_point, pressure)) or pressure <= 0:
-            continue
+        # Fractional UTC offsets produce local HH:30/HH:45 hourly labels.
         utc_hour = (local_hour - dt.timedelta(seconds=offset)).replace(tzinfo=dt.UTC)
+        if utc_hour.minute != 0 or not all(isinstance(n, (int, float)) and not isinstance(n, bool)
+                                          and math.isfinite(n) for n in (temperature, dew_point, pressure)) or pressure <= 0:
+            continue
         if start <= utc_hour <= end:
             seen_utc.add(utc_hour)
         if local_hour.date() in required:

@@ -105,6 +105,7 @@ class ReadinessTests(unittest.TestCase):
         self.assertTrue(MODULE.point_ready(point_payload(now), now))
         self.assertFalse(MODULE.point_ready(point_payload(now, hours=125), now))
         self.assertFalse(MODULE.point_ready(point_payload(now, missing_hour=30), now))
+        self.assertTrue(MODULE.point_ready(point_payload(now, offset=19800), now))
         self.assertFalse(MODULE.point_ready(point_payload(now, offset=19800, hours=125), now))
 
     def test_pinned_point_lag_and_retry_after_delay_large_grid_download(self):
