@@ -29,7 +29,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-PRIVATE_READ_ONLY = Path.home() / '.local/share/wetbulb35/historical-wbt/private'
+HISTORY_PRIVATE = Path('.local/share/wetbulb35/historical-wbt')
+
+
+def pr41_root():
+    """PR #41 private research: read-only input."""
+    return Path.home() / HISTORY_PRIVATE / 'private'
+
+
+def issue57_root():
+    """The only authorized write root for issue #57 checkpoints."""
+    return Path.home() / HISTORY_PRIVATE / 'issue57-private'
+
+
+def approval_ledger_root():
+    """One fixed ledger folder for every run: caps are per approval digest, not per --out."""
+    return issue57_root() / 'approval-ledgers'
+
+
+PRIVATE_READ_ONLY = pr41_root()
 HOUR_MS = 3_600_000
 
 
@@ -53,12 +71,18 @@ def parse_iso(stamp):
     return int(datetime.fromisoformat(stamp.replace('Z', '+00:00')).timestamp() * 1000)
 
 
-def check_private_out(out):
+def check_private_out(out, root=None):
+    """--out must resolve (symlinks followed) to a subfolder of issue57-private."""
+    root = Path(root or issue57_root()).resolve()
     out = Path(out).resolve()
     if out == REPO or out.is_relative_to(REPO):
         raise ValueError('Hourly chunks and checkpoints must remain outside Git')
-    if out == PRIVATE_READ_ONLY or out.is_relative_to(PRIVATE_READ_ONLY):
+    if out.is_relative_to(Path(pr41_root()).resolve()):
         raise ValueError('PR #41 private research is read-only; write under issue57-private')
+    if out == root or not out.is_relative_to(root):
+        raise ValueError(f'--out must be a subfolder of {root}')
+    if out.is_relative_to(root / 'approval-ledgers'):
+        raise ValueError('--out must not be the approval-ledger folder')
     return out
 
 
@@ -135,7 +159,11 @@ def durable_write(path, payload):
 
 
 class ApprovalLedger:
-    """Durable, fail-closed fetch/byte accounting per approval digest, across reruns.
+    """Durable, fail-closed fetch/byte accounting, global per approval digest.
+
+    The ledger lives in one fixed folder (issue57-private/approval-ledgers/<digest>.json)
+    whatever --out a run uses, so an approval's caps cover every output folder, rerun
+    and concurrent process; a run also holds that approval's exclusive run lock.
 
     A chunk attempt is charged before its first request. Before every GET, its full
     byte allowance is reserved and persisted; only a complete, size-checked response
@@ -144,9 +172,14 @@ class ApprovalLedger:
     re-spend it. The ledger records consumption only; it never marks work complete.
     """
 
-    def __init__(self, out, approval_sha256, approval):
-        self.path = Path(out) / f'approval-ledger-{approval_sha256[:16]}.json'
-        self.lock_path = self.path.with_suffix('.lock')
+    def __init__(self, ledger_root, approval_sha256, approval):
+        if not isinstance(approval_sha256, str) or len(approval_sha256) != 64:
+            raise PermissionError('Approval digest must be a full SHA-256')
+        root = Path(ledger_root)
+        root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.path = root / f'{approval_sha256}.json'
+        self.lock_path = root / f'{approval_sha256}.lock'
+        self.run_lock_path = root / f'{approval_sha256}.run.lock'
         self.approval, self.approval_sha256 = approval, approval_sha256
         with self._locked():
             if not self.path.exists():
@@ -172,6 +205,19 @@ class ApprovalLedger:
             raise PermissionError('Approval ledger is unreadable or belongs to another approval; refusing to guess')
         self.state = state
         return state
+
+    @contextlib.contextmanager
+    def exclusive_run(self):
+        """At most one active run per approval, whatever its --out folder."""
+        with self.run_lock_path.open('a+') as handle:
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                raise SystemExit('Another run is already using this approval; refusing to start') from None
+            try:
+                yield self
+            finally:
+                fcntl.flock(handle, fcntl.LOCK_UN)
 
     def charged_bytes(self):
         with self._locked():
@@ -476,7 +522,7 @@ def main():
     # The exclusive run lock is taken BEFORE anything that reads or charges the
     # ledger or can send a request (ledger load, cap checks, self-check, source
     # initialization with its metadata/time-axis GETs) and is held for the whole run.
-    with (out / '.run.lock').open('a+') as lock:
+    with contextlib.ExitStack() as held, (out / '.run.lock').open('a+') as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
@@ -487,7 +533,8 @@ def main():
         else:
             if a.archive_jobs:
                 archive = ArchiveSource(a.archive_jobs, a.start_year, a.end_year)
-            ledger = ApprovalLedger(out, sha256_file(a.approval), approval)
+            ledger = ApprovalLedger(approval_ledger_root(), sha256_file(a.approval), approval)
+            held.enter_context(ledger.exclusive_run())
             if a.max_new_chunks > ledger.remaining_chunks() or ledger.remaining_bytes() <= 0:
                 raise PermissionError('Chunk/byte budget exceeds what remains of the approved cap')
             if a.stage != 'pilot':

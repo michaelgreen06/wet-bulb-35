@@ -58,12 +58,19 @@ class TestTileBackfill(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
 
-    def test_private_destinations_only(self):
-        with self.assertRaises(ValueError):
-            RUN.check_private_out(RUN.REPO / 'scratch')
-        with self.assertRaises(ValueError):
-            RUN.check_private_out(RUN.PRIVATE_READ_ONLY / 'new')
-        self.assertEqual(RUN.check_private_out(self.base / 'ok'), (self.base / 'ok').resolve())
+    def test_out_must_resolve_inside_issue57_private(self):
+        root = self.base / 'issue57-private'
+        root.mkdir()
+        self.assertEqual(RUN.check_private_out(root / 'run', root=root), (root / 'run').resolve())
+        outside = self.base / 'elsewhere'
+        outside.mkdir()
+        (root / 'escape').symlink_to(outside)
+        for bad in (RUN.REPO / 'scratch', RUN.pr41_root() / 'new', outside / 'run', root, root / 'escape' / 'run',
+                    root / '..' / 'elsewhere', root / 'approval-ledgers', root / 'approval-ledgers' / 'x'):
+            with self.assertRaises(ValueError, msg=str(bad)):
+                RUN.check_private_out(bad, root=root)
+        self.assertEqual(RUN.issue57_root(), Path.home() / '.local/share/wetbulb35/historical-wbt/issue57-private')
+        self.assertEqual(RUN.approval_ledger_root(), RUN.issue57_root() / 'approval-ledgers')
 
     def test_stage_tiles_groups_cells_and_timezones(self):
         rows = [{'group': '1.0,2.0|UTC', 'tile': [1, 2], 'stage': 'remaining-001'},
@@ -237,7 +244,7 @@ class TestEndToEnd(unittest.TestCase):
         with self.assertRaises(PermissionError):
             again.begin_chunk()
         self.assertEqual(RUN.ApprovalLedger(self.out, 'b' * 64, approval).remaining_chunks(), 3)
-        (self.out / f"approval-ledger-{'a' * 16}.json").write_text(json.dumps({'chunks': 0, 'bytes': 0}))
+        (self.out / f"{'a' * 64}.json").write_text(json.dumps({'chunks': 0, 'bytes': 0}))
         with self.assertRaises(PermissionError):
             RUN.ApprovalLedger(self.out, 'a' * 64, approval)  # legacy/tampered ledger is not trusted
 
@@ -322,32 +329,74 @@ class TestConcurrency(unittest.TestCase):
         final, results = self.race({'maxChunkFetches': 10 ** 6, 'maxBytes': 2000})
         self.assertGreater(final.charged_bytes(), 2000 - 30)                 # filled up to the last whole reservation
 
-    def test_main_takes_the_run_lock_before_any_ledger_or_source_work(self):
+    def main_fixture(self, max_chunks=1, max_bytes=100):
+        """Fake HOME (no ~/.cdsapirc): a constructed source fails on the token, never on the network."""
+        home = self.out / 'home'
+        root = home / '.local/share/wetbulb35/historical-wbt/issue57-private'
+        root.mkdir(parents=True)
         plan = self.out / 'plan.json'
         plan.write_text(json.dumps({'rows': [{'group': '1.0,2.0|UTC', 'tile': [1, 2], 'stage': 'pilot'}]}))
         approval = self.out / 'approval.json'
         approval.write_text(json.dumps({'scope': 'acquire-era5land-arco', 'approvedBy': 'Test fixture (not an approval)',
                                         'approvedAt': '2026-10-05', 'planSha256': RUN.sha256_file(plan),
-                                        'stages': ['pilot'], 'maxChunkFetches': 1, 'maxBytes': 1}))
-        run_out = self.out / 'run'
-        run_out.mkdir()
-        home = self.out / 'home'  # no ~/.cdsapirc: a constructed source fails on the token, never on the network
-        home.mkdir()
-        cmd = [sys.executable, str(SCRIPTS / 'run_tile_backfill.py'), '--plan', str(plan), '--stage', 'pilot',
-               '--source', 'arco', '--approval', str(approval), '--out', str(run_out), '--max-new-chunks', '1', '--execute']
+                                        'stages': ['pilot'], 'maxChunkFetches': max_chunks, 'maxBytes': max_bytes}))
         env = {**os.environ, 'HOME': str(home)}
+
+        def run(out):
+            cmd = [sys.executable, str(SCRIPTS / 'run_tile_backfill.py'), '--plan', str(plan), '--stage', 'pilot',
+                   '--source', 'arco', '--approval', str(approval), '--out', str(out), '--max-new-chunks', '1', '--execute']
+            return subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=60)
+        return root, approval, run
+
+    def test_main_takes_the_run_lock_before_any_ledger_or_source_work(self):
+        root, approval, run = self.main_fixture()
+        run_out = root / 'run'
+        run_out.mkdir()
+        ledgers = root / 'approval-ledgers'
         with (run_out / '.run.lock').open('a+') as held:
             fcntl.flock(held, fcntl.LOCK_EX)
-            blocked = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=60)
+            blocked = run(run_out)
         self.assertNotEqual(blocked.returncode, 0)
         self.assertIn('Another run holds the lock', blocked.stderr)
-        self.assertEqual(list(run_out.glob('approval-ledger-*')), [], 'no ledger touched while another run holds the lock')
-        free = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=60)
+        self.assertFalse(ledgers.exists() and list(ledgers.glob('*.json')), 'no ledger touched while another run holds the lock')
+        free = run(run_out)
         self.assertNotEqual(free.returncode, 0)
         self.assertIn('cdsapirc', free.stderr)                       # failed on the missing token, after locking
-        self.assertEqual(len(list(run_out.glob('approval-ledger-*.json'))), 1)
+        self.assertEqual([p.name for p in ledgers.glob('*.json')], [f'{RUN.sha256_file(approval)}.json'])
         progress = run_out / 'progress-pilot-arco.json'
         self.assertFalse(progress.exists() and json.loads(progress.read_text()).get('outcome') == 'finished')
+
+    def test_one_approval_cap_covers_every_output_folder(self):
+        root, approval, run = self.main_fixture(max_chunks=1, max_bytes=100)
+        digest = RUN.sha256_file(approval)
+        spent = RUN.ApprovalLedger(root / 'approval-ledgers', digest, {'maxChunkFetches': 1, 'maxBytes': 100})
+        spent.begin_chunk()
+        spent.settle(spent.reserve('u', 100), 100)                   # the whole approval spent from folder A
+        for name in ('folder-a', 'folder-b', 'nested/folder-c'):
+            result = run(root / name)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('exceeds what remains of the approved cap', result.stderr, name)
+        state = json.loads((root / 'approval-ledgers' / f'{digest}.json').read_text())
+        self.assertEqual((state['chunkAttempts'], state['settledBytes'], state['reservations']), (1, 100, {}))
+        self.assertEqual(list(root.rglob('approval-ledger-*')), [], 'no per-folder ledgers exist any more')
+
+    def test_concurrent_runs_of_one_approval_in_different_folders_are_refused(self):
+        root, approval, run = self.main_fixture(max_chunks=5, max_bytes=10 ** 6)
+        ledger = RUN.ApprovalLedger(root / 'approval-ledgers', RUN.sha256_file(approval), {'maxChunkFetches': 5, 'maxBytes': 10 ** 6})
+        with ledger.exclusive_run():                                   # a run using this approval is active elsewhere
+            result = run(root / 'other-folder')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Another run is already using this approval', result.stderr)
+        self.assertEqual(ledger.charged_bytes(), 0)
+
+    def test_out_outside_issue57_private_is_refused_before_anything_runs(self):
+        root, approval, run = self.main_fixture()
+        outside = self.out / 'not-authorized'
+        result = run(outside)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('must be a subfolder of', result.stderr)
+        self.assertFalse(outside.exists())
+        self.assertFalse((root / 'approval-ledgers').exists())
 
 
 class FakeArco:
