@@ -17,6 +17,20 @@ done
 
 get_object() { npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/$1" --file="$2" --remote; }
 put_object() { npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/$1" --file="$2" --remote; }
+# On a failed first publication, deleting an alias is not enough: confirm it is
+# actually absent. A failed verification must be surfaced for reconciliation.
+delete_new_alias() {
+  local key="$1" index="$2" log=".hotspots/verify-delete-$2.log"
+  npx wrangler r2 object delete "$HOTSPOT_R2_BUCKET/$key" --remote --force || return 1
+  if get_object "$key" ".hotspots/verify-delete-$index.json" >"$log" 2>&1; then
+    echo "Alias still exists after rollback delete: $key" >&2
+    return 1
+  fi
+  if ! grep -qiE 'does not exist|NoSuchKey|not found|404' "$log"; then
+    cat "$log" >&2
+    return 1
+  fi
+}
 
 # The prior read and the pre-commit read must agree. A missing object is only
 # accepted when the initial read also found it missing (with errors already checked).
@@ -73,7 +87,7 @@ rollback() {
         if [[ -f "${current[i]}" ]]; then
           put_object "${keys[i]}" "${current[i]}" && get_object "${keys[i]}" ".hotspots/verify-restore-$i.json" && cmp "${current[i]}" ".hotspots/verify-restore-$i.json" || echo "::error::Rollback failed for ${keys[i]}" >&2
         else
-          npx wrangler r2 object delete "$HOTSPOT_R2_BUCKET/${keys[i]}" --remote --force || echo "::error::Rollback delete failed for ${keys[i]}" >&2
+          delete_new_alias "${keys[i]}" "$i" || echo "::error::Rollback delete or read-back failed for ${keys[i]}" >&2
         fi
       fi
     done

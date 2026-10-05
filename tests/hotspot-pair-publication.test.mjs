@@ -19,7 +19,7 @@ else if (op==='put') {
    fs.writeFileSync(process.env.FAIL_SECOND_LATEST,'failed'); console.error('simulated write failure'); process.exit(1);
  }
  fs.mkdirSync(path.dirname(base),{recursive:true}); fs.copyFileSync(file,base);
-} else if (op==='delete') { fs.rmSync(base,{force:true}); } else process.exit(2);
+} else if (op==='delete') { if (!(process.env.SKIP_DELETE && key==='inhabited-hotspots/v1/latest.json')) fs.rmSync(base,{force:true}); } else process.exit(2);
 `;
 function setup(fail = false, previous = false) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "hotspot-pair-"));
@@ -73,6 +73,19 @@ test("second alias failure restores the first and retains verified backups", () 
     assert.equal(fs.readFileSync(path.join(fixture.root, "r2/inhabited-hotspots/v1/latest.json"), "utf8"), prior);
     assert.equal(fs.readFileSync(path.join(fixture.root, "r2/global-grid-hotspots/v1/latest.json"), "utf8"), fs.readFileSync(path.join(fixture.root, ".hotspots/current-global-grid.json"), "utf8"));
     for (const prefix of ["inhabited-hotspots", "global-grid-hotspots"]) assert.equal(fs.readdirSync(path.join(fixture.root, "r2", prefix, "v1/snapshots")).length, 2);
+  } finally { fs.rmSync(fixture.root, { recursive: true, force: true }); }
+});
+
+test("first-publication rollback verifies deletion and surfaces a silent no-op", () => {
+  const fixture = setup(true);
+  fixture.env.SKIP_DELETE = "1";
+  try {
+    const result = run(fixture);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Alias still exists after rollback delete: inhabited-hotspots\/v1\/latest\.json/);
+    assert.match(result.stderr, /::error::Rollback delete or read-back failed/);
+    assert.equal(fs.existsSync(path.join(fixture.root, "r2/inhabited-hotspots/v1/latest.json")), true);
+    assert.equal(fs.existsSync(path.join(fixture.root, "r2/global-grid-hotspots/v1/latest.json")), false);
   } finally { fs.rmSync(fixture.root, { recursive: true, force: true }); }
 });
 
