@@ -22,7 +22,7 @@
     "build:hotspot-city-manifest": "node scripts/build-hotspot-city-manifest.mjs --source=scripts/resolved_cities.json --out=.hotspots/cities.json",
     "generate:hotspot-snapshot": "node --experimental-strip-types scripts/generate-inhabited-hotspot-snapshot.ts",
     "generate:global-grid-hotspot-snapshot": "python3 scripts/generate-global-grid-hotspot-snapshot.py",
-    "test:global-hotspots": "vitest run tests/hotspot-open-meteo.test.ts tests/hotspot-pipeline.test.ts tests/hotspot-snapshot.test.ts tests/hotspots-edge.test.ts tests/hotspot-ui.test.ts tests/global-grid-hotspots-edge.test.ts tests/global-grid-hotspot-ui.test.ts tests/hotspot-pinned-five-day.test.ts && node --test tests/hotspot-manifest.test.mjs tests/hotspot-publish-guard.test.mjs tests/hotspot-pair-budget.test.mjs tests/hotspot-pair-publication.test.mjs tests/hotspot-hosted-preflight.test.mjs tests/hotspot-navigation.test.mjs",
+    "test:global-hotspots": "vitest run tests/hotspot-open-meteo.test.ts tests/hotspot-pipeline.test.ts tests/hotspot-snapshot.test.ts tests/hotspots-edge.test.ts tests/hotspot-ui.test.ts tests/global-grid-hotspots-edge.test.ts tests/global-grid-hotspot-ui.test.ts tests/hotspot-pinned-five-day.test.ts && node --test tests/hotspot-manifest.test.mjs tests/hotspot-publish-guard.test.mjs tests/hotspot-pair-budget.test.mjs tests/hotspot-pair-publication.test.mjs tests/hotspot-hosted-preflight.test.mjs tests/hotspot-public-monitor.test.mjs tests/hotspot-navigation.test.mjs",
     "build": "next build",
     "build:static-prototype": "node scripts/prototype-static-generator.mjs --limit=130686 --out=dist",
     "build:vercel-output": "node scripts/build-vercel-output.mjs",
