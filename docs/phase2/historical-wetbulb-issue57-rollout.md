@@ -65,7 +65,8 @@ Routes whose tile is wholly absent from ARCO (all-ocean in ERA5-Land) will becom
   - Research-only data without explicit provenance acceptance; approvals for a different digest or scope (the planner applies the same rule as the publisher).
   - Shards accept only records returned by the approval gate (frozen), keyed by their own cell and zone, in their own 2° bucket.
   - Each source has its own chunk and output folders, and a restart refuses chunks from a different source.
-  - Acquisition caps are cumulative per approval digest, via a ledger kept across reruns.
+  - Acquisition caps are cumulative per approval digest and fail closed. The fsynced ledger charges each chunk attempt before its first request. It also reserves each GET's full byte allowance before sending, and only a complete response settles it down to the bytes received. An exception, oversize abort or killed process leaves the allowance charged, so a fresh run cannot re-spend it. Metadata and time-axis reads are charged too, and the ledger never marks work complete.
+  - The transport enforces the remaining allowance while reading. A declared Content-Length over the allowance aborts before the body, a body is read in bounded blocks and abandoned past the allowance, and truncated responses are refused.
   - Out-of-period or non-maximal packed records; HTML injection; local-date rollover at a DST change, at UTC+14 and at UTC−11.
 
 ## Acquisition plan and gate (not executed)
@@ -76,7 +77,7 @@ ARCO stores are appended in place: both `.zmetadata` digests changed between 202
 - decodes only those bytes;
 - trims every read to 1950-01-02T00Z–2026-01-02T23Z.
 
-Historical objects report stable ETags, with Last-Modified dates of 14–16 February 2025. Before any non-pilot stage, fetched pilot hours must equal PR #41's retained hours exactly for at least 364 days.
+Historical objects report stable ETags, with Last-Modified dates of 14–16 February 2025. Before any non-pilot stage, freshly fetched, content-pinned pilot hours must equal PR #41's retained hours exactly over at least 364 **contiguous, unique** days for one cell. The evidence file stores merged unique (cell, UTC hour) intervals plus the upstream object digests of each contributing chunk, so re-fetching or replaying a span adds nothing. A recorded mismatch blocks acquisition until reviewed, and legacy counter-only evidence is rejected.
 
 The estimates use a HEAD-only probe: 240 requests, Content-Length only, 40 stage-sampled tiles. A t2m + d2m + sp time-chunk set averages 6.14 MB (median 6.79 MB). Each tile needs 20 time chunks.
 

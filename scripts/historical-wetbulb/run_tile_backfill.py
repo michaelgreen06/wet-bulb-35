@@ -111,28 +111,82 @@ def verified_chunk(tile_dir, index, chunk_type=None):
     return manifest
 
 
+def durable_write(path, payload):
+    """Atomic, fsynced JSON write (file and directory), so accounting survives a crash."""
+    path = Path(path)
+    fd, tmp = tempfile.mkstemp(prefix=f'.{path.name}-', dir=path.parent)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, 'w') as handle:
+            json.dump(payload, handle, sort_keys=True)
+            handle.write('\n')
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, path)
+        directory = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
 class ApprovalLedger:
-    """Cumulative fetch/byte use per approval digest, so caps hold across reruns."""
+    """Durable, fail-closed fetch/byte accounting per approval digest, across reruns.
+
+    A chunk attempt is charged before its first request. Before every GET, its full
+    byte allowance is reserved and persisted; only a complete, size-checked response
+    settles the reservation down to the bytes actually received. An exception, oversize
+    abort or killed process leaves the full allowance charged, so a fresh run can never
+    re-spend it. The ledger records consumption only; it never marks work complete.
+    """
 
     def __init__(self, out, approval_sha256, approval):
-        self.path = out / f'approval-ledger-{approval_sha256[:16]}.json'
+        self.path = Path(out) / f'approval-ledger-{approval_sha256[:16]}.json'
         self.approval = approval
-        self.state = json.loads(self.path.read_text()) if self.path.exists() else {'chunks': 0, 'bytes': 0}
-        self.start_bytes = self.state['bytes']
+        if self.path.exists():
+            self.state = json.loads(self.path.read_text())
+            if (self.state.get('schemaVersion') != 2 or self.state.get('approvalSha256') != approval_sha256
+                    or not isinstance(self.state.get('reservations'), dict)):
+                raise PermissionError('Approval ledger is unreadable or belongs to another approval; refusing to guess')
+        else:
+            self.state = {'schemaVersion': 2, 'approvalSha256': approval_sha256, 'chunkAttempts': 0,
+                          'settledBytes': 0, 'reservations': {}, 'nextReservation': 0}
+            durable_write(self.path, self.state)
+
+    def charged_bytes(self):
+        return self.state['settledBytes'] + sum(r['bytes'] for r in self.state['reservations'].values())
 
     def remaining_chunks(self):
-        return self.approval['maxChunkFetches'] - self.state['chunks']
+        return self.approval['maxChunkFetches'] - self.state['chunkAttempts']
 
     def remaining_bytes(self):
-        return self.approval['maxBytes'] - self.state['bytes']
+        return self.approval['maxBytes'] - self.charged_bytes()
 
-    def record(self, source):
-        self.state['chunks'] += 1
-        self.state['bytes'] = self.start_bytes + source.used_bytes
-        tmp = self.path.with_suffix('.tmp')
-        tmp.write_text(json.dumps(self.state, sort_keys=True) + '\n')
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, self.path)
+    def begin_chunk(self):
+        if self.remaining_chunks() <= 0:
+            raise PermissionError('Approved chunk-fetch cap reached; stopping')
+        self.state['chunkAttempts'] += 1
+        durable_write(self.path, self.state)
+
+    def reserve(self, url, allowance):
+        if not isinstance(allowance, int) or allowance < 1 or allowance > self.remaining_bytes():
+            raise PermissionError('Approved ARCO byte cap reached; stopping before the request')
+        rid = str(self.state['nextReservation'])
+        self.state['nextReservation'] += 1
+        self.state['reservations'][rid] = {'url': url, 'bytes': allowance}
+        durable_write(self.path, self.state)
+        return rid
+
+    def settle(self, rid, received):
+        reserved = self.state['reservations'].get(rid)
+        if reserved is None or not isinstance(received, int) or not 0 <= received <= reserved['bytes']:
+            raise PermissionError('Ledger settlement does not match its reservation')
+        del self.state['reservations'][rid]
+        self.state['settledBytes'] += received
+        durable_write(self.path, self.state)
 
 
 class ArchiveSource:
@@ -205,42 +259,82 @@ class ArchiveSource:
                            'selectionSha256': sorted(set(digests))}}
 
 
+SELF_CHECK_MIN_HOURS = 8_736  # 364 contiguous days
+
+
+def _merge(intervals, new):
+    merged = []
+    for lo, hi in sorted(intervals + new):
+        if merged and lo <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], hi)
+        else:
+            merged.append([lo, hi])
+    return merged
+
+
 def self_check(chunk, archive, out):
-    """Exact equality of freshly fetched pinned hours with PR #41's retained hours."""
-    compared = 0
+    """Exact equality of freshly fetched *pinned* hours with PR #41's retained hours.
+
+    Evidence is stored as merged [start, end) UTC-hour intervals of unique matched
+    (cell, hour) pairs plus the pinned upstream object digests of each contributing
+    chunk, so replaying or re-fetching the same span adds nothing. Any mismatch is
+    recorded durably and blocks acquisition until reviewed.
+    """
+    source = chunk.get('source') or {}
+    if source.get('type') != 'ARCO-pinned-chunks' or source.get('pinned') is not True or not source.get('objects'):
+        raise ValueError('Self-check only accepts freshly fetched, content-pinned ARCO chunks')
+    path = out / 'self-check.json'
+    record = json.loads(path.read_text()) if path.exists() else {'schemaVersion': 2, 'failed': None, 'cells': {}, 'chunks': {}}
+    if record.get('schemaVersion') != 2:
+        raise PermissionError('Legacy or unreadable self-check evidence; delete it only after review')
     cells = chunk['cells']
+    runs_by_cell = {}
     for c, cell in enumerate(cells):
         years = archive.years.get(cell, {})
         if not years:
             continue
-        cache = {}
+        cache, runs, run_start, previous = {}, [], None, None
         for h in range(chunk['hours']):
             stamp = chunk['start_ms'] + h * HOUR_MS
             year = datetime.fromtimestamp(stamp / 1000, tz=timezone.utc).year
-            if year not in years:
-                continue
-            if year not in cache:
-                cache[year] = archive._rows(cell, year)[0]
-            expected = cache[year].get(stamp)
-            got = tuple(chunk['values'][(h * len(cells) + c) * 3:(h * len(cells) + c) * 3 + 3])
+            expected = None
+            if year in years:
+                if year not in cache:
+                    cache[year] = archive._rows(cell, year)[0]
+                expected = cache[year].get(stamp)
             if expected is None:
                 continue
+            got = tuple(chunk['values'][(h * len(cells) + c) * 3:(h * len(cells) + c) * 3 + 3])
             if tuple(struct.unpack('<3f', struct.pack('<3f', *expected))) != tuple(struct.unpack('<3f', struct.pack('<3f', *got))):
+                record['failed'] = {'cell': cell, 'hourUTC': iso_ms(stamp), 'objects': source['objects']}
+                durable_write(path, record)
                 raise ValueError(f'Self-check failed: pinned ARCO value differs from retained archive at {cell} {iso_ms(stamp)}')
-            compared += 1
-    if compared:
-        path = out / 'self-check.json'
-        record = json.loads(path.read_text()) if path.exists() else {'schemaVersion': 1, 'comparedHours': 0, 'mismatches': 0}
-        record['comparedHours'] += compared
-        path.write_text(json.dumps(record, sort_keys=True) + '\n')
-    return compared
+            if previous is None or stamp != previous + HOUR_MS:
+                if run_start is not None:
+                    runs.append([run_start, previous + HOUR_MS])
+                run_start = stamp
+            previous = stamp
+        if run_start is not None:
+            runs.append([run_start, previous + HOUR_MS])
+        if runs:
+            runs_by_cell[cell] = runs
+    if runs_by_cell:
+        identity = hashlib.sha256(json.dumps(source['objects'], sort_keys=True).encode()).hexdigest()
+        record['chunks'][identity] = {'startUTC': iso_ms(chunk['start_ms']), 'hours': chunk['hours'], 'objects': source['objects']}
+        for cell, runs in runs_by_cell.items():
+            record['cells'][cell] = _merge(record['cells'].get(cell, []), runs)
+        durable_write(path, record)
+    return sum(hi - lo for runs in runs_by_cell.values() for lo, hi in runs) // HOUR_MS
 
 
 def require_self_check(out):
     path = out / 'self-check.json'
     record = json.loads(path.read_text()) if path.exists() else {}
-    if record.get('comparedHours', 0) < 8_736 or record.get('mismatches') != 0:
-        raise PermissionError('Run the pilot stage with --source arco --archive-jobs first: ≥364 days must match the archive exactly')
+    longest = max((hi - lo for runs in record.get('cells', {}).values() for lo, hi in runs), default=0) // HOUR_MS
+    if record.get('schemaVersion') != 2 or record.get('failed') is not None or longest < SELF_CHECK_MIN_HOURS or not record.get('chunks'):
+        raise PermissionError('Run the pilot stage with --source arco --archive-jobs first: one cell must match the '
+                              'archive exactly over ≥364 contiguous unique days, with no recorded mismatch')
+    return longest
 
 
 def run_tile(tile, groups, source, out, *, start_year, end_year, budget, pause, archive=None, ledger=None):
@@ -262,11 +356,11 @@ def run_tile(tile, groups, source, out, *, start_year, end_year, budget, pause, 
             return {'status': 'bounded'}, fetched
         if fetched and pause:
             time.sleep(pause)
-        chunk = source.fetch(tile, cells, index)
+        if ledger is not None:
+            ledger.begin_chunk()  # charged before any request; never refunded
         budget['remaining'] -= 1
         fetched += 1
-        if ledger is not None:
-            ledger.record(source)
+        chunk = source.fetch(tile, cells, index)
         if chunk is None:
             return {'status': 'source-unavailable'}, fetched
         if archive is not None:
@@ -356,7 +450,7 @@ def main():
             spec = importlib.util.spec_from_file_location('arco_pinned_source', Path(__file__).with_name('arco_pinned_source.py'))
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            source = module.ArcoPinnedSource(max_bytes=ledger.remaining_bytes(), self_check_root=out)
+            source = module.ArcoPinnedSource(ledger=ledger)
     print(json.dumps({'dryRun': not a.execute, 'stage': a.stage, 'source': a.source, 'tiles': len(tiles),
                       'cells': sum(len(c) for c in tiles.values()),
                       'groups': sum(len(z) for c in tiles.values() for z in c.values()),
@@ -368,20 +462,30 @@ def main():
     with (out / '.run.lock').open('a+') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         summary = defaultdict(int)
-        for tile, groups in tiles.items():
-            if shutil.disk_usage(out).free < 10_000_000_000:
-                raise OSError('Stopped: less than 10 GB free')
-            status, fetched = run_tile(tile, groups, source, out, start_year=a.start_year, end_year=a.end_year,
-                                       budget=budget, pause=a.pause_seconds if a.source == 'arco' else 0,
-                                       archive=archive, ledger=ledger)
-            summary['sourceCalls'] += fetched
-            summary[status.get('status', 'complete')] += 1
-            summary['periods'] += len(status.get('periods', []))
-            if status.get('status') == 'bounded':
-                break
-        progress = {'schemaVersion': 1, 'stage': a.stage, 'source': a.source, 'planSha256': plan_sha,
-                    'tiles': len(tiles), **summary, 'updatedUTC': datetime.now(timezone.utc).isoformat()}
-        (out / f'progress-{a.stage}-{a.source}.json').write_text(json.dumps(progress, sort_keys=True) + '\n')
+        outcome, error = 'finished', None
+        try:
+            for tile, groups in tiles.items():
+                if shutil.disk_usage(out).free < 10_000_000_000:
+                    raise OSError('Stopped: less than 10 GB free')
+                status, fetched = run_tile(tile, groups, source, out, start_year=a.start_year, end_year=a.end_year,
+                                           budget=budget, pause=a.pause_seconds if a.source == 'arco' else 0,
+                                           archive=archive, ledger=ledger)
+                summary['sourceCalls'] += fetched
+                # Only a durable tile status written after reduction counts as complete.
+                durable = 'status' not in status and status.get('source') == source.name and status.get('tile') == list(tile)
+                summary['complete' if durable else status.get('status', 'unknown')] += 1
+                summary['periods'] += len(status.get('periods', [])) if durable else 0
+                if status.get('status') == 'bounded':
+                    outcome = 'bounded'
+                    break
+        except BaseException as caught:
+            outcome, error = 'failed', f'{type(caught).__name__}: {caught}'[:500]
+            raise
+        finally:
+            progress = {'schemaVersion': 1, 'stage': a.stage, 'source': a.source, 'planSha256': plan_sha,
+                        'tiles': len(tiles), 'outcome': outcome, 'error': error, **summary,
+                        'updatedUTC': datetime.now(timezone.utc).isoformat()}
+            durable_write(out / f'progress-{a.stage}-{a.source}.json', progress)
         print(json.dumps(progress), flush=True)
 
 

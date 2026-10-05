@@ -117,21 +117,57 @@ class TestTileBackfill(unittest.TestCase):
             with self.assertRaises(PermissionError):
                 RUN.load_approval(path, 'p' * 64, 'pilot')
 
-    def test_self_check_requires_exact_archive_match_before_non_pilot_stages(self):
+    def pinned(self, start_iso, n_hours, value=(300.5, 290.25, 100000.0), digest='d'):
+        return {'cells': ['1.0,2.0'], 'start_ms': RUN.parse_iso(start_iso), 'hours': n_hours, 'values': list(value) * n_hours,
+                'source': {'type': 'ARCO-pinned-chunks', 'pinned': True,
+                           'objects': [{'key': 't2m/0.0.0', 'sha256': digest * 64, 'bytes': 1}]}}
+
+    def self_check_setup(self):
         jobs = self.base / 'jobs'
         fake_job(jobs, '1.0,2.0', 1950, hours('1950-01-02T00:00:00.000Z', '1951-01-02T23:00:00.000Z'))
-        archive = RUN.ArchiveSource(jobs, 1950, 1950)
-        start = RUN.parse_iso('1950-01-02T00:00:00.000Z')
-        good = {'cells': ['1.0,2.0'], 'start_ms': start, 'hours': 8760, 'values': [300.5, 290.25, 100000.0] * 8760}
         out = self.base / 'out'
         out.mkdir()
+        return RUN.ArchiveSource(jobs, 1950, 1950), out
+
+    def test_self_check_needs_364_contiguous_unique_matching_days(self):
+        archive, out = self.self_check_setup()
         with self.assertRaises(PermissionError):
             RUN.require_self_check(out)
-        self.assertEqual(RUN.self_check(good, archive, out), 8736)  # hours inside the archived 1950 file only
-        RUN.require_self_check(out)
-        bad = {**good, 'values': [300.5, 290.25, 100000.5] * 8760}
+        self.assertEqual(RUN.self_check(self.pinned('1950-01-02T00:00:00.000Z', 8760), archive, out), 8736)
+        self.assertEqual(RUN.require_self_check(out), 8736)  # hours inside the archived 1950 file only
+
+    def test_replaying_a_short_span_never_accumulates_into_approval(self):
+        archive, out = self.self_check_setup()
+        for i in range(200):  # same 48 hours re-fetched again and again (e.g. after deleting chunk/status)
+            RUN.self_check(self.pinned('1950-03-01T00:00:00.000Z', 48, digest='abcdef'[i % 6]), archive, out)
+        with self.assertRaises(PermissionError):
+            RUN.require_self_check(out)
+        evidence = json.loads((out / 'self-check.json').read_text())
+        self.assertEqual(evidence['cells']['1.0,2.0'], [[RUN.parse_iso('1950-03-01T00:00:00.000Z'), RUN.parse_iso('1950-03-03T00:00:00.000Z')]])
+
+    def test_disjoint_spans_do_not_add_up_to_a_contiguous_year(self):
+        archive, out = self.self_check_setup()
+        RUN.self_check(self.pinned('1950-01-02T00:00:00.000Z', 4400), archive, out)
+        RUN.self_check(self.pinned('1950-07-10T00:00:00.000Z', 4300), archive, out)  # leaves a gap
+        with self.assertRaises(PermissionError):
+            RUN.require_self_check(out)
+        RUN.self_check(self.pinned('1950-07-03T00:00:00.000Z', 200), archive, out)  # closes the gap
+        self.assertEqual(RUN.require_self_check(out), 8736)
+
+    def test_mismatch_is_durable_and_unpinned_or_legacy_evidence_is_refused(self):
+        archive, out = self.self_check_setup()
         with self.assertRaisesRegex(ValueError, 'Self-check failed'):
-            RUN.self_check(bad, archive, out)
+            RUN.self_check(self.pinned('1950-01-02T00:00:00.000Z', 24, value=(300.5, 290.25, 100000.5)), archive, out)
+        RUN.self_check(self.pinned('1950-01-02T00:00:00.000Z', 8760), archive, out)
+        with self.assertRaises(PermissionError):
+            RUN.require_self_check(out)  # an earlier mismatch blocks until reviewed
+        unpinned = self.pinned('1950-01-02T00:00:00.000Z', 24)
+        unpinned['source'] = {'type': 'ARCO-unpinned-research-archive', 'pinned': False}
+        with self.assertRaisesRegex(ValueError, 'content-pinned'):
+            RUN.self_check(unpinned, archive, out)
+        (out / 'self-check.json').write_text(json.dumps({'schemaVersion': 1, 'comparedHours': 10 ** 6, 'mismatches': 0}))
+        with self.assertRaises(PermissionError):
+            RUN.require_self_check(out)
 
 
 PLAN = load('plan_all_routes.py')
@@ -178,19 +214,48 @@ class TestEndToEnd(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'different source'):
             self.run_tile(Other(self.jobs, 1950, 1951))
 
-    def test_approval_caps_accumulate_across_runs(self):
+    def test_ledger_charges_before_requests_and_survives_failures_and_restarts(self):
         self.out.mkdir()
         approval = {'maxChunkFetches': 3, 'maxBytes': 1000}
-        first = RUN.ApprovalLedger(self.out, 'a' * 64, approval)
-        source = type('S', (), {'used_bytes': 400})()
-        first.record(source)
-        first.record(source)
-        second = RUN.ApprovalLedger(self.out, 'a' * 64, approval)
-        self.assertEqual((second.remaining_chunks(), second.remaining_bytes()), (1, 600))
-        source.used_bytes = 500
-        second.record(source)
-        self.assertEqual(RUN.ApprovalLedger(self.out, 'a' * 64, approval).remaining_bytes(), 100)
+        ledger = RUN.ApprovalLedger(self.out, 'a' * 64, approval)
+        ledger.begin_chunk()
+        rid = ledger.reserve('u1', 400)
+        ledger.settle(rid, 250)                      # completed: charged what was received
+        ledger.begin_chunk()
+        ledger.reserve('u2', 500)                    # request dies: never settled
+        again = RUN.ApprovalLedger(self.out, 'a' * 64, approval)   # fresh run after the crash
+        self.assertEqual((again.remaining_chunks(), again.remaining_bytes()), (1, 250))
+        with self.assertRaises(PermissionError):
+            again.reserve('u3', 251)                 # cannot exceed what remains
+        with self.assertRaises(PermissionError):
+            again.settle(again.reserve('u3', 100), 101)
+        again.begin_chunk()
+        with self.assertRaises(PermissionError):
+            again.begin_chunk()
         self.assertEqual(RUN.ApprovalLedger(self.out, 'b' * 64, approval).remaining_chunks(), 3)
+        (self.out / f"approval-ledger-{'a' * 16}.json").write_text(json.dumps({'chunks': 0, 'bytes': 0}))
+        with self.assertRaises(PermissionError):
+            RUN.ApprovalLedger(self.out, 'a' * 64, approval)  # legacy/tampered ledger is not trusted
+
+    def test_failed_fetch_counts_and_never_writes_a_chunk_or_status(self):
+        self.out.mkdir()
+        ledger = RUN.ApprovalLedger(self.out, 'c' * 64, {'maxChunkFetches': 5, 'maxBytes': 10 ** 6})
+
+        class Broken:
+            name, chunk_type, data_start_ms = 'arco', 'ARCO-pinned-chunks', 0
+
+            def chunk_count(self, tile, cells):
+                return 2
+
+            def fetch(self, tile, cells, index):
+                raise ConnectionResetError('interrupted')
+        with self.assertRaises(ConnectionResetError):
+            RUN.run_tile((1, 2), self.groups, Broken(), self.out, start_year=1950, end_year=1951,
+                         budget={'remaining': 5}, pause=0, ledger=ledger)
+        self.assertEqual(RUN.ApprovalLedger(self.out, 'c' * 64, {'maxChunkFetches': 5, 'maxBytes': 10 ** 6}).remaining_chunks(), 4)
+        tile_dir = self.out / 'tiles' / 'arco' / 't001-002'
+        self.assertFalse((tile_dir / 'status.json').exists())
+        self.assertFalse(list(tile_dir.glob('chunk-*')) if tile_dir.exists() else [])
 
 
 class FakeArco:
@@ -209,11 +274,16 @@ class FakeArco:
         for (name, url), block in zip(ARCO.FIELDS, field_values):
             if name not in absent:
                 self.objects[f'{url}/{name}/0.0.0'] = struct.pack(f'<{len(block)}f', *block)
-        self.requested = []
+        self.requested, self.fail = [], set()
 
     def get(self, url, token, limit=0):
         self.requested.append(url)
-        return self.objects.get(url)
+        if url in self.fail:
+            raise ConnectionResetError('transfer interrupted')
+        data = self.objects.get(url)
+        if data is not None and len(data) > limit:
+            raise PermissionError('exceeds allowance')
+        return data
 
 
 class TestArcoPinnedSource(unittest.TestCase):
@@ -224,8 +294,14 @@ class TestArcoPinnedSource(unittest.TestCase):
         self.blocks = [[float(v % 97) + 250 for v in range(size)], [float(v % 89) + 240 for v in range(size)],
                        [100000.0 + (v % 7) for v in range(size)]]
 
-    def source(self, fake, max_bytes=10 ** 9):
-        return ARCO.ArcoPinnedSource(max_bytes=max_bytes, self_check_root='/nonexistent', token='t', get=fake.get,
+    def ledger(self, max_bytes=10 ** 9, digest='e'):
+        if not hasattr(self, 'tmp'):
+            self.tmp = tempfile.TemporaryDirectory()
+            self.addCleanup(self.tmp.cleanup)
+        return RUN.ApprovalLedger(Path(self.tmp.name), digest * 64, {'maxChunkFetches': 100, 'maxBytes': max_bytes})
+
+    def source(self, fake, max_bytes=10 ** 9, ledger=None):
+        return ARCO.ArcoPinnedSource(ledger=ledger or self.ledger(max_bytes), token='t', get=fake.get,
                                      decode=lambda data, code: struct.unpack(f'<{len(data) // struct.calcsize(code)}{code}', data))
 
     def test_chunk_hashes_every_object_and_trims_to_the_stated_period(self):
@@ -248,7 +324,32 @@ class TestArcoPinnedSource(unittest.TestCase):
         self.assertTrue(math.isnan(chunk['values'][2]))
         self.assertEqual(chunk['source']['objects'][2], {'key': 'sp/0.0.0', 'absent': True})
         with self.assertRaises(PermissionError):
-            self.source(FakeArco(self.times, self.blocks), max_bytes=1000).fetch((0, 0), ['-90.0,-179.9'], 0)
+            self.source(FakeArco(self.times, self.blocks), max_bytes=1000)  # metadata alone exceeds the cap
+
+    def test_every_request_is_charged_and_an_interrupted_object_stays_charged(self):
+        fake = FakeArco(self.times, self.blocks)
+        ledger = self.ledger(digest='f')
+        source = self.source(fake, ledger=ledger)
+        metadata_bytes = ledger.charged_bytes()
+        self.assertEqual(metadata_bytes, sum(len(fake.objects[u]) for u in fake.requested))
+        fake.fail.add(f'{ARCO.FIELDS[2][1]}/sp/0.0.0')
+        with self.assertRaises(ConnectionResetError):
+            source.fetch((0, 0), ['-90.0,-179.9'], 0)
+        t2m = len(fake.objects[f'{ARCO.TEMP_URL}/t2m/0.0.0'])
+        restarted = RUN.ApprovalLedger(Path(self.tmp.name), 'f' * 64, ledger.approval)
+        # t2m + d2m settled at actual size; the interrupted sp keeps its whole allowance charged.
+        self.assertEqual(restarted.charged_bytes(), metadata_bytes + 2 * t2m + min(ARCO.MAX_OBJECT_BYTES, 10 ** 9 - metadata_bytes - 2 * t2m))
+        self.assertEqual(len(restarted.state['reservations']), 1)
+
+    def test_remaining_allowance_bounds_each_request(self):
+        fake = FakeArco(self.times, self.blocks)
+        ledger = self.ledger(digest='g')
+        source = self.source(fake, ledger=ledger)
+        tight = ledger.charged_bytes() + len(fake.objects[f'{ARCO.TEMP_URL}/t2m/0.0.0']) + 10
+        source.ledger = RUN.ApprovalLedger(Path(self.tmp.name), 'g' * 64, {'maxChunkFetches': 100, 'maxBytes': tight})
+        with self.assertRaises(PermissionError):
+            source.fetch((0, 0), ['-90.0,-179.9'], 0)  # d2m would need more than the 10 bytes left
+        self.assertNotIn(f'{ARCO.PRESS_URL}/sp/0.0.0', fake.requested)
 
     def test_layout_or_encoding_drift_refuses(self):
         fake = FakeArco(self.times, self.blocks)
@@ -261,10 +362,48 @@ class TestArcoPinnedSource(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'stated period'):
             self.source(short)
 
+    def test_http_get_enforces_the_limit_while_reading(self):
+        class Reply:
+            def __init__(self, body, declared):
+                self.body, self.read_total = body, 0
+                self.headers = {} if declared is None else {'Content-Length': str(declared)}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def read(self, n):
+                block = self.body[self.read_total:self.read_total + n]
+                self.read_total += len(block)
+                return block
+
+        class Opener:
+            def __init__(self, reply):
+                self.reply = reply
+
+            def open(self, request, timeout):
+                return self.reply
+        url = f'{ARCO.TEMP_URL}/t2m/0.0.0'
+        declared = Reply(b'x' * 5000, 5000)
+        with self.assertRaises(PermissionError):
+            ARCO.http_get(url, 't', limit=4096, opener=Opener(declared))
+        self.assertEqual(declared.read_total, 0, 'declared oversize aborts before the body')
+        undeclared = Reply(b'x' * 10 ** 6, None)
+        with self.assertRaises(PermissionError):
+            ARCO.http_get(url, 't', limit=4096, opener=Opener(undeclared))
+        self.assertLessEqual(undeclared.read_total, 4097)
+        with self.assertRaisesRegex(ValueError, 'truncated'):
+            ARCO.http_get(url, 't', limit=4096, opener=Opener(Reply(b'x' * 100, 200)))
+        self.assertEqual(ARCO.http_get(url, 't', limit=4096, opener=Opener(Reply(b'ok', 2))), b'ok')
+        with self.assertRaises(PermissionError):
+            ARCO.http_get(url, 't', limit=0, opener=Opener(Reply(b'ok', 2)))
+
     def test_untrusted_origin_never_reaches_the_network(self):
         with mock.patch.object(ARCO.urllib.request, 'build_opener', side_effect=AssertionError('network')):
             with self.assertRaises(PermissionError):
-                ARCO.http_get('https://example.invalid/x', 't')
+                ARCO.http_get('https://example.invalid/x', 't', limit=10)
 
     def test_tile_cell_keys_follow_zarr_c_order(self):
         keys = ARCO.tile_cells((209, 358))

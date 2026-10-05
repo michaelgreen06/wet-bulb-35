@@ -37,20 +37,43 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         raise PermissionError('Authenticated ARCO requests must not redirect')
 
 
-def http_get(url, token, *, limit=MAX_OBJECT_BYTES):
-    """Return bytes, or None for an absent Zarr chunk (404 = fill value)."""
+READ_BLOCK = 1 << 16
+
+
+def http_get(url, token, *, limit, opener=None):
+    """Return bytes, or None for an absent Zarr chunk (404 = fill value).
+
+    The byte limit is enforced while reading: a declared Content-Length over the
+    limit aborts before the body, and the body is read in bounded blocks so at most
+    `limit` bytes are ever accepted before the request is abandoned.
+    """
     if not url.startswith((TEMP_URL, PRESS_URL)) or not token:
         raise PermissionError('Untrusted ARCO origin or missing private token')
+    if not isinstance(limit, int) or limit < 1:
+        raise PermissionError('No approved byte allowance for this request')
     request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + token})
+    opener = opener or urllib.request.build_opener(_NoRedirect)
     try:
-        with urllib.request.build_opener(_NoRedirect).open(request, timeout=120) as reply:
-            data = reply.read(limit + 1)
+        with opener.open(request, timeout=120) as reply:
+            declared = reply.headers.get('Content-Length')
+            if declared is not None and int(declared) > limit:
+                raise PermissionError('ARCO object exceeds the remaining approved byte allowance')
+            parts, received = [], 0
+            while True:
+                block = reply.read(min(READ_BLOCK, limit + 1 - received))
+                if not block:
+                    break
+                received += len(block)
+                if received > limit:
+                    raise PermissionError('ARCO object exceeds the remaining approved byte allowance')
+                parts.append(block)
+            data = b''.join(parts)
+            if declared is not None and len(data) != int(declared):
+                raise ValueError('ARCO response was truncated')
     except urllib.error.HTTPError as error:
         if error.code == 404:
             return None
         raise
-    if len(data) > limit:
-        raise ValueError('ARCO object exceeds the safety bound')
     return data
 
 
@@ -102,12 +125,12 @@ class ArcoPinnedSource:
     name = 'arco'
     chunk_type = 'ARCO-pinned-chunks'
 
-    def __init__(self, *, max_bytes, self_check_root, token=None, get=http_get, decode=None):
+    def __init__(self, *, ledger, token=None, get=http_get, decode=None):
+        """`ledger` (run_tile_backfill.ApprovalLedger) is charged for every request, metadata included."""
         self.token = token or self._token()
-        self.get, self.max_bytes, self.used_bytes = get, max_bytes, 0
+        self.get, self.ledger = get, ledger
         self.decode = decode or self._blosc
-        self.self_check_root = Path(self_check_root)
-        raw = {url: self._fetch(url + '/.zmetadata', limit=2_000_000, count=False) for url in (TEMP_URL, PRESS_URL)}
+        raw = {url: self._fetch(url + '/.zmetadata', limit=2_000_000) for url in (TEMP_URL, PRESS_URL)}
         self.metadata_sha256 = {url: hashlib.sha256(raw[url]).hexdigest() for url in raw}
         self.meta = {url: json.loads(raw[url])['metadata'] for url in raw}
         self.time_length = validate_metadata(self.meta)
@@ -129,12 +152,16 @@ class ArcoPinnedSource:
         width = struct.calcsize(code)
         return struct.unpack(f'<{len(raw) // width}{code}', raw)
 
-    def _fetch(self, url, *, limit=MAX_OBJECT_BYTES, count=True):
-        data = self.get(url, self.token, limit=limit)
-        if count and data is not None:
-            self.used_bytes += len(data)
-            if self.used_bytes > self.max_bytes:
-                raise PermissionError('Approved ARCO byte cap reached; stopping')
+    def _fetch(self, url, *, limit=MAX_OBJECT_BYTES):
+        # Reserve (durably) before sending; settle only after a complete response.
+        allowance = min(limit, self.ledger.remaining_bytes())
+        if allowance < 1:
+            raise PermissionError('Approved ARCO byte cap reached; stopping before the request')
+        rid = self.ledger.reserve(url, allowance)
+        data = self.get(url, self.token, limit=allowance)
+        if data is not None and len(data) > allowance:
+            raise PermissionError('ARCO transport returned more than the reserved allowance')
+        self.ledger.settle(rid, 0 if data is None else len(data))
         return data
 
     def _time_axis(self):
@@ -143,7 +170,7 @@ class ArcoPinnedSource:
             raise ValueError('ARCO time axis encoding changed; review before acquisition')
         values = []
         for k in range(math.ceil(array['shape'][0] / array['chunks'][0])):
-            values += self.decode(self._fetch(f'{TEMP_URL}/time/{k}', count=False), 'q')
+            values += self.decode(self._fetch(f'{TEMP_URL}/time/{k}'), 'q')
         values = [v * HOUR_MS for v in values[:array['shape'][0]]]
         if any(b - a != HOUR_MS for a, b in zip(values, values[1:])) or len(values) != self.time_length:
             raise ValueError('ARCO time axis is not contiguous hourly')
