@@ -1,20 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { forecastKey, forecastResponse, refreshForecast, SNAPSHOT_FORECAST_UNAVAILABLE } from "../workers/forecast-edge.ts";
-import { normalizePinnedOpenMeteoForecast } from "../lib/forecast/open-meteo.ts";
+import { buildPinnedOpenMeteoForecastUrl, normalizePinnedOpenMeteoForecast } from "../lib/forecast/open-meteo.ts";
 
 const RUN = "2026-10-05T00:00:00Z";
 const NOW = Date.parse("2026-10-05T12:30:00Z");
 const ranked = { path: "/wetbulb-temperature/united-states/texas/houston/", name: "Houston", latitude: 29.7604, longitude: -95.3698 };
 const ordinary = { path: "/wetbulb-temperature/united-states/texas/beaumont/", name: "Beaumont", latitude: 30.0802, longitude: -94.1266 };
 
-function source(offsetSeconds = -18000) {
+function source(offsetSeconds = -18000, hours = 193) {
   return {
     latitude: ranked.latitude, longitude: ranked.longitude, elevation: 20,
     timezone: offsetSeconds === -18000 ? "America/Chicago" : "Asia/Kolkata", utc_offset_seconds: offsetSeconds,
     hourly_units: { time: "iso8601", temperature_2m: "°C", dew_point_2m: "°C", surface_pressure: "hPa" },
     hourly: {
-      time: Array.from({ length: 169 }, (_, i) => new Date(Date.parse(RUN) + i * 3600000 + offsetSeconds * 1000).toISOString().slice(0, 16)),
-      temperature_2m: Array(169).fill(30), dew_point_2m: Array(169).fill(25), surface_pressure: Array(169).fill(1005),
+      time: Array.from({ length: hours }, (_, i) => new Date(Date.parse(RUN) + i * 3600000 + offsetSeconds * 1000).toISOString().slice(0, 16)),
+      temperature_2m: Array(hours).fill(30), dew_point_2m: Array(hours).fill(25), surface_pressure: Array(hours).fill(1005),
     },
   };
 }
@@ -68,7 +68,7 @@ describe("on-view snapshot-run equality", () => {
       expect(url.origin + url.pathname).toBe("https://single-runs-api.open-meteo.com/v1/forecast");
       expect(url.searchParams.get("models")).toBe("ecmwf_ifs025");
       expect(url.searchParams.get("run")).toBe("2026-10-05T00:00");
-      expect(url.searchParams.get("forecast_hours")).toBe("169");
+      expect(url.searchParams.get("forecast_hours")).toBe("193");
       expect(url.searchParams.get("latitude")?.includes(",")).toBe(false);
     }
     expect(records.get("forecast-attempts:2026-10-05")).toBe(2);
@@ -81,6 +81,18 @@ describe("on-view snapshot-run equality", () => {
     const incomplete = source();
     incomplete.hourly.surface_pressure[100] = null as unknown as number;
     expect(() => normalizePinnedOpenMeteoForecast(incomplete, ranked, NOW, RUN)).toThrow(/five complete future local dates/);
+  });
+
+  it("keeps five complete future local dates for east-offset cities near snapshot expiry", () => {
+    const late = Date.parse("2026-10-06T20:59:00Z");
+    const eastOffset = 4 * 3600;
+    expect(() => normalizePinnedOpenMeteoForecast(source(eastOffset, 169), ranked, late, RUN)).toThrow(/full run horizon/);
+    const url = buildPinnedOpenMeteoForecastUrl(ranked, RUN);
+    expect(url.searchParams.get("forecast_hours")).toBe("193");
+    const result = normalizePinnedOpenMeteoForecast(source(eastOffset, 193), ranked, late, RUN);
+    expect(result.days.map((day) => day.date)).toEqual([
+      "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12",
+    ]);
   });
 
   it("rejects a mismatched gate payload and an expired snapshot without a latest-run fallback", async () => {

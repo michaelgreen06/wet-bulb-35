@@ -15,6 +15,8 @@ export const OPEN_METEO_MODEL_METADATA_URL = "https://api.open-meteo.com/data/ec
 // Open-Meteo copies new runs across redundant servers for several minutes after availability.
 export const OPEN_METEO_RUN_SETTLE_MS = 10 * 60_000;
 export const FORECAST_DAYS = 5 as const;
+// Preserve five future *complete* local dates near the next daily snapshot rollover.
+export const PINNED_FORECAST_HOURS = 193 as const;
 export const FORECAST_PHASE_POLICY = "liquid-water" as const;
 
 export interface ForecastLocation {
@@ -169,9 +171,9 @@ export function buildPinnedOpenMeteoForecastUrl(
   url.searchParams.set("latitude", String(location.latitude));
   url.searchParams.set("longitude", String(location.longitude));
   url.searchParams.set("hourly", "temperature_2m,dew_point_2m,surface_pressure");
-  // Six days after initialization cannot cover five *future complete* local dates
-  // when the run arrives late; request seven days and validate the actual hours.
-  url.searchParams.set("forecast_hours", "169");
+  // An older current snapshot may still be valid near the next daily rollover.
+  // Eight days from initialization covers five future local dates across UTC offsets.
+  url.searchParams.set("forecast_hours", String(PINNED_FORECAST_HOURS));
   url.searchParams.set("run", initialization.slice(0, 16));
   url.searchParams.set("timezone", "auto");
   url.searchParams.set("models", OPEN_METEO_MODEL);
@@ -498,12 +500,12 @@ export function normalizePinnedOpenMeteoForecast(
   expectUnit(units, "surface_pressure", ["hPa"]);
   if (typeof value.timezone !== "string" || !validUtcOffset(value.utc_offset_seconds)) throw new TypeError("Pinned Open-Meteo timezone metadata is invalid.");
   const arrays = [hourly.time, hourly.temperature_2m, hourly.dew_point_2m, hourly.surface_pressure];
-  if (!arrays.every(Array.isArray) || arrays.some((items) => (items as unknown[]).length !== 169)) throw new TypeError("Pinned Open-Meteo forecast must contain the full run horizon.");
+  if (!arrays.every(Array.isArray) || arrays.some((items) => (items as unknown[]).length !== PINNED_FORECAST_HOURS)) throw new TypeError("Pinned Open-Meteo forecast must contain the full run horizon.");
   const [times, temperatures, dewPoints, pressures] = arrays as unknown[][];
   const offset = value.utc_offset_seconds as number;
   const start = Date.parse(initialization);
   const byDate = new Map<string, Array<{ time: string; temperature: number; dewPoint: number; pressure: number }>>();
-  for (let index = 0; index < 169; index += 1) {
+  for (let index = 0; index < PINNED_FORECAST_HOURS; index += 1) {
     const time = new Date(start + index * 3_600_000 + offset * 1_000).toISOString().slice(0, 16);
     if (times[index] !== time) throw new TypeError("Pinned Open-Meteo timestamps do not start at the requested initialization.");
     const temperature = temperatures[index]; const dewPoint = dewPoints[index]; const pressure = pressures[index];
