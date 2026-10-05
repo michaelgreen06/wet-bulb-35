@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ROMPS_METHOD, ROMPS_METHOD_VERSION } from "../forecast/romps.ts";
 import {
+  type HotspotPinnedDailyForecast,
   HOTSPOT_FORECAST_HOURS,
   HOTSPOT_OPEN_METEO_MODEL,
   HOTSPOT_OPEN_METEO_PROVIDER,
@@ -17,6 +18,19 @@ const coordinate = z.object({
   longitude: z.number().finite().min(-180).max(180),
 }).strict();
 const modelCell = coordinate.extend({ elevationM: z.number().finite() }).strict();
+const localDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+// Daily maxima from the snapshot's own pinned IFS run; only complete local dates are kept.
+const pinnedFiveDay = z.object({
+  initialization: isoUtc,
+  retrievedAt: isoUtc,
+  timezone: z.string().min(1).max(80),
+  utcOffsetSeconds: z.number().int().min(-14 * 3_600).max(14 * 3_600),
+  days: z.array(z.object({
+    date: localDate,
+    maximumWetBulbC: z.number().finite(),
+    peakLocalTime: z.string().regex(/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d$/),
+  }).strict()).max(7),
+}).strict();
 const candidate = z.object({
   path: z.string().regex(/^\/wetbulb-temperature\/.+\/$/),
   name: z.string().min(1),
@@ -53,6 +67,9 @@ export const HotspotSnapshotSchema = z.object({
     thresholdC: z.number().finite(),
     dilationRings: z.number().int().nonnegative(),
     globalLandMaximumC: z.number().finite(),
+    // Recorded separately: grid retrieval completion and the first poll that saw the run usable.
+    retrievedAt: isoUtc.optional(),
+    firstSeenReadyAt: isoUtc.nullable().optional(),
   }).strict(),
   counts: z.object({
     corpus: z.number().int().positive(),
@@ -77,13 +94,32 @@ export const HotspotSnapshotSchema = z.object({
     airTemperatureC: z.number().finite(),
     dewPointC: z.number().finite(),
     surfacePressureHpa: z.number().finite().positive(),
+    fiveDay: pinnedFiveDay.optional(),
   }).strict()).min(1).max(HOTSPOT_MAX_PUBLISHED_CELLS),
 }).strict().superRefine((snapshot, context) => {
-  if (Date.parse(snapshot.generatedAt) >= Date.parse(snapshot.validFrom)) {
+  // The window starts at the next full hour after grid retrieval; generation may finish shortly after
+  // it begins. Snapshots without a recorded retrieval keep the original generatedAt rule.
+  if (snapshot.discovery.retrievedAt) {
+    if (Date.parse(snapshot.generatedAt) < Date.parse(snapshot.discovery.retrievedAt)
+      || Date.parse(snapshot.generatedAt) >= Date.parse(snapshot.validTo)) {
+      context.addIssue({ code: "custom", message: "generatedAt must follow retrieval and precede validTo" });
+    }
+  } else if (Date.parse(snapshot.generatedAt) >= Date.parse(snapshot.validFrom)) {
     context.addIssue({ code: "custom", message: "generatedAt must precede validFrom for a future-only forecast" });
   }
   if (Date.parse(snapshot.validFrom) >= Date.parse(snapshot.validTo)) {
     context.addIssue({ code: "custom", message: "validFrom must precede validTo" });
+  }
+  const initializationMs = Date.parse(snapshot.discovery.initialization);
+  if (snapshot.discovery.retrievedAt
+    && (Date.parse(snapshot.discovery.retrievedAt) < initializationMs
+      || Date.parse(snapshot.discovery.retrievedAt) >= Date.parse(snapshot.validFrom))) {
+    context.addIssue({ code: "custom", message: "retrievedAt must follow initialization and precede validFrom" });
+  }
+  if (snapshot.discovery.firstSeenReadyAt
+    && (Date.parse(snapshot.discovery.firstSeenReadyAt) < initializationMs
+      || (snapshot.discovery.retrievedAt && Date.parse(snapshot.discovery.firstSeenReadyAt) > Date.parse(snapshot.discovery.retrievedAt)))) {
+    context.addIssue({ code: "custom", message: "firstSeenReadyAt must fall between initialization and retrieval" });
   }
   if (snapshot.counts.candidates !== snapshot.counts.discoveredCandidates + snapshot.counts.excludedControls
       || snapshot.counts.refined !== snapshot.counts.candidates
@@ -103,6 +139,21 @@ export const HotspotSnapshotSchema = z.object({
       || Date.parse(hotspot.peakTime) >= Date.parse(snapshot.validTo)) {
       context.addIssue({ code: "custom", message: "peakTime must fall inside the validity window" });
     }
+    const fiveDay = hotspot.fiveDay;
+    if (fiveDay) {
+      if (fiveDay.initialization !== snapshot.discovery.initialization) {
+        context.addIssue({ code: "custom", message: "five-day data must come from the snapshot's pinned initialization" });
+      }
+      const dates = fiveDay.days.map((day) => day.date);
+      const consecutive = dates.every((date, dayIndex) => dayIndex === 0
+        || Date.parse(`${date}T00:00:00Z`) - Date.parse(`${dates[dayIndex - 1]}T00:00:00Z`) === 86_400_000);
+      // A complete local date starts at or after the run initialization in that location's offset.
+      const firstLocalMidnightMs = dates.length ? Date.parse(`${dates[0]}T00:00:00Z`) - fiveDay.utcOffsetSeconds * 1_000 : initializationMs;
+      if (!consecutive || firstLocalMidnightMs < initializationMs
+        || fiveDay.days.some((day) => day.peakLocalTime.slice(0, 10) !== day.date)) {
+        context.addIssue({ code: "custom", message: "five-day data must contain consecutive complete local dates from the pinned run" });
+      }
+    }
   }
 });
 
@@ -116,6 +167,8 @@ export interface HotspotDiscoveryMetadata {
   thresholdC: number;
   dilationRings: number;
   globalLandMaximumC: number;
+  retrievedAt?: string;
+  firstSeenReadyAt?: string | null;
 }
 
 function compareRefinements(a: HotspotRefinement, b: HotspotRefinement): number {
@@ -204,10 +257,46 @@ export function createHotspotSnapshot(input: {
   return HotspotSnapshotSchema.parse(snapshot);
 }
 
+export type HotspotSnapshotState = "upcoming" | "active" | "expired";
+
+/** A snapshot is current only inside its original validity bounds; timestamps are never extended. */
+export function hotspotSnapshotState(snapshot: { validFrom: string; validTo: string }, now = Date.now()): HotspotSnapshotState {
+  if (now >= Date.parse(snapshot.validTo)) return "expired";
+  return now < Date.parse(snapshot.validFrom) ? "upcoming" : "active";
+}
+
+/** Shared caches must not keep a ranking past its validity end. */
+export function hotspotCacheControl(snapshot: { validTo: string }, now = Date.now()): string {
+  const remaining = Math.floor((Date.parse(snapshot.validTo) - now) / 1_000);
+  return remaining > 0 ? `public, max-age=${Math.min(300, remaining)}` : "no-store";
+}
+
 export function validateHotspotSnapshot(value: unknown) {
   return HotspotSnapshotSchema.safeParse(value);
 }
 
 export function isHotspotSnapshot(value: unknown): value is HotspotSnapshot {
   return validateHotspotSnapshot(value).success;
+}
+
+/** Adds pinned-run daily maxima to published locations; unmatched or empty entries are omitted. */
+export function attachPinnedFiveDay(snapshot: HotspotSnapshot, pinned: readonly HotspotPinnedDailyForecast[]): HotspotSnapshot {
+  const byPath = new Map(pinned.map((entry) => [entry.path, entry]));
+  return HotspotSnapshotSchema.parse({
+    ...snapshot,
+    hotspots: snapshot.hotspots.map((hotspot) => {
+      const entry = byPath.get(hotspot.path);
+      if (!entry || entry.days.length === 0) return hotspot;
+      return {
+        ...hotspot,
+        fiveDay: {
+          initialization: entry.initialization,
+          retrievedAt: entry.retrievedAt,
+          timezone: entry.timezone,
+          utcOffsetSeconds: entry.utcOffsetSeconds,
+          days: entry.days.slice(0, 7).map((day) => ({ ...day })),
+        },
+      };
+    }),
+  });
 }

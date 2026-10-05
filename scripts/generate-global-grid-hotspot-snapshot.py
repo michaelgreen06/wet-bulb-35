@@ -132,8 +132,10 @@ def _is_finite_number(value: Any) -> bool:
 
 def validate_snapshot_document(document: dict[str, Any]) -> None:
     required = {"schemaVersion", "method", "methodVersion", "model", "cells"}
-    if not isinstance(document, dict) or set(document) != required or document["schemaVersion"] != SCHEMA_VERSION:
+    if not isinstance(document, dict) or set(document) - {"publication"} != required or document["schemaVersion"] != SCHEMA_VERSION:
         raise ValueError("snapshot document has an invalid schema")
+    if "publication" in document:
+        validate_publication(document["publication"], document["model"])
     if document["method"] != METHOD or document["methodVersion"] != METHOD_VERSION:
         raise ValueError("snapshot document has an invalid wet-bulb method")
     model = document["model"]
@@ -182,6 +184,42 @@ def validate_snapshot_document(document: dict[str, Any]) -> None:
         ranking.append((-float(cell["wetBulbC"]), float(cell["latitude"]), float(cell["longitude"])))
     if ranking != sorted(ranking):
         raise ValueError("snapshot cells must be deterministically ranked")
+
+
+def validate_publication(publication: Any, model: dict[str, Any]) -> None:
+    """Publication times: retrieval completion, first ready poll, and snapshot generation."""
+    if not isinstance(publication, dict) or set(publication) != {"generatedAt", "retrievedAt", "firstSeenReadyAt"}:
+        raise ValueError("snapshot publication metadata is invalid")
+    initialization = _parse_utc_timestamp(model["initialization"], "snapshot initialization")
+    retrieved = _parse_utc_timestamp(publication["retrievedAt"], "publication retrievedAt")
+    generated = _parse_utc_timestamp(publication["generatedAt"], "publication generatedAt")
+    start = _parse_utc_timestamp(model["validTimeBounds"]["start"], "snapshot valid-time start")
+    # The window starts after retrieval; generation itself may finish shortly after the window begins.
+    if not initialization <= retrieved < start or generated < retrieved:
+        raise ValueError("publication times must follow initialization and retrieval must precede the forecast window")
+    if publication["firstSeenReadyAt"] is not None:
+        first_seen = _parse_utc_timestamp(publication["firstSeenReadyAt"], "publication firstSeenReadyAt")
+        if not initialization <= first_seen <= retrieved:
+            raise ValueError("first-ready time must fall between initialization and retrieval")
+
+
+def _whole_second(value: Any, label: str) -> str:
+    return _iso_utc(_parse_utc_timestamp(value, label).replace(microsecond=0))
+
+
+def add_publication_metadata(document: dict[str, Any], download: dict[str, Any], generated_at: dt.datetime) -> dict[str, Any]:
+    if not isinstance(download, dict) or download.get("initialization") != document["model"]["initialization"]:
+        raise ValueError("download metadata does not match the snapshot initialization")
+    published = {
+        **document,
+        "publication": {
+            "generatedAt": _iso_utc(generated_at),
+            "retrievedAt": _whole_second(download.get("retrievedAt"), "download retrievedAt"),
+            "firstSeenReadyAt": None if download.get("firstSeenReadyAt") is None else _whole_second(download["firstSeenReadyAt"], "download firstSeenReadyAt"),
+        },
+    }
+    validate_snapshot_document(published)
+    return published
 
 
 def generate_snapshot_from_arrays(*, latitudes: np.ndarray, longitudes: np.ndarray, steps: dict[int, dict[str, Any]], model: dict[str, Any]) -> dict[str, Any]:
@@ -316,6 +354,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--steps", default=",".join(map(str, DEFAULT_STEPS)))
     parser.add_argument("--window-start", help="inclusive UTC hourly validity start")
     parser.add_argument("--window-end", help="inclusive UTC hourly validity end")
+    parser.add_argument("--download-metadata", type=Path, help="downloader metadata adding retrieval and first-ready times")
     args = parser.parse_args(argv)
     try:
         expected_steps = _parse_steps(args.steps)
@@ -344,6 +383,9 @@ def main(argv: list[str] | None = None) -> None:
             steps=steps,
             model={"source": args.model_source, "initialization": initialization, "steps": list(steps)},
         )
+        if args.download_metadata:
+            download = json.loads(args.download_metadata.read_text(encoding="utf-8"))
+            document = add_publication_metadata(document, download, dt.datetime.now(dt.timezone.utc).replace(microsecond=0))
     except ValueError as error:
         parser.error(str(error))
     args.output.parent.mkdir(parents=True, exist_ok=True)

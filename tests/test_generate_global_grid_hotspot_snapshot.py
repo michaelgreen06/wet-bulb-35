@@ -63,6 +63,42 @@ class GlobalGridHotspotSnapshotTests(unittest.TestCase):
         self.assertEqual(document["cells"][-1]["longitude"], 0.25)
         HOTSPOTS.validate_snapshot_document(document)
 
+    def _late_document(self):
+        return HOTSPOTS.generate_snapshot_from_arrays(
+            latitudes=self.latitudes,
+            longitudes=self.longitudes,
+            steps={6: self.steps[0], 9: self.steps[3]},
+            model={"source": "ecmwf-ifs-0.25", "initialization": "2026-09-21T18:00:00Z", "steps": [6, 9]},
+        )
+
+    def test_publication_metadata_records_retrieval_and_first_ready_times(self):
+        document = HOTSPOTS.add_publication_metadata(
+            self._late_document(),
+            {"initialization": "2026-09-21T18:00:00Z", "retrievedAt": "2026-09-21T23:20:00.734120Z", "firstSeenReadyAt": "2026-09-21T23:05:00Z"},
+            HOTSPOTS.dt.datetime(2026, 9, 21, 23, 30, tzinfo=HOTSPOTS.dt.timezone.utc),
+        )
+        self.assertEqual(document["publication"], {
+            "generatedAt": "2026-09-21T23:30:00Z",
+            "retrievedAt": "2026-09-21T23:20:00Z",
+            "firstSeenReadyAt": "2026-09-21T23:05:00Z",
+        })
+        HOTSPOTS.validate_snapshot_document(document)
+
+    def test_publication_metadata_rejects_mismatched_runs_and_impossible_times(self):
+        late = self._late_document()
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            HOTSPOTS.add_publication_metadata(late, {"initialization": "2026-09-21T12:00:00Z", "retrievedAt": "2026-09-21T23:20:00Z"},
+                                              HOTSPOTS.dt.datetime(2026, 9, 21, 23, 30, tzinfo=HOTSPOTS.dt.timezone.utc))
+        # Generation finishing after the window began is allowed when retrieval preceded it.
+        HOTSPOTS.add_publication_metadata(late, {"initialization": "2026-09-21T18:00:00Z", "retrievedAt": "2026-09-21T23:59:00Z", "firstSeenReadyAt": None},
+                                          HOTSPOTS.dt.datetime(2026, 9, 22, 0, 4, tzinfo=HOTSPOTS.dt.timezone.utc))
+        with self.assertRaisesRegex(ValueError, "precede the forecast window"):
+            HOTSPOTS.add_publication_metadata(late, {"initialization": "2026-09-21T18:00:00Z", "retrievedAt": "2026-09-22T01:00:00Z", "firstSeenReadyAt": None},
+                                              HOTSPOTS.dt.datetime(2026, 9, 22, 1, 5, tzinfo=HOTSPOTS.dt.timezone.utc))
+        with self.assertRaisesRegex(ValueError, "first-ready"):
+            HOTSPOTS.add_publication_metadata(late, {"initialization": "2026-09-21T18:00:00Z", "retrievedAt": "2026-09-21T23:20:00Z", "firstSeenReadyAt": "2026-09-21T23:25:00Z"},
+                                              HOTSPOTS.dt.datetime(2026, 9, 21, 23, 30, tzinfo=HOTSPOTS.dt.timezone.utc))
+
     def test_limits_tied_cells_to_fifty_with_coordinate_tiebreakers(self):
         latitudes = np.array([1.0, 0.0, -1.0])
         longitudes = np.arange(20, dtype=float)

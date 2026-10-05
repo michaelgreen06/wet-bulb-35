@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHotspotSnapshot } from "../lib/hotspots/snapshot";
 import { hotspotApiResponse, readHotspotSnapshot } from "../workers/hotspots-edge";
 
@@ -59,6 +59,12 @@ function envWith(value: unknown) {
 }
 
 describe("hotspot snapshot edge delivery", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-09-22T12:00:00Z"));
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
   it("reads, validates, caches, and serves the fixed R2 object", async () => {
     const cache = new FakeCache();
     const first = await readHotspotSnapshot(envWith(snapshot()), cache);
@@ -69,12 +75,33 @@ describe("hotspot snapshot edge delivery", () => {
 
     const response = await hotspotApiResponse(new Request("https://example.test/api/inhabited-hotspots"), envWith(snapshot()), new FakeCache());
     expect(response.status).toBe(200);
-    expect(response.headers.get("cache-control")).toContain("max-age=300");
-    expect(["current", "expired"]).toContain(response.headers.get("x-hotspot-snapshot-status"));
+    expect(response.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(response.headers.get("x-hotspot-snapshot-status")).toBe("current");
+    expect(response.headers.get("x-hotspot-window-state")).toBe("active");
     const etag = response.headers.get("etag");
     expect(etag).toContain("hotspots-1-");
     const notModified = await hotspotApiResponse(new Request("https://example.test/api/inhabited-hotspots", { headers: { "if-none-match": etag! } }), envWith(snapshot()), new FakeCache());
     expect(notModified.status).toBe(304);
+  });
+
+  it("never lets shared caches hold a ranking past validTo and returns no ranking once expired", async () => {
+    vi.setSystemTime(Date.parse("2026-09-23T00:58:00Z"));
+    const nearEnd = await hotspotApiResponse(new Request("https://example.test/api/inhabited-hotspots"), envWith(snapshot()), new FakeCache());
+    expect(nearEnd.headers.get("cache-control")).toBe("public, max-age=120");
+
+    vi.setSystemTime(Date.parse("2026-09-23T01:00:00Z"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const expired = await hotspotApiResponse(new Request("https://example.test/api/inhabited-hotspots"), envWith(snapshot()), new FakeCache());
+    expect(expired.status).toBe(503);
+    expect(expired.headers.get("cache-control")).toBe("no-store");
+    expect(expired.headers.get("x-hotspot-snapshot-status")).toBe("expired");
+    const body = await expired.json();
+    expect(body).toMatchObject({ status: "expired", initialization: "2026-09-22T00:00:00Z", validFrom: "2026-09-22T01:00:00Z" });
+    expect(body.hotspots).toBeUndefined();
+    const conditional = await hotspotApiResponse(new Request("https://example.test/api/inhabited-hotspots", { headers: { "if-none-match": "\"hotspots-1-2026-09-22T00:30:00Z\"" } }), envWith(snapshot()), new FakeCache());
+    expect(conditional.status).toBe(503);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("fails closed for missing, malformed, disabled, and unsupported requests", async () => {

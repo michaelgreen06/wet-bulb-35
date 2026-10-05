@@ -4,14 +4,14 @@
 
 Implemented behind two independent gates:
 
-- The daily GitHub Actions job does not run on schedule unless `GLOBAL_HOTSPOTS_ENABLED=true` is configured as a repository variable.
+- The once-daily GitHub Actions job does not run on schedule unless `GLOBAL_HOTSPOTS_ENABLED=true` is configured as a repository variable.
 - The Worker page and API return `404` unless `HOTSPOT_FEATURE_MODE=enabled` and an approved `HOTSPOT_SNAPSHOTS` R2 binding are configured.
 
-The MVP does not create an R2 bucket, alter production configuration, deploy a Worker, or merge its branch.
+The review branch adds a private R2 binding to the production-domain Wrangler config but leaves both serving gates unset. The bucket exists privately; no snapshot is published, Worker deployed, or PR merged by this change.
 
 ## Product
 
-Once daily, the pipeline identifies high forecast wet bulb regions on the public ECMWF IFS 0.25° grid over the first 24 complete UTC hours after retrieval, intersects buffered cells with the complete canonical WetBulb35 location manifest, refines only those locations with the same 24 hourly values from one fixed ECMWF model through Open-Meteo, and publishes one validated snapshot.
+Once daily, the pipeline targets the 00Z ECMWF IFS cycle, identifies high forecast wet bulb regions on the public ECMWF IFS 0.25° grid over the first 24 complete UTC hours after retrieval, intersects buffered cells with the complete canonical WetBulb35 location manifest, refines only those locations with the same 24 hourly values from one fixed ECMWF model through Open-Meteo, and prepares one validated snapshot per product. Actual scheduled publication remains disabled pending separate approval.
 
 Public wording remains deliberately narrow:
 
@@ -45,16 +45,61 @@ The page does not claim a measured value, official record, city-center precision
    - calculates each hourly Romps value before selecting each location maximum;
    - deduplicates only the presentation results by the model cell returned by Open-Meteo;
    - validates the complete snapshot and atomically writes one local JSON file.
-5. `.github/workflows/global-inhabited-hotspots.yml` uploads:
+5. After explicit activation, `.github/workflows/global-inhabited-hotspots.yml` uploads:
    - a content-addressed immutable object at `inhabited-hotspots/v1/snapshots/sha256-<digest>.json`;
    - only after read-back verification, the current alias at `inhabited-hotspots/v1/latest.json`.
-   - The daily job begins at 15:15 UTC, 9 hours 15 minutes after the 06Z initialization, because ECMWF documents a 7–9 hour dissemination delay. The forecast window is not fixed to initialization; it begins at the next full UTC hour after successful retrieval. A missing mirror object is treated as incomplete dissemination and retried every five minutes for 30 minutes; it is not treated as proof that the run does not exist.
+   - The guard described under *Run readiness and publication* decides each product independently.
+
+## Run readiness and publication
+
+- One scheduled job starts at 06:35Z for the day's 00Z initialization (`35 6 * * *`), before ECMWF's documented 7–9 hour dissemination delay ends. The daily job will not fall back to yesterday's 18Z run; a delayed job may use a newer complete run.
+- `scripts/await-ifs-run-readiness.py` polls for at most 285 minutes, every five minutes plus up to one minute of jitter. It honors `Retry-After` and backs off exponentially on 429/5xx/transport errors.
+- Each poll reads only the Azure mirror's `.index` files (the downloader's mirror; about 40 KB each), never GRIB data. It parses their JSON rows: every step covering the 24 future hours from the next full UTC hour must list `2t`, `2d`, and `sp` for that exact run and step with a nonempty byte range, and step 0 must list `lsm`. An index that exists but lacks a required row is not ready. The last bracketing step is checked first.
+- If retrieval of a ready cycle still fails, the downloader (`--retry-until`) retries every five minutes plus jitter until the same deadline. It then warns, generates nothing, and keeps the prior immutable snapshots.
+- A cycle is usable only after Open-Meteo's static `ecmwf_ifs025` metadata reports that initialization (or a newer one) available for at least ten minutes **and** one exact-run Single Runs point response supplies simultaneous temperature, dew point, and pressure for the entire next-24-hour UTC window and five complete future Houston local dates. A failed point probe waits with bounded retry/backoff; metadata alone is not proof of pinned-run availability.
+- Newest-first: an older cycle is never selected over a newer complete one. Cycles at or older than the currently published snapshot are skipped.
+- The first poll that saw the run usable is recorded as `firstSeenReadyAt`, separately from `initialization` and the grid `retrievedAt`. Readiness is never inferred from the scheduler start time.
+- Late runs follow the existing window rule. A run first retrieved hours after it became available is used only if it covers 24 consecutive future hours starting at the next full UTC hour after the actual retrieval. Elapsed hours are never ranked, and a run that cannot cover a full future window is skipped.
+- `scripts/hotspot-publish-guard.mjs` compares each validated candidate with that product's current `latest.json`:
+  - a newer initialization publishes;
+  - an older one is refused;
+  - the same run publishes a new future window only after the published window has ended;
+  - an unreadable R2 response (anything other than a missing object) stops the job rather than letting an older run through.
+- The workflow's single concurrency group serializes read-compare-write. **Before any provider work on a publishing run**, it reads both current aliases and aborts on a missing half, malformed document, different initialization, or incompatible windows; only an entirely empty bucket can start a first publication. It verifies a backup of each existing alias and **both** content-addressed new objects before either `latest` alias is changed. A pre-commit pair check requires matching initialization and native grid source bounds bracketing the inhabited hourly window (the two bounds are not identical). If a write/read-back fails, a best-effort trap restores both old aliases (or deletes newly-created aliases **and verifies their absence**), verifies restored bytes, and fails the job. The final step separately re-reads both remote aliases and checks pair identity and expiry, so a crash between writes is detectable. R2 does not provide an atomic transaction across these two keys: readers can briefly see a split pair, and SIGKILL or failed rollback can leave one; a failed remote pair check blocks release and requires manual reconciliation from the verified immutable objects with the feature gates off. Do not describe this as atomic paired publication.
+- If no usable cycle arrives within the bounded window, the job warns and keeps the prior immutable snapshot. When a published product has no current snapshot (missing or past `validTo`), a final step fails the job. Configure an actual recipient for failed-job notifications before activation; a failed Actions check alone is not proof anyone received an alert. The daily job cannot detect expiry that occurs between runs, so independently check both private aliases' identity, `validTo`, and the two public API status headers at least hourly after activation. `scripts/check-hotspot-remote-pair.sh` reads both private aliases into `.hotspots/monitor-{inhabited,global-grid}.json`; `node scripts/check-hotspot-public-status.mjs .hotspots/monitor-inhabited.json .hotspots/monitor-global-grid.json` then checks both public APIs return `200`, the product-specific `current` headers, and the same initialization and validity bounds as the private aliases. Both commands are read-only and must run sequentially after activation with bucket credentials; do not run the public check while serving gates remain off. Configure an alert recipient and independent hourly execution before enabling publication, then alert before the earlier validity end and immediately on a missing/split/expired pair or unexpected publication run. Keep both serving gates off during reconciliation; restore only a previously verified immutable pair with the same initialization and compatible bounds, verify both remote aliases, then re-enable only with fresh approval. This monitoring and rollback plan is prepared, not active.
 
 A failed download, incomplete GRIB, budget overrun, provider failure, malformed response, validation error, or R2 verification failure stops the run. It cannot replace the prior current snapshot before a new snapshot has passed generation and immutable-object verification.
 
 ## Serving
 
-`workers/hotspots-edge.ts` reads only the fixed current R2 object, enforces a 512 KiB size limit, validates its strict schema, and caches the validated response briefly at the edge.
+`workers/hotspots-edge.ts` reads only the fixed current R2 object, enforces a 256 KB size limit, validates its strict schema, and caches the validated response briefly at the edge.
+
+### Freshness
+
+A snapshot is usable only within its original `validFrom`–`validTo` bounds; timestamps are never extended.
+
+- Before `validFrom`, the page shows the fixed window and its start time.
+- After `validFrom`, the page labels the ranking as the original fixed window, not a rolling “next 24 hours”. Peaks whose time has passed are marked “(passed)”.
+- From `validTo`, both the HTML page and the API stop presenting the ranking:
+  - The page keeps its URL and returns `503` with `Retry-After: 900`. It shows an unavailable state with only the ended window's bounds.
+  - The API returns a `503` JSON body without hotspots.
+  - The Worker logs `hotspot_snapshot_expired` for alerting.
+- API `cache-control` never extends beyond `validTo`. HTML keeps the site's `max-age=0, must-revalidate` policy.
+- The unfiltered global-grid product follows the same rules independently.
+- An enabled product with no readable snapshot also returns the accessible `503` unavailable page instead of plain text.
+
+### Navigation
+
+- While `HOTSPOT_FEATURE_MODE=enabled`, every Worker-rendered page includes a server-rendered `Top 50 inhabited hotspots` link. It sits in a `nav` landmark labeled "Forecast hotspots" and has `aria-current` on the page itself. Covered pages: home, directory, country, state, city, and both hotspot pages.
+- With the gate off, the link is omitted and the HTML is byte-identical to before. The route then returns 404, so the link is never shown pointing to a 404.
+- The HTML cache key includes the deployment version, so gate changes, which require a deploy, cannot leave stale links.
+- The inhabited page links to the unfiltered grid page only while `GLOBAL_GRID_HOTSPOT_FEATURE_MODE=enabled`. Its label says the grid page includes ocean and uninhabited cells and is not a ranking of inhabited locations. The grid page links back only while the inhabited gate is on.
+
+### On-view same-run five-day forecast
+
+- Publication refines candidates and stores only the ranking and its exact IFS initialization; it makes **no extra five-day request** and does not store `hotspots[].fiveDay` in new snapshots.
+- On a human view of any canonical city (ranked or ordinary), the current inhabited snapshot supplies `discovery.initialization`. The forecast Worker requests **only that city** via Open-Meteo Single Runs with `run=<initialization>`, `models=ecmwf_ifs025`, and enough hourly rows to test five complete *future* local dates; it never combines with a newer run. The cache and Durable Object result key include the initialization.
+- On insufficient full-day coverage or an expired/unavailable snapshot, the aligned forecast is unavailable with an explicit reason. Crawler requests and ranking page renders never fetch a city forecast. The hotspot ranking's next-24-hour UTC maximum and the city's five full local-day maxima cover different windows and need not match numerically.
 
 Read-only routes:
 
@@ -80,26 +125,28 @@ The target remains recovery of the true reference top 20 and reference maximum a
 
 Generation variables/secrets:
 
-- `GLOBAL_HOTSPOTS_ENABLED=true` — allows scheduled runs; absent/false keeps the schedule inert.
+- `GLOBAL_HOTSPOTS_ENABLED=true` — allows scheduled runs and permits an explicitly requested manual publication. Absent/false prevents either from publishing; a manual `publish=false` dispatch still performs weather-data generation and consumes provider budget, so it requires separate deliberate authorization.
 - `OPEN_METEO_API_MODE=public-noncommercial` or `customer-commercial` — explicit licensing mode.
 - `OPEN_METEO_BASE_URL` — optional approved endpoint override.
 - `OPEN_METEO_API_KEY` — required only for customer-commercial mode.
-- `HOTSPOT_DAILY_LOCATION_LIMIT` — hard ceiling; the pipeline fails rather than truncating.
+- `HOTSPOT_RUN_LOCATION_LIMIT` — fixed to 2,000 for this scheduled public job, inclusive of excluded controls; the pipeline fails rather than truncating. For one daily run, the **ceiling**, not measured usage, is one native global-grid retrieval, up to 20 batched refinement HTTP requests per attempt (60 with three attempts), up to 60 one-point exact-run readiness probes, and up to 2,000 one-city on-view forecast HTTP attempts. That is at most **2,120 Open-Meteo HTTP requests** and **8,060 location-attempt equivalents** (6,000 refinement + 60 readiness + 2,000 on-view), with **zero** five-day publication prefetch requests. Real usage depends on actual candidate count, retries and viewed cache misses; provider-side weighted equivalence and other traffic remain unverified. Current conditions use OpenWeather, not Open-Meteo. The budget script refuses provider work if this location-attempt envelope exceeds 9,000. Manual reruns, other projects and provider minute/hour/day/month limits are not centrally metered; confirm actual billing/usage before enabling. `HOTSPOT_DAILY_LOCATION_LIMIT` remains a legacy fallback name for local callers.
 - `HOTSPOT_EXCLUDED_SAMPLE_SIZE` — deterministic excluded-location control count; default 100.
-- `HOTSPOT_INTER_BATCH_DELAY_MS` — provider pacing between multi-location batches; scheduled default 20,000 ms. With batches of 100, this caps normal demand at 300 location-equivalents per minute before retry/backoff handling.
+- `HOTSPOT_INTER_BATCH_DELAY_MS` — fixed at 20,000 ms for the scheduled job, between both successful batches **and retries**. With batches of 100, this caps the generator's sustained demand at about 300 location-equivalents per minute. This does not centrally meter concurrent city-page traffic, so the provider's 600/minute shared limit still requires monitoring.
 - `HOTSPOT_R2_BUCKET` — approved existing R2 bucket name.
 - `CLOUDFLARE_ACCOUNT_ID` and `WETBULB35_CLOUDFLARE_API_TOKEN` — required only for publishing.
 
-Serving requires an approved Worker configuration change after storage authorization:
+Serving still requires separate approval to deploy the reviewed binding **and** to set feature gates. The PR only adds this binding to `wrangler.weather-production-domain.toml`:
 
 ```toml
 [[r2_buckets]]
 binding = "HOTSPOT_SNAPSHOTS"
-bucket_name = "<approved-existing-bucket>"
+bucket_name = "wetbulb35-hotspot-snapshots-prod"
 
 [vars]
-HOTSPOT_FEATURE_MODE = "enabled"
+# HOTSPOT_FEATURE_MODE and GLOBAL_GRID_HOTSPOT_FEATURE_MODE remain unset
 ```
+
+**Hosted credential preflight (prepared, not run):** `.github/workflows/hotspot-r2-credential-preflight.yml` is a manual-only, non-publishing workflow in this review branch; it cannot be run from the default branch until separately authorized merges. Once available there, a deliberate manual dispatch uses the stored hosted token only to read and validate the configured private bucket's metadata. It performs no object writes or deletes, no ECMWF/Open-Meteo requests, and no Worker deployment. This proves hosted-token bucket-metadata access **only**; it does not prove object read/write permissions or narrow token scope. An independently approved, harmless seed write followed by hosted read-back of exact bytes and a separately approved write/delete test would be needed to prove those permissions (the bucket is currently empty). Do not use the main hotspot workflow's `publish=false` dispatch for preflight: it still downloads/refines. An account-scoped Workers token with R2 access supports the Wrangler REST commands here; a bucket-scoped R2 token would require an S3-compatible client and code changes. GitHub secret values are opaque, so local token success does not establish hosted-token access. Any write/delete preflight or snapshot publication needs separate explicit authorization. Before activation, verify the remote alias pair independently and establish an alert for failed/stale/split pointers. Leave both feature gates off until a current, paired, complete 50/50 snapshot is verified.
 
 Do not add Cloudflare or Open-Meteo credentials to Git.
 
@@ -113,6 +160,7 @@ npm run test:forecast
 python3 -m venv .venv-hotspots
 .venv-hotspots/bin/python -m pip install --require-hashes -r requirements/global-hotspots.txt
 .venv-hotspots/bin/python -m unittest \
+  tests/test_await_ifs_run_readiness.py \
   tests/test_download_ecmwf_hotspot_grid.py \
   tests/test_download_gfs_hotspot_grid.py \
   tests/test_generate_ecmwf_hotspot_candidates.py \
@@ -133,7 +181,7 @@ The full live generation is intentionally an offline/operator workflow. Generate
 ## Data and licensing
 
 - ECMWF Open Data discovery uses the public 0.25° three-hourly source grid, interpolated to an explicitly labeled hourly evaluation cadence, and requires ECMWF attribution under CC BY 4.0.
-- Exact final ranking uses hourly Open-Meteo `ecmwf_ifs025` data.
+- Exact final ranking and Top-50 five-day reuse use hourly Open-Meteo `ecmwf_ifs025` Single Runs data pinned to the discovery initialization.
 - Open-Meteo public access is noncommercial. Advertising, subscriptions, sponsorships, or other commercial use requires an appropriate customer endpoint and license before monetization is activated.
 
 ## Direct-model shadow comparison

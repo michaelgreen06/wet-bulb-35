@@ -60,5 +60,108 @@ class CoveringStepsTests(unittest.TestCase):
         start, end = MODULE.hourly_window(dt.datetime(2026, 9, 22, 15, 15, 42, tzinfo=dt.UTC))
         self.assertEqual(start, dt.datetime(2026, 9, 22, 16, tzinfo=dt.UTC))
         self.assertEqual(end, dt.datetime(2026, 9, 23, 15, tzinfo=dt.UTC))
+class ReadinessFileTests(unittest.TestCase):
+    def _write(self, payload):
+        import json
+        import tempfile
+
+        directory = tempfile.mkdtemp()
+        path = Path(directory) / "readiness.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
+    def test_ready_cycle_is_loaded(self):
+        readiness = MODULE.load_readiness(self._write({
+            "ready": True, "initialization": "2026-10-04T06:00:00Z", "date": "2026-10-04", "time": 6,
+            "firstSeenReadyAt": "2026-10-04T13:20:00Z",
+        }))
+        self.assertEqual((readiness["date"], readiness["time"]), ("2026-10-04", 6))
+
+    def test_not_ready_or_inconsistent_files_are_rejected(self):
+        with self.assertRaises(ValueError):
+            MODULE.load_readiness(self._write({"ready": False}))
+        with self.assertRaises(ValueError):
+            MODULE.load_readiness(self._write({
+                "ready": True, "initialization": "2026-10-04T06:00:00Z", "date": "2026-10-04", "time": 6,
+                "firstSeenReadyAt": "2026-10-04T05:00:00Z",
+            }))
+
+
+class BoundedRetryTests(unittest.TestCase):
+    def _clock(self, start):
+        state = {"now": start, "sleeps": []}
+
+        def clock():
+            return state["now"]
+
+        def sleep(seconds):
+            state["sleeps"].append(seconds)
+            state["now"] += dt.timedelta(seconds=seconds)
+
+        return state, clock, sleep
+
+    def test_transient_failures_retry_within_the_window(self):
+        import random
+
+        start = dt.datetime(2026, 10, 4, 13, 20, tzinfo=dt.UTC)
+        state, clock, sleep = self._clock(start)
+        calls = {"count": 0}
+
+        def attempt():
+            calls["count"] += 1
+            if calls["count"] < 3:
+                raise RuntimeError("index row not yet retrievable")
+
+        self.assertTrue(MODULE.retry_until(attempt, start + dt.timedelta(hours=1), clock=clock, sleep=sleep,
+                                           rng=random.Random(1), log=lambda _message: None))
+        self.assertEqual(calls["count"], 3)
+        self.assertTrue(all(300 <= wait <= 360 for wait in state["sleeps"]))
+
+    def test_persistent_failure_stops_inside_the_bounded_window(self):
+        import random
+
+        start = dt.datetime(2026, 10, 4, 13, 20, tzinfo=dt.UTC)
+        deadline = start + dt.timedelta(minutes=20)
+        state, clock, sleep = self._clock(start)
+        logs = []
+
+        def attempt():
+            raise ConnectionError("mirror reset")
+
+        self.assertFalse(MODULE.retry_until(attempt, deadline, clock=clock, sleep=sleep, rng=random.Random(1), log=logs.append))
+        self.assertLessEqual(state["now"], deadline)
+        self.assertIn("bounded window is spent", logs[-1])
+
+    def test_cli_exits_with_warning_status_and_writes_no_metadata_when_retries_are_exhausted(self):
+        import json
+        import sys
+        import tempfile
+
+        class FailingClient:
+            def __init__(self, **_kwargs):
+                pass
+
+            def retrieve(self, **_kwargs):
+                raise RuntimeError("2d is not listed in the step index yet")
+
+        directory = Path(tempfile.mkdtemp())
+        readiness = directory / "readiness.json"
+        readiness.write_text(json.dumps({
+            "ready": True, "initialization": "2026-10-04T06:00:00Z", "date": "2026-10-04", "time": 6,
+            "firstSeenReadyAt": "2026-10-04T13:20:00Z",
+        }), encoding="utf-8")
+        original_client, original_argv = MODULE.Client, sys.argv
+        MODULE.Client = FailingClient
+        sys.argv = ["download", "--readiness", str(readiness), "--retry-until", "2026-01-01T00:00:00Z",
+                    "--forecast-output", str(directory / "f.grib2"), "--land-mask-output", str(directory / "m.grib2"),
+                    "--metadata-output", str(directory / "download.json")]
+        try:
+            self.assertEqual(MODULE.main(), MODULE.RETRY_EXHAUSTED_EXIT)
+        finally:
+            MODULE.Client, sys.argv = original_client, original_argv
+        self.assertFalse((directory / "download.json").exists())
+        self.assertFalse((directory / "f.grib2").exists())
+
+
 if __name__ == "__main__":
     unittest.main()

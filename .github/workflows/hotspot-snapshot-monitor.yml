@@ -1,0 +1,65 @@
+name: Hotspot snapshot health monitor
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wetbulb35-hotspot-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: vars.GLOBAL_HOTSPOTS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.WETBULB35_CLOUDFLARE_API_TOKEN }}
+      HOTSPOT_R2_BUCKET: ${{ vars.HOTSPOT_R2_BUCKET }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Check private pair, expiry horizon, and both public read paths
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$HOTSPOT_R2_BUCKET"
+          bash scripts/check-hotspot-remote-pair.sh
+          node scripts/check-hotspot-public-status.mjs \
+            .hotspots/monitor-inhabited.json .hotspots/monitor-global-grid.json
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          import { pairedRun } from './scripts/hotspot-pair-check.mjs';
+          const read = name => JSON.parse(fs.readFileSync(name, 'utf8'));
+          const pair = pairedRun(read('.hotspots/monitor-inhabited.json'), read('.hotspots/monitor-global-grid.json'));
+          if (pair.validTo - Date.now() <= 3 * 60 * 60 * 1000) {
+            throw new Error('Current paired snapshots expire within three hours; refresh or alert.');
+          }
+          NODE
+      - name: Alert operator with a persistent issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          title='Hotspot snapshot monitor: investigate stale or mismatched production pair'
+          existing=$(gh issue list --repo "$GH_REPO" --state open --limit 100 --json number,title \
+            --jq ".[] | select(.title == \"$title\") | .number")
+          if [ -z "$existing" ]; then
+            gh issue create --repo "$GH_REPO" --title "$title" \
+              --body '@michaelgreen06: The independent hotspot monitor failed. Check the Actions run, both private snapshot aliases, public APIs, and their validity bounds. Do not assume a Worker version rollback repairs provider data. No automatic DNS, route, or data mutation occurred.'
+          fi
+          exit 1

@@ -1,9 +1,10 @@
 import { Hono } from "hono";
-import { pageHtml, renderBrowsePage, renderCountryPage, renderGlobalGridHotspotPage, renderHomePage, renderHotspotPage, renderStatePage } from "../lib/page-renderer.mjs";
+import { pageHtml, renderBrowsePage, renderCountryPage, renderGlobalGridHotspotPage, renderHomePage, renderHotspotPage, renderHotspotUnavailablePage, renderStatePage } from "../lib/page-renderer.mjs";
 import { expandNearby } from "../lib/nearby.mjs";
 import { createClimateExpander, validCell, validClimateTuple } from "../lib/climate-classes.mjs";
-import { forecastResponse } from "./forecast-edge.ts";
-import { hotspotApiResponse, readHotspotSnapshot } from "./hotspots-edge.ts";
+import { hotspotSnapshotState } from "../lib/hotspots/snapshot.ts";
+import { forecastResponse, SNAPSHOT_FORECAST_UNAVAILABLE } from "./forecast-edge.ts";
+import { hotspotApiResponse, readHotspotSnapshot, warnExpiredSnapshot } from "./hotspots-edge.ts";
 import { globalGridHotspotApiResponse, readGlobalGridHotspotSnapshot } from "./global-grid-hotspots-edge.ts";
 import { createObservability, weatherResponse } from "./weather-edge.mjs";
 export { WeatherGate } from "./weather-edge.mjs";
@@ -32,7 +33,26 @@ async function readAssetJson(request, assets, pathname) {
   if (!response?.ok) throw new InternalMetadataError();
   try { return await response.json(); } catch { throw new InternalMetadataError(); }
 }
-function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID === undefined ? DEFAULT_GA_MEASUREMENT_ID : env.GOOGLE_ANALYTICS_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial", hotspotEnabled: env.HOTSPOT_FEATURE_MODE === "enabled" }; }
+function rendererOptions(env) { return { siteUrl: env.CANONICAL_ORIGIN || DEFAULT_CANONICAL_ORIGIN, googleAnalyticsId: env.GOOGLE_ANALYTICS_ID === undefined ? DEFAULT_GA_MEASUREMENT_ID : env.GOOGLE_ANALYTICS_ID, forecastEnabled: env.OPEN_METEO_API_MODE === "public-noncommercial" || env.OPEN_METEO_API_MODE === "customer-commercial", hotspotEnabled: env.HOTSPOT_FEATURE_MODE === "enabled", globalGridHotspotEnabled: env.GLOBAL_GRID_HOTSPOT_FEATURE_MODE === "enabled" }; }
+// Hotspot pages keep their URL when no current ranking exists: 503 + Retry-After marks the gap as temporary.
+function hotspotUnavailableResponse(request, html, routePath) {
+  const response = new Response(html, { status: 503, headers: { ...htmlHeaders(routePath), "cache-control": "no-store", "retry-after": "900" } });
+  return request.method === "HEAD" ? headResponse(response) : response;
+}
+async function hotspotPageResponse(request, env, product, readSnapshot, render) {
+  const routePath = product === "inhabited" ? "/wetbulb-temperature/forecast/global-hotspots/" : "/wetbulb-temperature/forecast/global-grid-hotspots/";
+  const options = rendererOptions(env);
+  const result = await readSnapshot();
+  if (!result.ok) return hotspotUnavailableResponse(request, renderHotspotUnavailablePage(product, { reason: "unpublished" }, options), routePath);
+  const now = Date.now();
+  if (hotspotSnapshotState(result.snapshot, now) === "expired") {
+    warnExpiredSnapshot(product, result.snapshot);
+    return hotspotUnavailableResponse(request, renderHotspotUnavailablePage(product, { reason: "expired", snapshot: result.snapshot }, options), routePath);
+  }
+  const response = htmlResponse(render(result.snapshot, { ...options, now }), routePath);
+  response.headers.set("etag", result.etag);
+  return request.method === "HEAD" ? headResponse(response) : response;
+}
 function indexCountryShard(country, rows, factsSnapshot = null, climateCells = null) {
   const states = new Map();
   const stateSlugs = new Map((country.states || []).map((state) => [state.name, state.slug]));
@@ -362,7 +382,15 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
         longitude: Number(result.city.longitude),
       };
     };
-    return forecastResponse(context.req.raw, context.env, executionContext, resolveForecastLocation);
+    // The current snapshot supplies the exact IFS initialization for every city view.
+    // No snapshot, expired snapshot, or read failure may fall back to latest.
+    const resolvePinnedForecast = async () => {
+      if (context.env.HOTSPOT_FEATURE_MODE !== "enabled") return null;
+      const result = await readHotspotSnapshot(context.env, cache());
+      if (!result.ok || hotspotSnapshotState(result.snapshot) === "expired") return SNAPSHOT_FORECAST_UNAVAILABLE;
+      return result.snapshot.discovery.initialization;
+    };
+    return forecastResponse(context.req.raw, context.env, executionContext, resolveForecastLocation, undefined, resolvePinnedForecast);
   });
   app.all("/api/forecast/", (context) => context.notFound());
   app.all("/api/inhabited-hotspots", (context) => {
@@ -385,14 +413,7 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     const request = context.req.raw;
     if (request.method !== "GET" && request.method !== "HEAD") return context.notFound();
     if (context.env.HOTSPOT_FEATURE_MODE !== "enabled") return context.notFound();
-    const result = await readHotspotSnapshot(context.env, cache());
-    if (!result.ok) {
-      const response = internalErrorResponse(result.status);
-      return request.method === "HEAD" ? headResponse(response) : response;
-    }
-    const response = htmlResponse(renderHotspotPage(result.snapshot, rendererOptions(context.env)), "/wetbulb-temperature/forecast/global-hotspots/");
-    response.headers.set("etag", result.etag);
-    return request.method === "HEAD" ? headResponse(response) : response;
+    return hotspotPageResponse(request, context.env, "inhabited", () => readHotspotSnapshot(context.env, cache()), renderHotspotPage);
   });
   app.all("/wetbulb-temperature/forecast/global-grid-hotspots", (context) => {
     if (context.req.raw.method !== "GET" && context.req.raw.method !== "HEAD") return context.notFound();
@@ -404,14 +425,7 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
     const request = context.req.raw;
     if (request.method !== "GET" && request.method !== "HEAD") return context.notFound();
     if (context.env.GLOBAL_GRID_HOTSPOT_FEATURE_MODE !== "enabled") return context.notFound();
-    const result = await readGlobalGridHotspotSnapshot(context.env, cache());
-    if (!result.ok) {
-      const response = internalErrorResponse(result.status);
-      return request.method === "HEAD" ? headResponse(response) : response;
-    }
-    const response = htmlResponse(renderGlobalGridHotspotPage(result.snapshot, rendererOptions(context.env)), "/wetbulb-temperature/forecast/global-grid-hotspots/");
-    response.headers.set("etag", result.etag);
-    return request.method === "HEAD" ? headResponse(response) : response;
+    return hotspotPageResponse(request, context.env, "global-grid", () => readGlobalGridHotspotSnapshot(context.env, cache()), renderGlobalGridHotspotPage);
   });
   app.get("*", async (context) => {
     const request = context.req.raw;

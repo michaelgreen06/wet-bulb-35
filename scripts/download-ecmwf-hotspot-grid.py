@@ -5,7 +5,11 @@ import datetime as dt
 import json
 import math
 import os
+import random
+import sys
+import time
 from pathlib import Path
+from typing import Callable
 
 from ecmwf.opendata import Client
 
@@ -53,7 +57,50 @@ def covering_steps(run: dt.datetime, window_start: dt.datetime, window_end: dt.d
     return list(range(start, end + 1, 3))
 
 
-def main() -> None:
+def load_readiness(path: Path) -> dict:
+    """Read the bounded readiness poll result that selected this cycle."""
+    readiness = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(readiness, dict) or readiness.get("ready") is not True:
+        raise ValueError("readiness file does not describe a ready ECMWF cycle")
+    initialization = dt.datetime.fromisoformat(str(readiness.get("initialization", "")).replace("Z", "+00:00"))
+    first_seen = dt.datetime.fromisoformat(str(readiness.get("firstSeenReadyAt", "")).replace("Z", "+00:00"))
+    if initialization.tzinfo is None or initialization.hour not in (0, 6, 12, 18) or first_seen < initialization:
+        raise ValueError("readiness file has an invalid initialization or first-ready time")
+    return readiness
+
+
+RETRY_EXHAUSTED_EXIT = 3
+
+
+def retry_until(
+    attempt: Callable[[], None],
+    deadline: dt.datetime,
+    *,
+    interval_seconds: float = 300,
+    jitter_seconds: float = 60,
+    clock: Callable[[], dt.datetime] = lambda: dt.datetime.now(dt.UTC),
+    sleep: Callable[[float], None] = time.sleep,
+    rng: random.Random | None = None,
+    log: Callable[[str], None] = lambda message: print(message, file=sys.stderr),
+) -> bool:
+    """Retry a failed retrieval within the bounded readiness window; False once the window is spent."""
+    rng = rng or random.Random()
+    attempts = 0
+    while True:
+        attempts += 1
+        try:
+            attempt()
+            return True
+        except Exception as error:  # client raises multiple transport/index exception types
+            wait = interval_seconds + rng.uniform(0, jitter_seconds)
+            if clock() + dt.timedelta(seconds=wait) > deadline:
+                log(f"ECMWF retrieval attempt {attempts} failed ({type(error).__name__}: {error}); the bounded window is spent.")
+                return False
+            log(f"ECMWF retrieval attempt {attempts} failed ({type(error).__name__}: {error}); retrying in {wait:.0f}s.")
+            sleep(wait)
+
+
+def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", type=parse_date)
     parser.add_argument("--time", type=int, choices=(0, 6, 12, 18))
@@ -62,90 +109,112 @@ def main() -> None:
     parser.add_argument("--metadata-output", type=Path)
     parser.add_argument("--reference-time", help="UTC ISO timestamp used to choose covering steps; defaults to now")
     parser.add_argument("--source", default="ecmwf", choices=("ecmwf", "aws", "azure"))
+    parser.add_argument("--readiness", type=Path, help="readiness poll output; selects its cycle and records its first-ready time")
+    parser.add_argument("--retry-until", help="UTC ISO deadline: retry failed retrievals until then, then exit 3 without output")
     args = parser.parse_args()
+    readiness = None
+    if args.readiness:
+        if args.date is not None or args.time is not None:
+            parser.error("--readiness cannot be combined with --date/--time")
+        readiness = load_readiness(args.readiness)
+        args.date = readiness["date"]
+        args.time = int(readiness["time"])
 
-    reference_override: dt.datetime | None = None
-    if args.reference_time:
-        reference_override = dt.datetime.fromisoformat(args.reference_time.replace("Z", "+00:00"))
-        if reference_override.tzinfo is None:
-            raise ValueError("--reference-time must include a UTC offset")
-        reference_override = reference_override.astimezone(dt.UTC)
+    def download_once() -> None:
+        reference_override: dt.datetime | None = None
+        if args.reference_time:
+            reference_override = dt.datetime.fromisoformat(args.reference_time.replace("Z", "+00:00"))
+            if reference_override.tzinfo is None:
+                raise ValueError("--reference-time must include a UTC offset")
+            reference_override = reference_override.astimezone(dt.UTC)
 
-    client = Client(source=args.source, model="ifs", resol="0p25", infer_stream_keyword=False)
-    args.forecast_output.parent.mkdir(parents=True, exist_ok=True)
-    args.land_mask_output.parent.mkdir(parents=True, exist_ok=True)
-    forecast_temporary = args.forecast_output.with_name(f".{args.forecast_output.name}.tmp-{os.getpid()}")
-    mask_temporary = args.land_mask_output.with_name(f".{args.land_mask_output.name}.tmp-{os.getpid()}")
-    failures: list[str] = []
-    selected: dt.datetime | None = None
-    selected_steps: list[int] = []
-    selected_window: tuple[dt.datetime, dt.datetime] | None = None
-    selected_reference: dt.datetime | None = None
-    retrieved_at: dt.datetime | None = None
+        client = Client(source=args.source, model="ifs", resol="0p25", infer_stream_keyword=False)
+        args.forecast_output.parent.mkdir(parents=True, exist_ok=True)
+        args.land_mask_output.parent.mkdir(parents=True, exist_ok=True)
+        forecast_temporary = args.forecast_output.with_name(f".{args.forecast_output.name}.tmp-{os.getpid()}")
+        mask_temporary = args.land_mask_output.with_name(f".{args.land_mask_output.name}.tmp-{os.getpid()}")
+        failures: list[str] = []
+        selected: dt.datetime | None = None
+        selected_steps: list[int] = []
+        selected_window: tuple[dt.datetime, dt.datetime] | None = None
+        selected_reference: dt.datetime | None = None
+        retrieved_at: dt.datetime | None = None
 
-    try:
-        for run in candidate_runs(client, args.date, args.time):
-            common = {"date": run.date().isoformat(), "time": run.hour, "stream": "oper", "type": "fc"}
-            try:
-                window_reference = reference_override or dt.datetime.now(dt.UTC)
-                for coverage_attempt in range(2):
-                    window_start, window_end = hourly_window(window_reference)
-                    steps = covering_steps(run, window_start, window_end)
-                    retrieve(client, forecast_temporary, **common, step=steps, param=["2t", "2d", "sp"])
-                    retrieve(client, mask_temporary, **common, step=0, param=["lsm"])
-                    completed = dt.datetime.now(dt.UTC)
-                    actual_reference = reference_override or completed
-                    actual_start, actual_end = hourly_window(actual_reference)
-                    first_valid = run + dt.timedelta(hours=steps[0])
-                    last_valid = run + dt.timedelta(hours=steps[-1])
-                    if first_valid <= actual_start and last_valid >= actual_end:
-                        forecast_temporary.replace(args.forecast_output)
-                        mask_temporary.replace(args.land_mask_output)
-                        selected = run
-                        selected_steps = steps
-                        selected_window = (actual_start, actual_end)
-                        selected_reference = actual_reference
-                        retrieved_at = completed
+        try:
+            for run in candidate_runs(client, args.date, args.time):
+                common = {"date": run.date().isoformat(), "time": run.hour, "stream": "oper", "type": "fc"}
+                try:
+                    window_reference = reference_override or dt.datetime.now(dt.UTC)
+                    for coverage_attempt in range(2):
+                        window_start, window_end = hourly_window(window_reference)
+                        steps = covering_steps(run, window_start, window_end)
+                        retrieve(client, forecast_temporary, **common, step=steps, param=["2t", "2d", "sp"])
+                        retrieve(client, mask_temporary, **common, step=0, param=["lsm"])
+                        completed = dt.datetime.now(dt.UTC)
+                        actual_reference = reference_override or completed
+                        actual_start, actual_end = hourly_window(actual_reference)
+                        first_valid = run + dt.timedelta(hours=steps[0])
+                        last_valid = run + dt.timedelta(hours=steps[-1])
+                        if first_valid <= actual_start and last_valid >= actual_end:
+                            forecast_temporary.replace(args.forecast_output)
+                            mask_temporary.replace(args.land_mask_output)
+                            selected = run
+                            selected_steps = steps
+                            selected_window = (actual_start, actual_end)
+                            selected_reference = actual_reference
+                            retrieved_at = completed
+                            break
+                        if coverage_attempt == 1:
+                            raise RuntimeError("ECMWF retrieval crossed the selected forecast window twice")
+                        window_reference = completed
+                    if selected is not None:
                         break
-                    if coverage_attempt == 1:
-                        raise RuntimeError("ECMWF retrieval crossed the selected forecast window twice")
-                    window_reference = completed
-                if selected is not None:
-                    break
-            except Exception as error:  # client raises multiple transport/index exception types
-                forecast_temporary.unlink(missing_ok=True)
-                mask_temporary.unlink(missing_ok=True)
-                failures.append(f"{run.isoformat()}: {type(error).__name__}: {error}")
-                if args.date is not None:
-                    raise
-        if selected is None:
-            raise RuntimeError("No complete ECMWF run was retrievable: " + " | ".join(failures))
-    finally:
-        forecast_temporary.unlink(missing_ok=True)
-        mask_temporary.unlink(missing_ok=True)
+                except Exception as error:  # client raises multiple transport/index exception types
+                    forecast_temporary.unlink(missing_ok=True)
+                    mask_temporary.unlink(missing_ok=True)
+                    failures.append(f"{run.isoformat()}: {type(error).__name__}: {error}")
+                    if args.date is not None:
+                        raise
+            if selected is None:
+                raise RuntimeError("No complete ECMWF run was retrievable: " + " | ".join(failures))
+        finally:
+            forecast_temporary.unlink(missing_ok=True)
+            mask_temporary.unlink(missing_ok=True)
 
-    if selected_window is None or selected_reference is None or retrieved_at is None:
-        raise RuntimeError("ECMWF retrieval did not produce complete window metadata")
-    window_start, window_end = selected_window
-    metadata = {
-        "initialization": selected.isoformat().replace("+00:00", "Z"),
-        "referenceTime": selected_reference.isoformat().replace("+00:00", "Z"),
-        "retrievedAt": retrieved_at.isoformat().replace("+00:00", "Z"),
-        "windowStart": window_start.isoformat().replace("+00:00", "Z"),
-        "windowEnd": window_end.isoformat().replace("+00:00", "Z"),
-        "validTo": (window_end + dt.timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
-        "steps": selected_steps,
-        "hourlySteps": [int((window_start - selected).total_seconds() // 3600) + offset for offset in range(24)],
-        "forecastBytes": args.forecast_output.stat().st_size,
-        "landMaskBytes": args.land_mask_output.stat().st_size,
-    }
-    if args.metadata_output:
-        args.metadata_output.parent.mkdir(parents=True, exist_ok=True)
-        temporary = args.metadata_output.with_name(f".{args.metadata_output.name}.tmp-{os.getpid()}")
-        temporary.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
-        temporary.replace(args.metadata_output)
-    print(json.dumps(metadata))
+        if selected_window is None or selected_reference is None or retrieved_at is None:
+            raise RuntimeError("ECMWF retrieval did not produce complete window metadata")
+        window_start, window_end = selected_window
+        metadata = {
+            "initialization": selected.isoformat().replace("+00:00", "Z"),
+            "referenceTime": selected_reference.isoformat().replace("+00:00", "Z"),
+            "retrievedAt": retrieved_at.isoformat().replace("+00:00", "Z"),
+            "windowStart": window_start.isoformat().replace("+00:00", "Z"),
+            "windowEnd": window_end.isoformat().replace("+00:00", "Z"),
+            "validTo": (window_end + dt.timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+            "steps": selected_steps,
+            "hourlySteps": [int((window_start - selected).total_seconds() // 3600) + offset for offset in range(24)],
+            "forecastBytes": args.forecast_output.stat().st_size,
+            "landMaskBytes": args.land_mask_output.stat().st_size,
+            "firstSeenReadyAt": readiness["firstSeenReadyAt"] if readiness else None,
+            "openMeteoAvailableAt": readiness.get("openMeteoAvailableAt") if readiness else None,
+        }
+        if readiness and readiness["initialization"] != metadata["initialization"]:
+            raise RuntimeError("ECMWF retrieval initialization does not match the readiness poll")
+        if args.metadata_output:
+            args.metadata_output.parent.mkdir(parents=True, exist_ok=True)
+            temporary = args.metadata_output.with_name(f".{args.metadata_output.name}.tmp-{os.getpid()}")
+            temporary.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+            temporary.replace(args.metadata_output)
+        print(json.dumps(metadata))
+
+    if not args.retry_until:
+        download_once()
+        return 0
+    deadline = dt.datetime.fromisoformat(args.retry_until.replace("Z", "+00:00"))
+    if deadline.tzinfo is None:
+        parser.error("--retry-until must include a UTC offset")
+    return 0 if retry_until(download_once, deadline) else RETRY_EXHAUSTED_EXIT
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

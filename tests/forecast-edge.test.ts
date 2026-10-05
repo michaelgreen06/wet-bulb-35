@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   FORECAST_BROWSER_CACHE_CONTROL,
   forecastKey,
@@ -89,8 +89,38 @@ const gateEnv = (overrides = {}) => ({
   ...overrides,
 });
 
+// Houston local time 10:00 on 2026-09-20, the first fixture date.
+const NOW = Date.parse("2026-09-20T15:00:00Z");
+const RUN_INITIALIZATION = "2026-09-20T00:00:00Z";
+const modelMetadata = (availableAt = "2026-09-20T07:30:00Z") => ({
+  last_run_initialisation_time: Date.parse(RUN_INITIALIZATION) / 1_000,
+  last_run_availability_time: Date.parse(availableAt) / 1_000,
+  update_interval_seconds: 21_600,
+});
+let metadataCalls = 0;
+let metadataResponse: () => Response = () => Response.json(modelMetadata());
+
+/** Routes Open-Meteo's static model metadata separately from weighted forecast calls. */
+function stubProvider(handler: (input: URL | RequestInfo) => Promise<Response>) {
+  vi.stubGlobal("fetch", async (input: URL | RequestInfo) => {
+    if (String(input).includes("/data/ecmwf_ifs025/static/meta.json")) {
+      metadataCalls += 1;
+      return metadataResponse();
+    }
+    return handler(input);
+  });
+}
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+  metadataCalls = 0;
+  metadataResponse = () => Response.json(modelMetadata());
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
@@ -129,7 +159,7 @@ describe("forecast edge and WeatherGate integration", () => {
     const { storage, values } = fakeStorage();
     let providerCalls = 0;
     let requestedUrl: URL | null = null;
-    vi.stubGlobal("fetch", async (input: URL | RequestInfo) => {
+    stubProvider(async (input: URL | RequestInfo) => {
       providerCalls += 1;
       requestedUrl = new URL(String(input));
       return Response.json(upstreamFixture());
@@ -144,8 +174,13 @@ describe("forecast edge and WeatherGate integration", () => {
     expect(verifiedUrl).not.toBeNull();
     expect(verifiedUrl?.searchParams.get("hourly")).toBe("temperature_2m,dew_point_2m,surface_pressure");
     expect(verifiedUrl?.searchParams.get("forecast_days")).toBe("5");
-    expect([...values.keys()].some((key) => key.startsWith("forecast-source:open-meteo:v2:"))).toBe(true);
-    expect([...values.keys()].some((key) => key.startsWith("forecast-result:forecast:v2:"))).toBe(true);
+    expect(verifiedUrl?.searchParams.get("models")).toBe("ecmwf_ifs025");
+    // Version 4 keys never collide with earlier best_match entries.
+    expect([...values.keys()].some((key) => key.startsWith("forecast-source:open-meteo:v4:"))).toBe(true);
+    expect([...values.keys()].some((key) => key.startsWith("forecast-result:forecast:v4:"))).toBe(true);
+    expect(first.payload.providerModel).toBe("ecmwf_ifs025");
+    expect(first.payload.runs).toEqual([{ id: "latest", model: "ecmwf_ifs025", initialization: RUN_INITIALIZATION, retrievedAt: NOW }]);
+    expect(metadataCalls).toBe(1);
     const day = new Date().toISOString().slice(0, 10);
     expect(values.get(`forecast-attempts:${day}`)).toBe(1);
     expect(values.has(`attempts:${day}`)).toBe(false);
@@ -154,7 +189,7 @@ describe("forecast edge and WeatherGate integration", () => {
   it("uses the licensed customer endpoint when an API-key secret is configured", async () => {
     const { storage } = fakeStorage();
     let requestedUrl: URL | null = null;
-    vi.stubGlobal("fetch", async (input: URL | RequestInfo) => {
+    stubProvider(async (input: URL | RequestInfo) => {
       requestedUrl = new URL(String(input));
       return Response.json(upstreamFixture());
     });
@@ -165,7 +200,7 @@ describe("forecast edge and WeatherGate integration", () => {
 
   it("serves a validated forecast through a private browser response and Cache API envelope", async () => {
     const { storage } = fakeStorage();
-    vi.stubGlobal("fetch", async () => Response.json(upstreamFixture()));
+    stubProvider(async () => Response.json(upstreamFixture()));
     const envelope = await refreshForecast(storage, gateEnv(), gateBody());
     const cache = new FakeCache();
     let gateCalls = 0;
@@ -191,7 +226,7 @@ describe("forecast edge and WeatherGate integration", () => {
   it("fails closed when the independent forecast budget is disabled", async () => {
     const { storage } = fakeStorage();
     let providerCalls = 0;
-    vi.stubGlobal("fetch", async () => { providerCalls += 1; return Response.json(upstreamFixture()); });
+    stubProvider(async () => { providerCalls += 1; return Response.json(upstreamFixture()); });
     await expect(refreshForecast(storage, gateEnv({ FORECAST_DAILY_ATTEMPT_LIMIT: "0" }), gateBody())).rejects.toThrow();
     expect(providerCalls).toBe(0);
   });
@@ -199,7 +234,7 @@ describe("forecast edge and WeatherGate integration", () => {
   it("fails closed before budget or provider access when production API mode is disabled", async () => {
     const { storage, values } = fakeStorage();
     let providerCalls = 0;
-    vi.stubGlobal("fetch", async () => { providerCalls += 1; return Response.json(upstreamFixture()); });
+    stubProvider(async () => { providerCalls += 1; return Response.json(upstreamFixture()); });
     await expect(refreshForecast(storage, gateEnv({ OPEN_METEO_API_MODE: "disabled" }), gateBody())).rejects.toThrow(/not approved/);
     expect(providerCalls).toBe(0);
     expect([...values.keys()].some((key) => key.startsWith("forecast-attempts:"))).toBe(false);
@@ -207,14 +242,14 @@ describe("forecast edge and WeatherGate integration", () => {
 
   it("returns stale forecast data without extending it when Open-Meteo fails", async () => {
     vi.useFakeTimers();
-    const started = new Date("2026-09-20T00:00:00Z");
+    const started = new Date("2026-09-20T12:00:00Z");
     vi.setSystemTime(started);
     const { storage, values } = fakeStorage();
-    vi.stubGlobal("fetch", async () => Response.json(upstreamFixture()));
+    stubProvider(async () => Response.json(upstreamFixture()));
     const first = await refreshForecast(storage, gateEnv(), gateBody());
 
     vi.setSystemTime(new Date(started.getTime() + 4 * 60 * 60 * 1_000));
-    vi.stubGlobal("fetch", async () => new Response("unavailable", { status: 503 }));
+    stubProvider(async () => new Response("unavailable", { status: 503 }));
     const stale = await refreshForecast(storage, gateEnv(), gateBody());
     expect(stale).toEqual(first);
     expect(values.get(`forecast-result:${gateBody().key}`)).toEqual(first);
@@ -225,7 +260,7 @@ describe("forecast edge and WeatherGate integration", () => {
     const gate = new WeatherGate({ storage }, gateEnv());
     let providerCalls = 0;
     let release: ((response: Response) => void) | undefined;
-    vi.stubGlobal("fetch", async () => {
+    stubProvider(async () => {
       providerCalls += 1;
       return new Promise<Response>((resolve) => { release = resolve; });
     });
@@ -245,7 +280,7 @@ describe("forecast edge and WeatherGate integration", () => {
 
   it("Hono exposes the endpoint for every exact canonical city path and resolved static coordinates", async () => {
     const { storage } = fakeStorage();
-    vi.stubGlobal("fetch", async () => Response.json(upstreamFixture()));
+    stubProvider(async () => Response.json(upstreamFixture()));
     const envelope = await refreshForecast(storage, gateEnv(), gateBody());
     const ordinaryEnvelope = await refreshForecast(storage, gateEnv(), {
       key: forecastKey(ordinaryLocation.path),

@@ -40,7 +40,13 @@ max(3 / 10, 3 / 10 × 5 / 14) × 1 = 0.3
 minimum charge per location = 1.0 call
 ```
 
-The Worker explicitly uses `models=best_match`, `timezone=auto`, and `forecast_days=5`. It never requests Open-Meteo's precomputed wet bulb field.
+The Worker explicitly uses `models=ecmwf_ifs025` (ECMWF IFS 0.25°, the same named model as the Top-50 hotspot products), `timezone=auto`, and `forecast_days=5`. It never requests Open-Meteo's precomputed wet bulb field.
+
+### Model run attribution
+
+When the inhabited hotspot feature is enabled, the current snapshot supplies one exact IFS initialization for **every canonical city**. On a human forecast view and cache miss, the Worker requests only that city from Open-Meteo Single Runs with `models=ecmwf_ifs025`, `run=<snapshot initialization>`, `forecast_hours=169`, and `timezone=auto`. It requires simultaneous hourly temperature, dew point and pressure for five full *future* local dates; missing coverage returns an aligned-forecast-unavailable state rather than mixing in a newer run. The snapshot publication itself makes no five-day city forecast calls. Outside that gated feature, the existing explicit-model `forecast_days=5` path remains separate.
+
+For the ungated latest-model path, metadata run attribution may remain unconfirmed. The gated pinned path needs no metadata inference because `run=` is explicit, and its response is labeled with that initialization. Never present a different run as aligned with the Top-50 ranking.
 
 ## Request and cache boundaries
 
@@ -55,7 +61,7 @@ The existing WeatherGate Durable Object handles a distinct `/forecast` operation
 - three hours of freshness; and
 - twelve hours of stale availability.
 
-Normalized Open-Meteo observations and Romps results are stored under separate versioned keys. Formula revisions can therefore reuse still-fresh provider data. The public Cache API stores only validated result envelopes. Browser responses remain `private, no-store`.
+Normalized Open-Meteo observations and Romps results use versioned keys. Version 4 separates on-view run-keyed forecasts from earlier `best_match` and latest-IFS entries. The gated aligned path caches by canonical city and exact initialization, for three hours fresh and at most twelve hours stale, without substituting an older or newer run. The public Cache API stores validated envelopes; browser responses remain `private, no-store`. Ungated latest-model forecasts retain five dates beginning today; aligned forecasts require five complete local dates beginning tomorrow and reject incomplete hourly inputs.
 
 Known crawlers receive `204` before route resolution, cache lookup, or provider access. Server-side HTML rendering never fetches a forecast.
 

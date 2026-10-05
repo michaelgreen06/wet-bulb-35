@@ -15,6 +15,11 @@ run_worker_first = true
 [durable_objects]
 bindings = [{ name = "WEATHER_GATE", class_name = "WeatherGate" }]
 
+# Private snapshots; feature gates remain off until separately approved.
+[[r2_buckets]]
+binding = "HOTSPOT_SNAPSHOTS"
+bucket_name = "wetbulb35-hotspot-snapshots-prod"
+
 [[migrations]]
 tag = "v1-weather-gate"
 new_sqlite_classes = ["WeatherGate"]
