@@ -13,12 +13,15 @@ if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).
   const refinementAttempts = 3;
   const forecastAttempts = 2000;
   const batchSize = 100;
-  const locationAttemptEnvelope = calculateDailyBudget({ locations, refinementAttempts, forecastAttempts });
+  // 285-minute poll at >=300 seconds between probes: at most 58 one-point
+  // attempts, rounded up to 60 for budget headroom. Indices/metadata are separate.
+  const readinessPointAttempts = 60;
+  const locationAttemptEnvelope = calculateDailyBudget({ locations, refinementAttempts, forecastAttempts }) + readinessPointAttempts;
   // Refinement is batched; forecast views each request one canonical location.
-  const httpRequestEnvelope = Math.ceil(locations / batchSize) * refinementAttempts + forecastAttempts;
+  const httpRequestEnvelope = Math.ceil(locations / batchSize) * refinementAttempts + forecastAttempts + readinessPointAttempts;
   console.log(JSON.stringify({ mode, scheduledRunsPerDay: 1, globalGridRetrievals: 1, refinementBatchSize: batchSize,
     locations, refinementAttempts, forecastAttempts, refinementHttpRequestEnvelope: Math.ceil(locations / batchSize) * refinementAttempts,
-    onViewForecastHttpRequestEnvelope: forecastAttempts, httpRequestEnvelope, locationAttemptEnvelope,
+    onViewForecastHttpRequestEnvelope: forecastAttempts, readinessPointAttempts, httpRequestEnvelope, locationAttemptEnvelope,
     note: "Worst-case ceilings, not measured usage or verified provider-side weighted equivalents; no five-day publication prefetch." }));
   // Provider equivalence and competing traffic still need verification before enabling.
   if (mode === "public-noncommercial" && locationAttemptEnvelope > 9000) throw new Error("Daily public endpoint envelope exceeds 9,000 location attempts; refuse provider work");

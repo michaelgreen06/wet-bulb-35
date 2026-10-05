@@ -16,6 +16,15 @@ test("daily shared Open-Meteo ceiling separates existing refinement from on-view
   assert.throws(() => calculateDailyBudget({ locations: -1 }), /nonnegative/);
 });
 
+test("scheduled cap accommodates the observed 1515 and counts bounded readiness probes", () => {
+  const workflow = fs.readFileSync(new URL("../.github/workflows/global-inhabited-hotspots.yml", import.meta.url), "utf8");
+  assert.match(workflow, /HOTSPOT_RUN_LOCATION_LIMIT: "2000"/);
+  assert.ok(2000 >= 1515);
+  const source = fs.readFileSync(new URL("../scripts/hotspot-provider-budget.mjs", import.meta.url), "utf8");
+  assert.match(source, /readinessPointAttempts = 60/);
+  assert.equal(calculateDailyBudget({ locations: 2000 }) + 60, 8060);
+});
+
 test("the two current aliases share the same initialization and exclusive window", () => {
   assert.equal(pairedRun(inhabited, grid).validTo, Date.parse(end));
   assert.throws(() => pairedRun(inhabited, { model: { ...grid.model, initialization: "2026-10-05T06:00:00Z" } }), /share/);

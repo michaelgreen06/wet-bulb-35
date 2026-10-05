@@ -41,6 +41,18 @@ def index_body(run: dt.datetime, step: int, params) -> str:
             for index, param in enumerate(["10u", *params, "tp"])]
     return "\n".join(json.dumps(row) for row in rows) + "\n"
 
+def point_payload(now: dt.datetime, *, hours=169, missing_hour=None, offset=-6 * 3600):
+    # Single Runs hours start at the initialization; enough fixture hours span the
+    # UTC ranking window plus Houston's five full future local calendar dates.
+    initial = now.replace(minute=0, second=0, microsecond=0) - dt.timedelta(hours=12)
+    local = initial + dt.timedelta(seconds=offset)
+    times = [(local + dt.timedelta(hours=i)).strftime("%Y-%m-%dT%H:%M") for i in range(hours)]
+    values = [30.0] * hours
+    if missing_hour is not None:
+        values[missing_hour] = None
+    return {"utc_offset_seconds": offset, "hourly": {"time": times,
+        "temperature_2m": values, "dew_point_2m": [25.0] * hours, "surface_pressure": [1000.0] * hours}}
+
 
 class Mirror:
     """Fake ECMWF mirror serving index files for complete cycles, optionally from a given time."""
@@ -71,10 +83,11 @@ class Mirror:
         return 200, {}, index_body(run, step, params)
 
 
-def run_poll(clock, mirror, read_metadata, deadline_hours: float = 4, published=None, logs=None, earliest=None):
+def run_poll(clock, mirror, read_metadata, deadline_hours: float = 4, published=None, logs=None, earliest=None, read_point=None):
     return MODULE.poll(
         fetch_index=mirror,
         read_metadata=read_metadata,
+        read_point=read_point or (lambda _run: (200, {}, point_payload(clock.now))),
         base_url="https://mirror.test/ecmwf",
         deadline=clock.now + dt.timedelta(hours=deadline_hours),
         published_initialization=published,
@@ -87,6 +100,30 @@ def run_poll(clock, mirror, read_metadata, deadline_hours: float = 4, published=
 
 
 class ReadinessTests(unittest.TestCase):
+    def test_exact_run_point_requires_all_future_hourly_inputs_and_five_local_days(self):
+        now = dt.datetime(2026, 10, 4, 13, tzinfo=UTC)
+        self.assertTrue(MODULE.point_ready(point_payload(now), now))
+        self.assertFalse(MODULE.point_ready(point_payload(now, hours=125), now))
+        self.assertFalse(MODULE.point_ready(point_payload(now, missing_hour=30), now))
+        self.assertFalse(MODULE.point_ready(point_payload(now, offset=19800, hours=125), now))
+
+    def test_pinned_point_lag_and_retry_after_delay_large_grid_download(self):
+        run = dt.datetime(2026, 10, 4, 6, tzinfo=UTC)
+        clock = Clock(dt.datetime(2026, 10, 4, 13, tzinfo=UTC))
+        mirror = Mirror(clock, {run: clock.now})
+        calls = []
+        def point(selected):
+            calls.append(selected)
+            if len(calls) == 1:
+                return 429, {"Retry-After": "900"}, None
+            if len(calls) == 2:
+                return 404, {}, None
+            return 200, {}, point_payload(clock.now)
+        result = run_poll(clock, mirror, lambda: metadata(run, run), read_point=point)
+        self.assertTrue(result["ready"])
+        self.assertEqual(calls, [run, run, run])
+        self.assertGreaterEqual(clock.sleeps[0], 900)
+
     def test_daily_attempt_never_falls_back_to_yesterdays_complete_18z_cycle(self):
         previous = dt.datetime(2026, 10, 4, 18, tzinfo=UTC)
         target = dt.datetime(2026, 10, 5, 0, tzinfo=UTC)

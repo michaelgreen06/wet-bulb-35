@@ -29,7 +29,8 @@ jobs:
       # Manual publish cannot bypass the separate repository enable switch.
       PUBLISH_INTENDED: ${{ vars.GLOBAL_HOTSPOTS_ENABLED == 'true' && (github.event_name == 'schedule' || inputs.publish) }}
       # See scripts/hotspot-provider-budget.mjs; includes retries and the forecast Worker.
-      HOTSPOT_RUN_LOCATION_LIMIT: "1500"
+      # Inclusive of all candidates and controls; overflow fails closed (no truncation).
+      HOTSPOT_RUN_LOCATION_LIMIT: "2000"
       HOTSPOT_EXCLUDED_SAMPLE_SIZE: ${{ vars.HOTSPOT_EXCLUDED_SAMPLE_SIZE || '100' }}
       # At batch-size 100, 20 seconds caps public-endpoint demand at
       # 300 location-equivalents/minute before retries and backoff.
@@ -111,6 +112,9 @@ jobs:
 
       - name: Wait for the newest usable IFS cycle
         id: readiness
+        env:
+          OPEN_METEO_API_MODE: ${{ vars.OPEN_METEO_API_MODE || 'public-noncommercial' }}
+          OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
         run: |
           # Bounded: stop well inside the job timeout; the next cycle's schedule retries.
           DEADLINE=$(date -u -d "+285 minutes" +%Y-%m-%dT%H:%M:%SZ)

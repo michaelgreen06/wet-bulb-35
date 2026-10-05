@@ -5,10 +5,11 @@ A cycle is usable only when:
 - the public ECMWF Open Data mirror's index for every forecast step that brackets the next
   24 future hours lists 2t, 2d, and sp rows for that exact run and step, and the step-0
   index lists the land-sea mask (an index file can exist before all of its rows); and
-- Open-Meteo reports the same (or a newer) ``ecmwf_ifs025`` initialization as available and
-  settled, so pinned Single Runs refinement can use the identical run.
+- Open-Meteo reports the same (or newer) initialization as settled, AND one bounded
+  Single Runs request for the exact run covers the future ranking window and five
+  complete future local dates with simultaneous hourly inputs.
 
-Only lightweight index files (about 40 KB each) and Open-Meteo's static model metadata are fetched.
+Index files and static metadata are checked first; only then is one point probed.
 Readiness is never inferred from the scheduler's start time. The first poll that observed
 the cycle usable is recorded separately from initialization and later retrieval times.
 """
@@ -17,12 +18,14 @@ import datetime as dt
 import email.utils
 import importlib.util
 import json
+import math
 import os
 import random
 import sys
 import time
 import urllib.error
 import urllib.request
+import urllib.parse
 from pathlib import Path
 from typing import Any, Callable
 
@@ -34,6 +37,11 @@ DOWNLOAD = importlib.util.module_from_spec(_DOWNLOAD_SPEC)
 _DOWNLOAD_SPEC.loader.exec_module(DOWNLOAD)
 
 OPEN_METEO_METADATA_URL = "https://api.open-meteo.com/data/ecmwf_ifs025/static/meta.json"
+OPEN_METEO_SINGLE_RUNS_URL = "https://single-runs-api.open-meteo.com/v1/forecast"
+OPEN_METEO_CUSTOMER_RUNS_URL = "https://customer-single-runs-api.open-meteo.com/v1/forecast"
+PROBE_LATITUDE = 29.7604  # Houston: an ordinary canonical city's local horizon.
+PROBE_LONGITUDE = -95.3698
+MAX_PROBE_BYTES = 150_000
 # Open-Meteo copies new runs across redundant API servers for several minutes.
 OPEN_METEO_SETTLE = dt.timedelta(minutes=10)
 # ECMWF documents a 7-9 hour dissemination delay; earlier cycles cannot be complete.
@@ -46,6 +54,7 @@ FORECAST_PARAMS = frozenset({"2t", "2d", "sp"})
 MASK_PARAM = "lsm"
 MAX_INDEX_BYTES = 1_000_000
 MetadataFunction = Callable[[], tuple[int, dict[str, str], Any]]
+PointFunction = Callable[[dt.datetime], tuple[int, dict[str, str], Any]]
 
 
 class RetryLater(Exception):
@@ -161,11 +170,73 @@ def open_meteo_ready(metadata: Any, run: dt.datetime, now: dt.datetime) -> tuple
     ready = dt.datetime.fromtimestamp(initialization, dt.UTC) >= run and available_at + OPEN_METEO_SETTLE <= now
     return ready, iso(available_at)
 
+def point_ready(value: Any, now: dt.datetime) -> bool:
+    """Verify the selected run's hourly inputs, UTC window and five whole future local days."""
+    if not isinstance(value, dict) or value.get("error"):
+        return False
+    offset = value.get("utc_offset_seconds")
+    hourly = value.get("hourly")
+    if not isinstance(offset, int) or isinstance(offset, bool) or abs(offset) > 18 * 3600 or not isinstance(hourly, dict):
+        return False
+    fields = [hourly.get(key) for key in ("time", "temperature_2m", "dew_point_2m", "surface_pressure")]
+    if not isinstance(fields[0], list) or not all(isinstance(field, list) and len(field) == len(fields[0]) for field in fields):
+        return False
+    local_now = now + dt.timedelta(seconds=offset)
+    tomorrow = local_now.date() + dt.timedelta(days=1)
+    required = {tomorrow + dt.timedelta(days=i) for i in range(5)}
+    start, end = DOWNLOAD.hourly_window(now)
+    seen_local: dict[dt.date, set[int]] = {day: set() for day in required}
+    seen_utc: set[dt.datetime] = set()
+    for local_text, temperature, dew_point, pressure in zip(*fields):
+        if not isinstance(local_text, str):
+            return False
+        try:
+            local_hour = dt.datetime.strptime(local_text, "%Y-%m-%dT%H:%M")
+        except ValueError:
+            return False
+        if local_hour.minute != 0 or not all(isinstance(n, (int, float)) and not isinstance(n, bool)
+                                                and math.isfinite(n) for n in (temperature, dew_point, pressure)) or pressure <= 0:
+            continue
+        utc_hour = (local_hour - dt.timedelta(seconds=offset)).replace(tzinfo=dt.UTC)
+        if start <= utc_hour <= end:
+            seen_utc.add(utc_hour)
+        if local_hour.date() in required:
+            seen_local[local_hour.date()].add(local_hour.hour)
+    return (len(seen_utc) == 24 and all(len(hours) == 24 for hours in seen_local.values()))
+
+def _http_point(run: dt.datetime, url: str = OPEN_METEO_SINGLE_RUNS_URL, timeout: float = 20) -> tuple[int, dict[str, str], Any]:
+    mode = os.environ.get("OPEN_METEO_API_MODE", "public-noncommercial")
+    api_key = os.environ.get("OPEN_METEO_API_KEY")
+    if mode not in ("public-noncommercial", "customer-commercial"):
+        raise ValueError("Open-Meteo point probe requires an approved API mode")
+    if mode == "customer-commercial":
+        url = OPEN_METEO_CUSTOMER_RUNS_URL
+        if not api_key:
+            raise ValueError("Customer Single Runs point probe requires an API key")
+    elif url != OPEN_METEO_SINGLE_RUNS_URL:
+        raise ValueError("Public point probe requires the approved Single Runs endpoint")
+    params = {"latitude": PROBE_LATITUDE, "longitude": PROBE_LONGITUDE,
+        "hourly": "temperature_2m,dew_point_2m,surface_pressure", "forecast_hours": 169,
+        "run": run.strftime("%Y-%m-%dT%H:%M"), "timezone": "auto", "models": "ecmwf_ifs025"}
+    if mode == "customer-commercial":
+        params["apikey"] = api_key
+    query = urllib.parse.urlencode(params)
+    request = urllib.request.Request(f"{url}?{query}", headers={"Accept": "application/json", "User-Agent": "wetbulb35-readiness/1"})
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            body = response.read(MAX_PROBE_BYTES + 1)
+            if len(body) > MAX_PROBE_BYTES:
+                raise ValueError("Open-Meteo readiness point response exceeded size limit")
+            return response.status, dict(response.headers.items()), json.loads(body)
+    except urllib.error.HTTPError as error:
+        return error.code, dict(error.headers.items()) if error.headers else {}, None
+
 
 def poll(
     *,
     fetch_index: IndexFunction,
     read_metadata: MetadataFunction,
+    read_point: PointFunction = _http_point,
     base_url: str,
     deadline: dt.datetime,
     published_initialization: dt.datetime | None,
@@ -178,6 +249,8 @@ def poll(
     rng: random.Random | None = None,
     log: Callable[[str], None] = lambda message: print(message, file=sys.stderr),
 ) -> dict[str, Any]:
+    if interval_seconds < 300 or jitter_seconds < 0 or max_backoff_seconds < 300:
+        raise ValueError("Polling interval must be at least 300 seconds, with nonnegative jitter/backoff")
     rng = rng or random.Random()
     checks = 0
     errors = 0
@@ -203,6 +276,12 @@ def poll(
                 ready, available_at = open_meteo_ready(metadata if status == 200 else None, run, now)
                 if not ready:
                     log(f"{iso(run)}: ECMWF steps are listed; Open-Meteo has not settled on this run yet.")
+                    break
+                status, headers, point = read_point(run)
+                if status in (429, 503) or status >= 500:
+                    raise RetryLater(f"Open-Meteo pinned point returned {status}", retry_after_seconds(headers, now))
+                if status != 200 or not point_ready(point, now):
+                    log(f"{iso(run)}: exact-run Open-Meteo point lacks the future ranking window or five complete future local dates.")
                     break
                 return {
                     "ready": True,
@@ -289,6 +368,7 @@ def main(argv: list[str] | None = None) -> int:
     result = poll(
         fetch_index=fetch_index,
         read_metadata=lambda: _http_metadata(args.open_meteo_metadata_url),
+        read_point=_http_point,
         base_url=fetch_index.base_url,
         deadline=parse_iso(args.deadline),
         published_initialization=published,
