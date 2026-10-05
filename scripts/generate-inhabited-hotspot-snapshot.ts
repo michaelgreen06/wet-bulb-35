@@ -238,8 +238,8 @@ export function applyDownloadTiming(discovery: HotspotDiscoveryMetadata, downloa
 }
 
 /**
- * Adds same-run daily maxima for the published locations only. This auxiliary step is
- * warning-only: on failure the ranking still publishes and city pages use the latest IFS run.
+ * Adds same-run daily maxima for every published location. A failure retains the
+ * prior published snapshot rather than silently publishing an unaligned ranking.
  */
 export async function addPinnedFiveDay({
   snapshot,
@@ -273,7 +273,11 @@ export async function addPinnedFiveDay({
         ...options,
         modelInitialization: snapshot.discovery.initialization,
       });
-      return attachPinnedFiveDay(snapshot, pinned);
+      const enriched = attachPinnedFiveDay(snapshot, pinned);
+      if (enriched.hotspots.some((hotspot) => !hotspot.fiveDay || hotspot.fiveDay.days.length < 5)) {
+        throw new Error("Pinned five-day data must cover five complete local dates for every published hotspot.");
+      }
+      return enriched;
     } catch (error) {
       lastError = error;
       if (attempt < attempts) {
@@ -282,8 +286,9 @@ export async function addPinnedFiveDay({
       }
     }
   }
-  warn(`Pinned five-day refinement skipped: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
-  return snapshot;
+  const message = `Pinned five-day refinement failed; retaining the prior snapshot: ${lastError instanceof Error ? lastError.message : String(lastError)}`;
+  warn(message);
+  throw new Error(message, { cause: lastError });
 }
 
 export async function generateHotspotSnapshot({

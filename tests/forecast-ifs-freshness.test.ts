@@ -59,10 +59,15 @@ function pinned(dates: string[]): PinnedDailyForecast {
 
 function fakeStorage() {
   const values = new Map<string, unknown>();
-  const storage = {
+  type Storage = {
+    get(key: string): Promise<unknown>;
+    put(key: string, value: unknown): Promise<void>;
+    transaction<T>(callback: (transaction: Storage) => Promise<T>): Promise<T>;
+  };
+  const storage: Storage = {
     async get(key: string) { return values.get(key); },
     async put(key: string, value: unknown) { values.set(key, value); },
-    async transaction<T>(callback: (transaction: typeof storage) => Promise<T>) { return callback(storage); },
+    async transaction<T>(callback: (transaction: Storage) => Promise<T>) { return callback(storage); },
   };
   return { storage, values };
 }

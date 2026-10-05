@@ -25,7 +25,7 @@ const bangkok: HotspotCandidate = {
 };
 
 /** Mirrors the observed Single Runs response: local times from the run start, nulls after +144 h. */
-function singleRun(offsetSeconds: number, timezone: string, coveredHours = HOTSPOT_PINNED_FORECAST_HOURS) {
+function singleRun(offsetSeconds: number, timezone: string, coveredHours: number = HOTSPOT_PINNED_FORECAST_HOURS) {
   const startMs = Date.parse(RUN);
   const time = Array.from({ length: HOTSPOT_PINNED_FORECAST_HOURS }, (_, hour) => new Date(startMs + hour * 3_600_000 + offsetSeconds * 1_000).toISOString().slice(0, 16));
   const value = (hour: number, fill: number) => (hour < coveredHours ? fill : null);
@@ -100,19 +100,29 @@ describe("pinned Top-50 five-day data", () => {
     expect(validateHotspotSnapshot(early).success).toBe(false);
   });
 
-  it("is warning-only: a provider failure publishes the ranking without pinned days", async () => {
+  it("warns and retains the prior snapshot when the pinned provider fails", async () => {
     const warnings: string[] = [];
-    const result = await addPinnedFiveDay({
+    await expect(addPinnedFiveDay({
       snapshot: snapshot(),
       fetchImplementation: async () => new Response("busy", { status: 500 }),
       options: {},
       attempts: 2,
       retryDelayMs: 1,
       warn: (message) => warnings.push(message),
-    });
-    expect(result.hotspots[0].fiveDay).toBeUndefined();
-    expect(validateHotspotSnapshot(result).success).toBe(true);
-    expect(warnings[0]).toMatch(/Pinned five-day refinement skipped/);
+    })).rejects.toThrow(/retaining the prior snapshot/);
+    expect(warnings[0]).toMatch(/Pinned five-day refinement failed/);
+  });
+
+  it("rejects incomplete local-day coverage instead of publishing partial alignment", async () => {
+    const warnings: string[] = [];
+    await expect(addPinnedFiveDay({
+      snapshot: snapshot(),
+      fetchImplementation: async () => Response.json(singleRun(25_200, "Asia/Bangkok", 90)),
+      options: {},
+      attempts: 1,
+      warn: (message) => warnings.push(message),
+    })).rejects.toThrow(/five complete local dates/);
+    expect(warnings).toHaveLength(1);
   });
 
   it("allows generation to finish just after a window that began after retrieval", () => {

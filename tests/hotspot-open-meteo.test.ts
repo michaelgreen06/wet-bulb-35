@@ -125,8 +125,7 @@ describe("hotspot Open-Meteo refinement", () => {
     badUnits.hourly_units.surface_pressure = "Pa";
     expect(() => normalizeHotspotOpenMeteoResponse(badUnits, [candidates[0]])).toThrow(/unit/);
 
-    const farCell: ReturnType<typeof payloadFor> & { latitude: number } = payloadFor(0);
-    farCell.latitude = 40;
+    const farCell = { ...payloadFor(0), latitude: 40 };
     expect(() => normalizeHotspotOpenMeteoResponse(farCell, [candidates[0]])).toThrow(/far/);
   });
 
