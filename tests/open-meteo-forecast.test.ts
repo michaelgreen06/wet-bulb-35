@@ -13,6 +13,9 @@ import {
   calculateRompsWetBulbFromVaporPressureKelvin,
 } from "../lib/forecast/romps";
 
+// Houston local time 10:00 on 2026-09-20, the first fixture date.
+const RETRIEVED_AT = Date.parse("2026-09-20T15:00:00Z");
+
 const location = {
   path: "/wetbulb-temperature/united-states/texas/houston/",
   name: "Houston, Texas, United States",
@@ -56,11 +59,11 @@ describe("Open-Meteo forecast adapter", () => {
     expect(url.searchParams.get("hourly")).toBe("temperature_2m,dew_point_2m,surface_pressure");
     expect(url.searchParams.get("forecast_days")).toBe("5");
     expect(url.searchParams.get("timezone")).toBe("auto");
-    expect(url.searchParams.get("models")).toBe("best_match");
+    expect(url.searchParams.get("models")).toBe("ecmwf_ifs025");
   });
 
   it("normalizes units, pressure, vapor pressure, and complete local-time rows", () => {
-    const source = normalizeOpenMeteoForecast(upstreamFixture(), location, 1_700_000_000_000);
+    const source = normalizeOpenMeteoForecast(upstreamFixture(), location, RETRIEVED_AT);
     expect(source.hourly).toHaveLength(120);
     expect(source.hourly[0]).toEqual({
       localTime: "2026-09-20T00:00",
@@ -74,7 +77,7 @@ describe("Open-Meteo forecast adapter", () => {
   });
 
   it("uses dew point to avoid cold-phase RH ambiguity before selecting each local day's maximum", () => {
-    const source = normalizeOpenMeteoForecast(upstreamFixture(), location, 1_700_000_000_000);
+    const source = normalizeOpenMeteoForecast(upstreamFixture(), location, RETRIEVED_AT);
     const forecast = calculateFiveDayWetBulbForecast(source);
     expect(forecast.days).toHaveLength(5);
     expect(forecast.days[0].peakLocalTime).toBe("2026-09-20T15:00");
@@ -91,7 +94,7 @@ describe("Open-Meteo forecast adapter", () => {
     const cold = upstreamFixture();
     cold.hourly.temperature_2m.fill(-5);
     cold.hourly.dew_point_2m.fill(-7);
-    const source = normalizeOpenMeteoForecast(cold, location, 1_700_000_000_000);
+    const source = normalizeOpenMeteoForecast(cold, location, RETRIEVED_AT);
     const expectedVaporPressure = calculateRompsLiquidSaturationVaporPressurePa(266.15);
     expect(source.hourly[0].vaporPressurePa).toBe(expectedVaporPressure);
     const forecast = calculateFiveDayWetBulbForecast(source);
@@ -110,25 +113,25 @@ describe("Open-Meteo forecast adapter", () => {
       return `2026-${day < 22 ? "10" : "11"}-${String(day < 22 ? day + 10 : day - 21).padStart(2, "0")}${value.slice(10)}`;
     });
     expect(fall.hourly.time).toContain("2026-11-01T01:00");
-    expect(normalizeOpenMeteoForecast(fall, location, Date.now()).hourly).toHaveLength(120);
+    expect(normalizeOpenMeteoForecast(fall, location, Date.parse("2026-10-30T15:00:00Z")).hourly).toHaveLength(120);
   });
 
   it("rejects 23-hour and 25-hour days", () => {
     const spring = upstreamFixture();
     const missing = spring.hourly.time.indexOf("2026-09-21T02:00");
     for (const values of Object.values(spring.hourly)) values.splice(missing, 1);
-    expect(() => normalizeOpenMeteoForecast(spring, location, Date.now())).toThrow(/coverage/);
+    expect(() => normalizeOpenMeteoForecast(spring, location, RETRIEVED_AT)).toThrow(/coverage/);
 
     const fall = upstreamFixture();
     const repeated = fall.hourly.time.indexOf("2026-09-21T01:00");
     for (const values of Object.values(fall.hourly)) values.splice(repeated, 0, values[repeated] as never);
-    expect(() => normalizeOpenMeteoForecast(fall, location, Date.now())).toThrow(/coverage|misaligned/);
+    expect(() => normalizeOpenMeteoForecast(fall, location, RETRIEVED_AT)).toThrow(/coverage|misaligned/);
   });
 
   it("clamps a supersaturated row to saturation instead of rejecting the payload", () => {
     const noisy = upstreamFixture();
     noisy.hourly.dew_point_2m[5] = noisy.hourly.temperature_2m[5] + 1.5;
-    const source = normalizeOpenMeteoForecast(noisy, location, Date.now());
+    const source = normalizeOpenMeteoForecast(noisy, location, RETRIEVED_AT);
     expect(source.hourly).toHaveLength(120);
     expect(source.hourly[5].dewPointC).toBe(source.hourly[5].temperatureC);
     expect(source.hourly[5].vaporPressurePa).toBe(calculateRompsLiquidSaturationVaporPressurePa(source.hourly[5].temperatureC + 273.15));
@@ -138,27 +141,27 @@ describe("Open-Meteo forecast adapter", () => {
   it("rejects bad units, misaligned arrays, gaps, duplicates, and incomplete days", () => {
     const badUnit = upstreamFixture();
     badUnit.hourly_units.surface_pressure = "Pa";
-    expect(() => normalizeOpenMeteoForecast(badUnit, location, Date.now())).toThrow(/unit/);
+    expect(() => normalizeOpenMeteoForecast(badUnit, location, RETRIEVED_AT)).toThrow(/unit/);
 
     const misaligned = upstreamFixture();
     misaligned.hourly.temperature_2m.pop();
-    expect(() => normalizeOpenMeteoForecast(misaligned, location, Date.now())).toThrow(/misaligned/);
+    expect(() => normalizeOpenMeteoForecast(misaligned, location, RETRIEVED_AT)).toThrow(/misaligned/);
 
     const gap = upstreamFixture();
     const missing = gap.hourly.time.indexOf("2026-09-21T02:00");
     for (const values of Object.values(gap.hourly)) values.splice(missing, 1);
     const secondMissing = gap.hourly.time.indexOf("2026-09-21T03:00");
     for (const values of Object.values(gap.hourly)) values.splice(secondMissing, 1);
-    expect(() => normalizeOpenMeteoForecast(gap, location, Date.now())).toThrow(/coverage|incomplete/);
+    expect(() => normalizeOpenMeteoForecast(gap, location, RETRIEVED_AT)).toThrow(/coverage|incomplete/);
 
     const duplicate = upstreamFixture();
     duplicate.hourly.time[25] = duplicate.hourly.time[24];
-    expect(() => normalizeOpenMeteoForecast(duplicate, location, Date.now())).toThrow(/gaps or duplicates/);
+    expect(() => normalizeOpenMeteoForecast(duplicate, location, RETRIEVED_AT)).toThrow(/gaps or duplicates/);
 
     const incomplete = upstreamFixture();
     for (const key of Object.keys(incomplete.hourly) as Array<keyof typeof incomplete.hourly>) {
       incomplete.hourly[key] = incomplete.hourly[key].slice(0, 96) as never;
     }
-    expect(() => normalizeOpenMeteoForecast(incomplete, location, Date.now())).toThrow(/coverage/);
+    expect(() => normalizeOpenMeteoForecast(incomplete, location, RETRIEVED_AT)).toThrow(/coverage/);
   });
 });

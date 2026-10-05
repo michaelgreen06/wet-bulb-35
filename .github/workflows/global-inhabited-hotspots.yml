@@ -2,8 +2,9 @@ name: Global wet bulb hotspots
 
 on:
   schedule:
-    # ECMWF documents a 7–9 hour dissemination delay. Start 9h15 after 06Z.
-    - cron: "15 15 * * *"
+    # One run per IFS cycle (18/00/06/12Z), starting 6h35 after initialization so bounded
+    # readiness polling begins before ECMWF's documented 7–9 hour dissemination delay ends.
+    - cron: "35 0,6,12,18 * * *"
   workflow_dispatch:
     inputs:
       publish:
@@ -23,9 +24,11 @@ jobs:
   generate:
     if: github.event_name == 'workflow_dispatch' || vars.GLOBAL_HOTSPOTS_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 330
     env:
-      HOTSPOT_DAILY_LOCATION_LIMIT: ${{ vars.HOTSPOT_DAILY_LOCATION_LIMIT || '5000' }}
+      PUBLISH_INTENDED: ${{ github.event_name == 'schedule' || inputs.publish }}
+      # Per run; four cycles a day cap scheduled public-endpoint demand at 4 × (2,000 + 50 pinned five-day) weighted calls.
+      HOTSPOT_RUN_LOCATION_LIMIT: ${{ vars.HOTSPOT_RUN_LOCATION_LIMIT || '2000' }}
       HOTSPOT_EXCLUDED_SAMPLE_SIZE: ${{ vars.HOTSPOT_EXCLUDED_SAMPLE_SIZE || '100' }}
       # At batch-size 100, 20 seconds caps public-endpoint demand at
       # 300 location-equivalents/minute before retries and backoff.
@@ -53,32 +56,95 @@ jobs:
       - name: Verify focused hotspot implementation
         run: |
           npm run test:global-hotspots
-          .venv-hotspots/bin/python -m unittest tests/test_generate_ecmwf_hotspot_candidates.py tests/test_download_ecmwf_hotspot_grid.py tests/test_download_gfs_hotspot_grid.py tests/test_generate_global_grid_hotspot_snapshot.py tests/test_compare_hotspot_shadow_snapshots.py tests/test_capture_hotspot_shadow_stations.py tests/test_score_hotspot_shadow_observations.py
+          .venv-hotspots/bin/python -m unittest tests/test_await_ifs_run_readiness.py tests/test_generate_ecmwf_hotspot_candidates.py tests/test_download_ecmwf_hotspot_grid.py tests/test_download_gfs_hotspot_grid.py tests/test_generate_global_grid_hotspot_snapshot.py tests/test_compare_hotspot_shadow_snapshots.py tests/test_capture_hotspot_shadow_stations.py tests/test_score_hotspot_shadow_observations.py
 
       - name: Build the canonical city manifest
         run: npm run build:hotspot-city-manifest
 
-      - name: Download today's complete public ECMWF 06Z run
+      - name: Read the currently published snapshots
+        id: current
+        if: env.PUBLISH_INTENDED == 'true'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.WETBULB35_CLOUDFLARE_API_TOKEN }}
+          HOTSPOT_R2_BUCKET: ${{ vars.HOTSPOT_R2_BUCKET }}
         run: |
-          for attempt in $(seq 1 7); do
-            if .venv-hotspots/bin/python scripts/download-ecmwf-hotspot-grid.py \
-              --date "$(date -u +%F)" \
-              --time 6 \
-              --source azure \
-              --forecast-output .hotspots/ecmwf-forecast.grib2 \
-              --land-mask-output .hotspots/ecmwf-land-mask.grib2 \
-              --metadata-output .hotspots/ecmwf-download.json; then
-              break
-            fi
-            if [ "$attempt" -eq 7 ]; then
-              echo "The complete 06Z run was still unavailable after 30 minutes." >&2
-              exit 1
-            fi
-            echo "The 06Z mirror is not complete yet; retrying in 5 minutes." >&2
-            sleep 300
-          done
+          test -n "$HOTSPOT_R2_BUCKET"
+          mkdir -p .hotspots
+          read_current() {
+            local key="$1" target="$2" log
+            log=$(mktemp)
+            if npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/$key" --file="$target" --remote >"$log" 2>&1; then return 0; fi
+            rm -f "$target"
+            # Only a missing object means nothing is published; any other failure must not let an older run through.
+            if grep -qiE "does not exist|NoSuchKey|not found|404" "$log"; then return 0; fi
+            cat "$log" >&2
+            return 1
+          }
+          read_current inhabited-hotspots/v1/latest.json .hotspots/current-inhabited.json
+          read_current global-grid-hotspots/v1/latest.json .hotspots/current-global-grid.json
+          # Poll only for cycles newer than the older of the two published products.
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            import { snapshotRun } from './scripts/hotspot-publish-guard.mjs';
+            const read = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; } };
+            const runs = [snapshotRun('inhabited', read('.hotspots/current-inhabited.json')), snapshotRun('global-grid', read('.hotspots/current-global-grid.json'))];
+            const value = runs.every(Boolean) ? new Date(Math.min(...runs.map((run) => run.initialization))).toISOString().replace('.000Z', 'Z') : '';
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'initialization=' + value + '\n');
+          "
+
+      - name: Wait for the newest usable IFS cycle
+        id: readiness
+        run: |
+          # Bounded: stop well inside the job timeout; the next cycle's schedule retries.
+          DEADLINE=$(date -u -d "+285 minutes" +%Y-%m-%dT%H:%M:%SZ)
+          echo "deadline=$DEADLINE" >> "$GITHUB_OUTPUT"
+          PUBLISHED="${{ steps.current.outputs.initialization }}"
+          set +e
+          .venv-hotspots/bin/python scripts/await-ifs-run-readiness.py \
+            --source azure \
+            --deadline "$DEADLINE" \
+            ${PUBLISHED:+--published-initialization "$PUBLISHED"} \
+            --output .hotspots/readiness.json
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -eq 0 ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          elif [ "$STATUS" -eq 3 ]; then
+            echo "::warning::No newer complete IFS cycle with matching Open-Meteo data was usable before $DEADLINE; the prior snapshot is retained."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            exit "$STATUS"
+          fi
+
+      - name: Download the selected complete public ECMWF run
+        id: download
+        if: steps.readiness.outputs.ready == 'true'
+        env:
+          DEADLINE: ${{ steps.readiness.outputs.deadline }}
+        run: |
+          # Transient retrieval failures retry within the same bounded window; exhaustion only warns.
+          set +e
+          .venv-hotspots/bin/python scripts/download-ecmwf-hotspot-grid.py \
+            --readiness .hotspots/readiness.json \
+            --retry-until "$DEADLINE" \
+            --source azure \
+            --forecast-output .hotspots/ecmwf-forecast.grib2 \
+            --land-mask-output .hotspots/ecmwf-land-mask.grib2 \
+            --metadata-output .hotspots/ecmwf-download.json
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -eq 0 ]; then
+            echo "downloaded=true" >> "$GITHUB_OUTPUT"
+          elif [ "$STATUS" -eq 3 ]; then
+            echo "::warning::The ready IFS cycle could not be retrieved before $DEADLINE; the prior snapshot is retained."
+            echo "downloaded=false" >> "$GITHUB_OUTPUT"
+          else
+            exit "$STATUS"
+          fi
 
       - name: Discover candidate cities on the native model grid
+        if: steps.download.outputs.downloaded == 'true'
         run: |
           STEPS=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.steps.join(','))")
           WINDOW_START=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.windowStart)")
@@ -96,6 +162,7 @@ jobs:
             --dilation-rings 1
 
       - name: Refine every candidate hourly and validate the snapshot
+        if: steps.download.outputs.downloaded == 'true'
         env:
           OPEN_METEO_API_MODE: ${{ vars.OPEN_METEO_API_MODE || 'public-noncommercial' }}
           OPEN_METEO_BASE_URL: ${{ vars.OPEN_METEO_BASE_URL }}
@@ -105,9 +172,12 @@ jobs:
             --candidates .hotspots/candidates.json \
             --city-manifest .hotspots/cities.json \
             --output .hotspots/snapshot.json \
+            --download-metadata .hotspots/ecmwf-download.json \
+            --pinned-five-day true \
             --batch-size 100
 
       - name: Rank every global model-grid cell from the same initialization
+        if: steps.download.outputs.downloaded == 'true'
         run: |
           STEPS=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.steps.join(','))")
           WINDOW_START=$(node -e "const m=require('./.hotspots/ecmwf-download.json'); process.stdout.write(m.windowStart)")
@@ -115,29 +185,32 @@ jobs:
           .venv-hotspots/bin/python scripts/generate-global-grid-hotspot-snapshot.py \
             --forecast-grib .hotspots/ecmwf-forecast.grib2 \
             --output .hotspots/global-grid-snapshot.json \
+            --download-metadata .hotspots/ecmwf-download.json \
             --steps "$STEPS" \
             --window-start "$WINDOW_START" \
             --window-end "$WINDOW_END"
 
-      - name: Verify both products use the requested 06Z initialization
+      - name: Verify both products use the polled initialization and window
+        if: steps.download.outputs.downloaded == 'true'
         run: |
           .venv-hotspots/bin/python - <<'PY'
           import json
           from pathlib import Path
 
+          readiness = json.loads(Path('.hotspots/readiness.json').read_text())
           download = json.loads(Path('.hotspots/ecmwf-download.json').read_text())
           inhabited = json.loads(Path('.hotspots/snapshot.json').read_text())
           global_grid = json.loads(Path('.hotspots/global-grid-snapshot.json').read_text())
           initializations = {
+              readiness['initialization'],
               download['initialization'],
               inhabited['discovery']['initialization'],
               global_grid['model']['initialization'],
           }
           if len(initializations) != 1:
               raise SystemExit(f'Hotspot products have mismatched initializations: {sorted(initializations)}')
-          initialization = initializations.pop()
-          if not initialization.endswith('T06:00:00Z'):
-              raise SystemExit(f'Expected a 06Z initialization, got {initialization}')
+          if any(day.get('fiveDay', {}).get('initialization', readiness['initialization']) != readiness['initialization'] for day in inhabited['hotspots']):
+              raise SystemExit('Pinned five-day data does not use the snapshot initialization')
           if inhabited['validFrom'] != download['windowStart'] or inhabited['validTo'] != download['validTo']:
               raise SystemExit('Inhabited snapshot does not match the publication-relative 24-hour window')
           if global_grid['model']['validTimeBounds'] != {'start': download['windowStart'], 'end': download['windowEnd']}:
@@ -145,6 +218,7 @@ jobs:
           PY
 
       - name: Retain the validated snapshot as a workflow artifact
+        if: steps.download.outputs.downloaded == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: global-hotspots-${{ github.run_id }}
@@ -152,32 +226,62 @@ jobs:
             .hotspots/snapshot.json
             .hotspots/global-grid-snapshot.json
             .hotspots/ecmwf-download.json
+            .hotspots/readiness.json
           if-no-files-found: error
           retention-days: 14
 
+      - name: Guard the latest pointers against older or duplicate runs
+        id: guard
+        if: steps.download.outputs.downloaded == 'true' && env.PUBLISH_INTENDED == 'true'
+        run: |
+          INHABITED=$(GITHUB_OUTPUT= node scripts/hotspot-publish-guard.mjs --kind inhabited --candidate .hotspots/snapshot.json --current .hotspots/current-inhabited.json)
+          GLOBAL_GRID=$(GITHUB_OUTPUT= node scripts/hotspot-publish-guard.mjs --kind global-grid --candidate .hotspots/global-grid-snapshot.json --current .hotspots/current-global-grid.json)
+          echo "$INHABITED"
+          echo "$GLOBAL_GRID"
+          echo "inhabited=$(node -e "process.stdout.write(String(JSON.parse(process.argv[1]).publish))" "$INHABITED")" >> "$GITHUB_OUTPUT"
+          echo "global_grid=$(node -e "process.stdout.write(String(JSON.parse(process.argv[1]).publish))" "$GLOBAL_GRID")" >> "$GITHUB_OUTPUT"
+
       - name: Publish content-addressed and current R2 objects
-        if: github.event_name == 'schedule' || inputs.publish
+        if: steps.guard.outputs.inhabited == 'true' || steps.guard.outputs.global_grid == 'true'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.WETBULB35_CLOUDFLARE_API_TOKEN }}
           HOTSPOT_R2_BUCKET: ${{ vars.HOTSPOT_R2_BUCKET }}
+          PUBLISH_INHABITED: ${{ steps.guard.outputs.inhabited }}
+          PUBLISH_GLOBAL_GRID: ${{ steps.guard.outputs.global_grid }}
         run: |
           test -n "$HOTSPOT_R2_BUCKET"
-          INHABITED_DIGEST=$(sha256sum .hotspots/snapshot.json | cut -d' ' -f1)
-          GLOBAL_GRID_DIGEST=$(sha256sum .hotspots/global-grid-snapshot.json | cut -d' ' -f1)
-          INHABITED_IMMUTABLE="inhabited-hotspots/v1/snapshots/sha256-${INHABITED_DIGEST}.json"
-          GLOBAL_GRID_IMMUTABLE="global-grid-hotspots/v1/snapshots/sha256-${GLOBAL_GRID_DIGEST}.json"
+          publish() {
+            local source="$1" prefix="$2" name="$3"
+            local digest immutable
+            digest=$(sha256sum "$source" | cut -d' ' -f1)
+            immutable="$prefix/v1/snapshots/sha256-${digest}.json"
+            npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/$immutable" --file="$source" --remote
+            npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/$immutable" --file=".hotspots/verify-$name-immutable.json" --remote
+            cmp "$source" ".hotspots/verify-$name-immutable.json"
+            npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/$prefix/v1/latest.json" --file="$source" --remote
+            npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/$prefix/v1/latest.json" --file=".hotspots/verify-$name-latest.json" --remote
+            cmp "$source" ".hotspots/verify-$name-latest.json"
+            cp "$source" ".hotspots/current-$name.json"
+          }
+          # Each product follows its own guard decision.
+          if [ "$PUBLISH_INHABITED" = "true" ]; then publish .hotspots/snapshot.json inhabited-hotspots inhabited; fi
+          if [ "$PUBLISH_GLOBAL_GRID" = "true" ]; then publish .hotspots/global-grid-snapshot.json global-grid-hotspots global-grid; fi
 
-          npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/$INHABITED_IMMUTABLE" --file=.hotspots/snapshot.json --remote
-          npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/$GLOBAL_GRID_IMMUTABLE" --file=.hotspots/global-grid-snapshot.json --remote
-          npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/$INHABITED_IMMUTABLE" --file=.hotspots/verify-inhabited-immutable.json --remote
-          npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/$GLOBAL_GRID_IMMUTABLE" --file=.hotspots/verify-global-grid-immutable.json --remote
-          cmp .hotspots/snapshot.json .hotspots/verify-inhabited-immutable.json
-          cmp .hotspots/global-grid-snapshot.json .hotspots/verify-global-grid-immutable.json
-
-          npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/inhabited-hotspots/v1/latest.json" --file=.hotspots/snapshot.json --remote
-          npx wrangler r2 object put "$HOTSPOT_R2_BUCKET/global-grid-hotspots/v1/latest.json" --file=.hotspots/global-grid-snapshot.json --remote
-          npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/inhabited-hotspots/v1/latest.json" --file=.hotspots/verify-inhabited-latest.json --remote
-          npx wrangler r2 object get "$HOTSPOT_R2_BUCKET/global-grid-hotspots/v1/latest.json" --file=.hotspots/verify-global-grid-latest.json --remote
-          cmp .hotspots/snapshot.json .hotspots/verify-inhabited-latest.json
-          cmp .hotspots/global-grid-snapshot.json .hotspots/verify-global-grid-latest.json
+      - name: Alert while a published product has no current snapshot
+        if: always() && env.PUBLISH_INTENDED == 'true'
+        run: |
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            import { snapshotRun } from './scripts/hotspot-publish-guard.mjs';
+            const read = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; } };
+            let failed = false;
+            for (const kind of ['inhabited', 'global-grid']) {
+              const run = snapshotRun(kind, read('.hotspots/current-' + kind + '.json'));
+              if (!run || run.validTo <= Date.now()) {
+                console.log('::error::No current ' + kind + ' hotspot snapshot is published; pages show the unavailable state.');
+                failed = true;
+              }
+            }
+            process.exitCode = failed ? 1 : 0;
+          "

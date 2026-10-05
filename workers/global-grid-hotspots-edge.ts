@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { hotspotCacheControl, hotspotSnapshotState } from "../lib/hotspots/snapshot.ts";
+import { warnExpiredSnapshot } from "./hotspots-edge.ts";
 
-export const GLOBAL_GRID_HOTSPOT_API_CACHE_CONTROL = "public, max-age=300, stale-while-revalidate=3600" as const;
 export const GLOBAL_GRID_HOTSPOT_SNAPSHOT_KEY = "global-grid-hotspots/v1/latest.json" as const;
 const MAX_SNAPSHOT_BYTES = 256_000;
 const CACHE_URL = "https://global-grid-hotspots-cache.internal/v1/latest.json";
@@ -31,6 +32,11 @@ const rawGlobalGridSnapshotSchema = z.object({
     grid: z.object({ latitudeCount: z.number().int().positive(), longitudeCount: z.number().int().positive() }).strict(),
     evaluatedCellCount: z.number().int().nonnegative(),
   }).strict(),
+  publication: z.object({
+    generatedAt: isoUtc,
+    retrievedAt: isoUtc,
+    firstSeenReadyAt: isoUtc.nullable(),
+  }).strict().optional(),
   cells: z.array(z.object({
     latitude: finiteNumber.min(-90).max(90),
     longitude: finiteNumber.min(-360).max(360),
@@ -60,6 +66,8 @@ export const GlobalGridHotspotSnapshotSchema = z.object({
     interval: z.enum(["three-hourly", "hourly-interpolated"]),
     resolution: z.literal("0.25°"),
     steps: z.array(z.number().int().nonnegative()).min(1),
+    retrievedAt: isoUtc.optional(),
+    firstSeenReadyAt: isoUtc.nullable().optional(),
   }).strict(),
   counts: z.object({
     gridCells: z.number().int().positive(),
@@ -158,7 +166,8 @@ async function parseSnapshotText(text: string): Promise<GlobalGridHotspotSnapsho
     const end = new Date(Date.parse(raw.data.model.validTimeBounds.end) + (hourly ? 1 : 3) * 60 * 60 * 1000).toISOString();
     value = {
       schemaVersion: 1,
-      generatedAt: raw.data.model.initialization,
+      // Older staging snapshots lack publication metadata; they fall back to the initialization.
+      generatedAt: raw.data.publication?.generatedAt ?? raw.data.model.initialization,
       validFrom: raw.data.model.validTimeBounds.start,
       validTo: end,
       method: {
@@ -173,6 +182,10 @@ async function parseSnapshotText(text: string): Promise<GlobalGridHotspotSnapsho
         interval: hourly ? "hourly-interpolated" : "three-hourly",
         resolution: "0.25°",
         steps: raw.data.model.steps,
+        ...(raw.data.publication ? {
+          retrievedAt: raw.data.publication.retrievedAt,
+          firstSeenReadyAt: raw.data.publication.firstSeenReadyAt,
+        } : {}),
       },
       counts: {
         gridCells: raw.data.model.grid.latitudeCount * raw.data.model.grid.longitudeCount,
@@ -257,10 +270,26 @@ export async function globalGridHotspotApiResponse(
   }
   const result = await readGlobalGridHotspotSnapshot(env, cache);
   if (!result.ok) return json({ error: result.message }, result.status, { "cache-control": "no-store" });
-  const snapshotStatus = Date.parse(result.snapshot.validTo) <= Date.now() ? "expired" : "current";
-  if (request.headers.get("if-none-match") === result.etag) {
-    return new Response(null, { status: 304, headers: { etag: result.etag, "cache-control": GLOBAL_GRID_HOTSPOT_API_CACHE_CONTROL, "x-global-grid-hotspot-snapshot-status": snapshotStatus } });
+  const now = Date.now();
+  const state = hotspotSnapshotState(result.snapshot, now);
+  if (state === "expired") {
+    warnExpiredSnapshot("global-grid", result.snapshot);
+    const expired = json({
+      error: "The last global-grid forecast window has ended. No current ranking is available.",
+      status: "expired",
+      initialization: result.snapshot.model.initialization,
+      validFrom: result.snapshot.validFrom,
+      validTo: result.snapshot.validTo,
+    }, 503, { "cache-control": "no-store", "retry-after": "900", "x-global-grid-hotspot-snapshot-status": "expired" });
+    return request.method === "HEAD" ? new Response(null, { status: 503, headers: expired.headers }) : expired;
   }
-  const response = json(result.snapshot, 200, { etag: result.etag, "cache-control": GLOBAL_GRID_HOTSPOT_API_CACHE_CONTROL, "x-global-grid-hotspot-snapshot-status": snapshotStatus });
+  const headers = {
+    etag: result.etag,
+    "cache-control": hotspotCacheControl(result.snapshot, now),
+    "x-global-grid-hotspot-snapshot-status": "current",
+    "x-global-grid-hotspot-window-state": state,
+  };
+  if (request.headers.get("if-none-match") === result.etag) return new Response(null, { status: 304, headers });
+  const response = json(result.snapshot, 200, headers);
   return request.method === "HEAD" ? new Response(null, { status: 200, headers: response.headers }) : response;
 }

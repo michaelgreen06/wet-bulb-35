@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { globalGridHotspotApiResponse, readGlobalGridHotspotSnapshot } from "../workers/global-grid-hotspots-edge";
 
 function snapshot() {
@@ -49,6 +49,12 @@ function envWith(value: unknown) {
 }
 
 describe("global-grid hotspot snapshot edge delivery", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-09-22T12:00:00Z"));
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
   it("normalizes the offline Python generator document", async () => {
     const raw = {
       schemaVersion: 1,
@@ -74,6 +80,18 @@ describe("global-grid hotspot snapshot edge delivery", () => {
       expect(result.snapshot.validTo).toBe("2026-09-23T03:00:00.000Z");
       expect(result.snapshot.model.interval).toBe("hourly-interpolated");
       expect(result.snapshot.hotspots[0]).toMatchObject({ rank: 1, maximumWetBulbC: 30.73, surfacePressureHpa: 1006.815 });
+      // Legacy documents without publication metadata fall back to the initialization.
+      expect(result.snapshot.generatedAt).toBe("2026-09-21T12:00:00Z");
+    }
+
+    const published = await readGlobalGridHotspotSnapshot(envWith({
+      ...raw,
+      publication: { generatedAt: "2026-09-22T02:20:00Z", retrievedAt: "2026-09-22T02:05:00Z", firstSeenReadyAt: "2026-09-21T19:40:00Z" },
+    }), new FakeCache());
+    expect(published.ok).toBe(true);
+    if (published.ok) {
+      expect(published.snapshot.generatedAt).toBe("2026-09-22T02:20:00Z");
+      expect(published.snapshot.model).toMatchObject({ retrievedAt: "2026-09-22T02:05:00Z", firstSeenReadyAt: "2026-09-21T19:40:00Z" });
     }
   });
 
@@ -86,6 +104,21 @@ describe("global-grid hotspot snapshot edge delivery", () => {
     expect(response.status).toBe(200);
     expect((await response.json()).hotspots).toHaveLength(2);
     expect(response.headers.get("etag")).toContain("global-grid-hotspots-1-");
+    expect(response.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(response.headers.get("x-global-grid-hotspot-window-state")).toBe("active");
+  });
+
+  it("applies the expiry rule independently of the inhabited product", async () => {
+    vi.setSystemTime(Date.parse("2026-09-23T01:00:00Z"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const expired = await globalGridHotspotApiResponse(new Request("https://example.test/api/global-grid-hotspots"), envWith(snapshot()), new FakeCache());
+    expect(expired.status).toBe(503);
+    expect(expired.headers.get("x-global-grid-hotspot-snapshot-status")).toBe("expired");
+    const body = await expired.json();
+    expect(body).toMatchObject({ status: "expired", validTo: "2026-09-23T01:00:00Z" });
+    expect(body.hotspots).toBeUndefined();
+    expect(warn.mock.calls.some(([line]) => String(line).includes('"product":"global-grid"'))).toBe(true);
+    warn.mockRestore();
   });
 
   it("reads the production snapshot from the shared R2 binding", async () => {

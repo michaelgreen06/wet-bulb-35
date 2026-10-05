@@ -1,7 +1,11 @@
-import { validateHotspotSnapshot, type HotspotSnapshot } from "../lib/hotspots/snapshot.ts";
+import {
+  hotspotCacheControl,
+  hotspotSnapshotState,
+  validateHotspotSnapshot,
+  type HotspotSnapshot,
+} from "../lib/hotspots/snapshot.ts";
 
 export const HOTSPOT_SNAPSHOT_KEY = "inhabited-hotspots/v1/latest.json" as const;
-export const HOTSPOT_API_CACHE_CONTROL = "public, max-age=300, stale-while-revalidate=3600" as const;
 const MAX_SNAPSHOT_BYTES = 256_000;
 const CACHE_URL = "https://hotspot-cache.internal/inhabited-hotspots/v1/latest.json";
 
@@ -33,6 +37,13 @@ export interface HotspotEnvironment {
 export type HotspotSnapshotResult =
   | { ok: true; snapshot: HotspotSnapshot; etag: string }
   | { ok: false; status: 503; message: string };
+
+/** Structured Worker log line that alerting can match until a valid snapshot is published. */
+export function warnExpiredSnapshot(product: "inhabited" | "global-grid", snapshot: { validTo: string }): void {
+  try {
+    console.warn(JSON.stringify({ event: "hotspot_snapshot_expired", product, validTo: snapshot.validTo }));
+  } catch {}
+}
 
 function etag(snapshot: HotspotSnapshot): string {
   return `"hotspots-${snapshot.schemaVersion}-${snapshot.generatedAt}"`;
@@ -121,10 +132,27 @@ export async function hotspotApiResponse(
   }
   const result = await readHotspotSnapshot(env, cache);
   if (!result.ok) return json({ error: result.message }, result.status, { "cache-control": "no-store" });
-  const snapshotStatus = Date.parse(result.snapshot.validTo) <= Date.now() ? "expired" : "current";
-  if (request.headers.get("if-none-match") === result.etag) {
-    return new Response(null, { status: 304, headers: { etag: result.etag, "cache-control": HOTSPOT_API_CACHE_CONTROL, "x-hotspot-snapshot-status": snapshotStatus } });
+  const now = Date.now();
+  const state = hotspotSnapshotState(result.snapshot, now);
+  if (state === "expired") {
+    // An ended window is never served as a current ranking; the last bounds stay visible for context.
+    warnExpiredSnapshot("inhabited", result.snapshot);
+    const expired = json({
+      error: "The last hotspot forecast window has ended. No current ranking is available.",
+      status: "expired",
+      initialization: result.snapshot.discovery.initialization,
+      validFrom: result.snapshot.validFrom,
+      validTo: result.snapshot.validTo,
+    }, 503, { "cache-control": "no-store", "retry-after": "900", "x-hotspot-snapshot-status": "expired" });
+    return request.method === "HEAD" ? new Response(null, { status: 503, headers: expired.headers }) : expired;
   }
-  const response = json(result.snapshot, 200, { etag: result.etag, "cache-control": HOTSPOT_API_CACHE_CONTROL, "x-hotspot-snapshot-status": snapshotStatus });
+  const headers = {
+    etag: result.etag,
+    "cache-control": hotspotCacheControl(result.snapshot, now),
+    "x-hotspot-snapshot-status": "current",
+    "x-hotspot-window-state": state,
+  };
+  if (request.headers.get("if-none-match") === result.etag) return new Response(null, { status: 304, headers });
+  const response = json(result.snapshot, 200, headers);
   return request.method === "HEAD" ? new Response(null, { status: 200, headers: response.headers }) : response;
 }
