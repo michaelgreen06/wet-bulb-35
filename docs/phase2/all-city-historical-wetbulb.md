@@ -2,6 +2,8 @@
 
 Status: **offline pipeline prototype; not a live page feature**. The PR implements bounded acquisition, source alignment, stable-route identity lookup, Romps hourly calculation, local-day/month/year aggregation, and a compact static-asset encoding. It does **not** include complete ERA5-Land history, production Worker routes, public page copy, or a deployment. Do not merge or publish it as a completed all-city feature.
 
+Issue #57 staged rollout (route accounting, verified pilot, tile pipeline, publication gate): see [historical-wetbulb-issue57-rollout.md](historical-wetbulb-issue57-rollout.md).
+
 ## Verified on 2026-09-29
 
 - CDS authenticated privately; the 1950 Phoenix request provided two CSV field groups and **8,736** aligned hourly temperature/dew-point/surface-pressure rows at the same actual grid point. One source year (~169 KB ZIP) was normalized, reduced with the production Romps engine, and packaged as a **research-only** 5,251-byte static shard. The high within that **1950-only** sample was ~24.26 °C; this is **not** the historical period high.
