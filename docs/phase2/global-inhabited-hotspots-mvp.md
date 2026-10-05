@@ -129,7 +129,7 @@ The target remains recovery of the true reference top 20 and reference maximum a
 
 Generation variables/secrets:
 
-- `GLOBAL_HOTSPOTS_ENABLED=true` — allows scheduled runs; absent/false keeps the schedule inert.
+- `GLOBAL_HOTSPOTS_ENABLED=true` — allows scheduled runs and permits an explicitly requested manual publication. Absent/false prevents either from publishing; a manual `publish=false` dispatch still performs weather-data generation and consumes provider budget, so it requires separate deliberate authorization.
 - `OPEN_METEO_API_MODE=public-noncommercial` or `customer-commercial` — explicit licensing mode.
 - `OPEN_METEO_BASE_URL` — optional approved endpoint override.
 - `OPEN_METEO_API_KEY` — required only for customer-commercial mode.

@@ -31,3 +31,12 @@ test("scheduled publication checks both existing aliases as a pair before provid
   const readiness = workflow.indexOf("Wait for the newest usable IFS cycle");
   assert.ok(read >= 0 && read < missing && missing < pair && pair < readiness);
 });
+
+test("manual publication also requires the repository enable switch", () => {
+  const workflow = fs.readFileSync(new URL("../.github/workflows/global-inhabited-hotspots.yml", import.meta.url), "utf8");
+  assert.match(workflow, /PUBLISH_INTENDED:\s*\$\{\{ vars\.GLOBAL_HOTSPOTS_ENABLED == 'true' && \(github\.event_name == 'schedule' \|\| inputs\.publish\) \}\}/);
+  const refuse = workflow.indexOf("Refuse manual publication while the repository gate is off");
+  const checkout = workflow.indexOf("actions/checkout@");
+  assert.ok(refuse >= 0 && refuse < checkout, "refusal must precede checkout and provider work");
+  assert.match(workflow, /if: github\.event_name == 'workflow_dispatch' && inputs\.publish && vars\.GLOBAL_HOTSPOTS_ENABLED != 'true'/);
+});

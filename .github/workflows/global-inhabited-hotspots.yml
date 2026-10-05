@@ -26,7 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
-      PUBLISH_INTENDED: ${{ github.event_name == 'schedule' || inputs.publish }}
+      # Manual publish cannot bypass the separate repository enable switch.
+      PUBLISH_INTENDED: ${{ vars.GLOBAL_HOTSPOTS_ENABLED == 'true' && (github.event_name == 'schedule' || inputs.publish) }}
       # See scripts/hotspot-provider-budget.mjs; includes retries and the forecast Worker.
       HOTSPOT_RUN_LOCATION_LIMIT: "1500"
       HOTSPOT_EXCLUDED_SAMPLE_SIZE: ${{ vars.HOTSPOT_EXCLUDED_SAMPLE_SIZE || '100' }}
@@ -34,6 +35,12 @@ jobs:
       # 300 location-equivalents/minute before retries and backoff.
       HOTSPOT_INTER_BATCH_DELAY_MS: "20000"
     steps:
+      - name: Refuse manual publication while the repository gate is off
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && vars.GLOBAL_HOTSPOTS_ENABLED != 'true'
+        run: |
+          echo '::error::Manual publication requires GLOBAL_HOTSPOTS_ENABLED=true; no provider work was performed.'
+          exit 1
+
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
