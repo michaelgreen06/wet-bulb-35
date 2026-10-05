@@ -175,9 +175,9 @@ describe("forecast edge and WeatherGate integration", () => {
     expect(verifiedUrl?.searchParams.get("hourly")).toBe("temperature_2m,dew_point_2m,surface_pressure");
     expect(verifiedUrl?.searchParams.get("forecast_days")).toBe("5");
     expect(verifiedUrl?.searchParams.get("models")).toBe("ecmwf_ifs025");
-    // Version 3 keys never collide with earlier best_match entries.
-    expect([...values.keys()].some((key) => key.startsWith("forecast-source:open-meteo:v3:"))).toBe(true);
-    expect([...values.keys()].some((key) => key.startsWith("forecast-result:forecast:v3:"))).toBe(true);
+    // Version 4 keys never collide with earlier best_match entries.
+    expect([...values.keys()].some((key) => key.startsWith("forecast-source:open-meteo:v4:"))).toBe(true);
+    expect([...values.keys()].some((key) => key.startsWith("forecast-result:forecast:v4:"))).toBe(true);
     expect(first.payload.providerModel).toBe("ecmwf_ifs025");
     expect(first.payload.runs).toEqual([{ id: "latest", model: "ecmwf_ifs025", initialization: RUN_INITIALIZATION, retrievedAt: NOW }]);
     expect(metadataCalls).toBe(1);

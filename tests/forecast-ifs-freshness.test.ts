@@ -198,25 +198,21 @@ describe("five-day local-date freshness", () => {
 describe("Top-50 pinned-run reuse", () => {
   const fullDates = ["2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24"];
 
-  it("serves a pinned run that covers all five current local dates without any provider or gate call", async () => {
-    const gate = gateFrom(() => { throw new Error("gate must not be called"); });
+  it("does not reuse precomputed Top-50 days; city views now require an exact-run request", async () => {
+    const gate = gateFrom(() => new Response(null, { status: 500 }));
     const response = await forecastResponse(request(), gate.env, undefined, async () => location, new FakeCache(), async () => pinned(fullDates));
-    expect(response.status).toBe(200);
-    const payload = await response.json() as WetBulbForecast;
-    expect(gate.calls.count).toBe(0);
-    expect(payload.runs).toEqual([{ id: "top50-pinned", model: "ecmwf_ifs025", initialization: PINNED_RUN, retrievedAt: Date.parse("2026-09-20T02:10:00Z") }]);
-    expect(payload.days.every((day) => day.runId === "top50-pinned")).toBe(true);
+    expect(response.status).toBe(500);
+    expect(gate.calls.count).toBe(1);
   });
 
-  it("labels each day by run when the pinned run lacks the full horizon", async () => {
+  it("does not mix a precomputed pinned run with latest data", async () => {
     const envelope = await latestEnvelope();
     const gate = gateFrom(() => Response.json(envelope));
-    // The pinned run starts after local midnight today, so day one comes from the latest run.
     const response = await forecastResponse(request(), gate.env, undefined, async () => location, new FakeCache(), async () => pinned(fullDates.slice(1)));
     const payload = await response.json() as WetBulbForecast;
     expect(gate.calls.count).toBe(1);
-    expect(payload.days.map((day) => day.runId)).toEqual(["latest", "top50-pinned", "top50-pinned", "top50-pinned", "top50-pinned"]);
-    expect(payload.runs.map((run) => [run.id, run.initialization])).toEqual([["top50-pinned", PINNED_RUN], ["latest", RUN]]);
+    expect(payload.days.map((day) => day.runId)).toEqual(["latest", "latest", "latest", "latest", "latest"]);
+    expect(payload.runs).toHaveLength(1);
     expect(isWetBulbForecast(payload)).toBe(true);
   });
 
@@ -271,17 +267,17 @@ describe("Top-50 pinned-run reuse", () => {
     const url = "https://test/api/forecast?path=" + encodeURIComponent(location.path);
 
     const pinnedResponse = await app.fetch(new Request(url), { ...baseEnv, HOTSPOT_FEATURE_MODE: "enabled" });
-    expect((await pinnedResponse.json()).runs[0].id).toBe("top50-pinned");
-    expect(gateCalls).toBe(0);
+    expect(pinnedResponse.status).toBe(500);
+    expect(gateCalls).toBe(1);
 
     const disabled = await app.fetch(new Request(url), baseEnv);
     expect((await disabled.json()).runs[0].id).toBe("latest");
-    expect(gateCalls).toBe(1);
+    expect(gateCalls).toBe(2);
 
     vi.setSystemTime(Date.parse("2026-09-21T03:00:00Z"));
     // Local date is still 2026-09-20 (22:00), but the snapshot window has ended.
     const expired = await app.fetch(new Request(url), { ...baseEnv, HOTSPOT_FEATURE_MODE: "enabled" });
-    expect((await expired.json()).runs[0].id).toBe("latest");
+    expect(expired.status).toBe(503);
     expect(gateCalls).toBe(2);
   });
 });

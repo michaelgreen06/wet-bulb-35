@@ -336,8 +336,7 @@ export async function generateHotspotSnapshot({
     options: { ...options, ...window, modelInitialization: parsed.discovery.initialization },
   });
   const snapshot = createHotspotSnapshot({ generatedAt, refinements, corpusCount: manifest.length, discovery: parsed.discovery });
-  if (!pinnedFiveDay) return snapshot;
-  return addPinnedFiveDay({ snapshot, fetchImplementation, options });
+  return snapshot;
 }
 
 function parseArgs(argv = process.argv.slice(2)): Map<string, string> {
@@ -393,7 +392,6 @@ async function main(): Promise<void> {
     options,
     generatedAt: args.get("generated-at") ?? new Date().toISOString().replace(".000Z", "Z"),
     downloadMetadata,
-    pinnedFiveDay: args.get("pinned-five-day") === "true",
   });
   const validation = validateHotspotSnapshot(snapshot);
   if (!validation.success) throw new TypeError(`Hotspot snapshot validation failed: ${validation.error.message}`);

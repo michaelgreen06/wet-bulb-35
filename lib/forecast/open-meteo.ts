@@ -9,8 +9,8 @@ export const OPEN_METEO_PROVIDER = "open-meteo" as const;
 // Five-day city forecasts name ECMWF IFS explicitly so they match the Top-50 hotspot model.
 export const OPEN_METEO_MODEL = "ecmwf_ifs025" as const;
 // Version 3 keys separate IFS results from earlier best_match cache entries.
-export const OPEN_METEO_SCHEMA_VERSION = 3 as const;
-export const FORECAST_SCHEMA_VERSION = 3 as const;
+export const OPEN_METEO_SCHEMA_VERSION = 4 as const;
+export const FORECAST_SCHEMA_VERSION = 4 as const;
 export const OPEN_METEO_MODEL_METADATA_URL = "https://api.open-meteo.com/data/ecmwf_ifs025/static/meta.json" as const;
 // Open-Meteo copies new runs across redundant servers for several minutes after availability.
 export const OPEN_METEO_RUN_SETTLE_MS = 10 * 60_000;
@@ -32,7 +32,7 @@ export interface NormalizedHourlyObservation {
   surfacePressurePa: number;
 }
 
-export type ForecastRunId = "latest" | "top50-pinned";
+export type ForecastRunId = "latest" | "snapshot-pinned" | "top50-pinned";
 
 /** One named IFS run. A null initialization means Open-Meteo could not confirm which run answered. */
 export interface ForecastModelRun {
@@ -154,6 +154,23 @@ export function buildOpenMeteoForecastUrl(location: Pick<ForecastLocation, "lati
   url.searchParams.set("longitude", String(location.longitude));
   url.searchParams.set("hourly", "temperature_2m,dew_point_2m,surface_pressure");
   url.searchParams.set("forecast_days", String(FORECAST_DAYS));
+  url.searchParams.set("timezone", "auto");
+  url.searchParams.set("models", OPEN_METEO_MODEL);
+  return url;
+}
+
+/** Requests one canonical city from the snapshot's exact IFS run. */
+export function buildPinnedOpenMeteoForecastUrl(
+  location: Pick<ForecastLocation, "latitude" | "longitude">,
+  initialization: string,
+): URL {
+  if (!validInitialization(initialization)) throw new TypeError("Pinned forecast initialization is invalid.");
+  const url = new URL("https://single-runs-api.open-meteo.com/v1/forecast");
+  url.searchParams.set("latitude", String(location.latitude));
+  url.searchParams.set("longitude", String(location.longitude));
+  url.searchParams.set("hourly", "temperature_2m,dew_point_2m,surface_pressure");
+  url.searchParams.set("forecast_hours", "145");
+  url.searchParams.set("run", initialization.slice(0, 16));
   url.searchParams.set("timezone", "auto");
   url.searchParams.set("models", OPEN_METEO_MODEL);
   return url;
@@ -340,10 +357,10 @@ export function calculateFiveDayWetBulbForecast(source: OpenMeteoSource): WetBul
 
 function validRun(value: unknown): value is ForecastModelRun {
   return isRecord(value)
-    && (value.id === "latest" || value.id === "top50-pinned")
+    && (value.id === "latest" || value.id === "snapshot-pinned" || value.id === "top50-pinned")
     && value.model === OPEN_METEO_MODEL
     && (value.initialization === null || validInitialization(value.initialization))
-    && (value.id !== "top50-pinned" || value.initialization !== null)
+    && ((value.id !== "snapshot-pinned" && value.id !== "top50-pinned") || value.initialization !== null)
     && finiteNumber(value.retrievedAt)
     && (value.retrievedAt as number) > 0;
 }
@@ -379,9 +396,12 @@ export function isWetBulbForecast(value: unknown): value is WetBulbForecast {
     && (value.runs as ForecastModelRun[]).every((run) => (value.days as DailyWetBulbForecast[]).some((day) => day.runId === run.id));
 }
 
-/** A cached forecast is servable only while its first day is still the location's current date. */
+/** A latest forecast starts today; an aligned exact-run forecast starts on the next complete local day. */
 export function isCurrentForecast(forecast: WetBulbForecast, now: number): boolean {
-  return forecast.days[0]?.date === localDateAt(forecast.utcOffsetSeconds, now);
+  const today = localDateAt(forecast.utcOffsetSeconds, now);
+  return forecast.runs.some((run) => run.id === "snapshot-pinned")
+    ? forecast.days[0]?.date > today
+    : forecast.days[0]?.date === today;
 }
 
 function validPinnedForecast(value: unknown): value is PinnedDailyForecast {
@@ -457,4 +477,53 @@ export function combinePinnedForecast(
     days,
   };
   return isWetBulbForecast(combined) ? combined : null;
+}
+
+/** Validates one exact-run payload and returns five complete future local dates only. */
+export function normalizePinnedOpenMeteoForecast(
+  value: unknown,
+  location: ForecastLocation,
+  retrievedAt: number,
+  initialization: string,
+): WetBulbForecast {
+  if (!validLocation(location) || !finiteNumber(retrievedAt) || !validInitialization(initialization) || !isRecord(value)
+    || !isRecord(value.hourly) || !isRecord(value.hourly_units)) throw new TypeError("Pinned Open-Meteo forecast is invalid.");
+  const hourly = value.hourly;
+  const units = value.hourly_units;
+  expectUnit(units, "time", ["iso8601"]);
+  expectUnit(units, "temperature_2m", ["°C"]);
+  expectUnit(units, "dew_point_2m", ["°C"]);
+  expectUnit(units, "surface_pressure", ["hPa"]);
+  if (typeof value.timezone !== "string" || !validUtcOffset(value.utc_offset_seconds)) throw new TypeError("Pinned Open-Meteo timezone metadata is invalid.");
+  const arrays = [hourly.time, hourly.temperature_2m, hourly.dew_point_2m, hourly.surface_pressure];
+  if (!arrays.every(Array.isArray) || arrays.some((items) => (items as unknown[]).length !== 145)) throw new TypeError("Pinned Open-Meteo forecast must contain the full run horizon.");
+  const [times, temperatures, dewPoints, pressures] = arrays as unknown[][];
+  const offset = value.utc_offset_seconds as number;
+  const start = Date.parse(initialization);
+  const byDate = new Map<string, Array<{ time: string; temperature: number; dewPoint: number; pressure: number }>>();
+  for (let index = 0; index < 145; index += 1) {
+    const time = new Date(start + index * 3_600_000 + offset * 1_000).toISOString().slice(0, 16);
+    if (times[index] !== time) throw new TypeError("Pinned Open-Meteo timestamps do not start at the requested initialization.");
+    const temperature = temperatures[index]; const dewPoint = dewPoints[index]; const pressure = pressures[index];
+    if (temperature === null || dewPoint === null || pressure === null) continue;
+    if (!finiteNumber(temperature) || !finiteNumber(dewPoint) || !finiteNumber(pressure) || pressure <= 0) throw new TypeError(`Pinned Open-Meteo hourly row ${index} is invalid.`);
+    const entries = byDate.get(time.slice(0, 10)) ?? [];
+    entries.push({ time, temperature, dewPoint: Math.min(dewPoint, temperature), pressure });
+    byDate.set(time.slice(0, 10), entries);
+  }
+  const today = localDateAt(offset, retrievedAt);
+  const days: DailyWetBulbForecast[] = [];
+  for (const [date, entries] of [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    if (date <= today || entries.length !== 24) continue;
+    let maximumWetBulbC = Number.NEGATIVE_INFINITY; let peakLocalTime = "";
+    for (const entry of entries) {
+      const wetBulbC = calculateRompsWetBulbFromVaporPressureKelvin({ pressurePa: entry.pressure * 100, airTemperatureK: entry.temperature + 273.15, vaporPressurePa: calculateRompsLiquidSaturationVaporPressurePa(entry.dewPoint + 273.15) }) - 273.15;
+      if (wetBulbC > maximumWetBulbC) { maximumWetBulbC = wetBulbC; peakLocalTime = entry.time; }
+    }
+    days.push({ date, maximumWetBulbC, peakLocalTime, runId: "snapshot-pinned" });
+  }
+  if (days.length < FORECAST_DAYS || days.some((day, index) => index > 0 && day.date !== addDays(days[0].date, index))) throw new TypeError("Pinned IFS run does not cover five complete future local dates.");
+  const forecast: WetBulbForecast = { schemaVersion: FORECAST_SCHEMA_VERSION, method: ROMPS_METHOD, methodVersion: ROMPS_METHOD_VERSION, phasePolicy: FORECAST_PHASE_POLICY, provider: OPEN_METEO_PROVIDER, providerModel: OPEN_METEO_MODEL, location: { ...location }, timezone: value.timezone, utcOffsetSeconds: offset, retrievedAt, runs: [{ id: "snapshot-pinned", model: OPEN_METEO_MODEL, initialization, retrievedAt }], days: days.slice(0, FORECAST_DAYS) };
+  if (!isWetBulbForecast(forecast)) throw new TypeError("Pinned Open-Meteo forecast is malformed.");
+  return forecast;
 }

@@ -192,7 +192,6 @@ jobs:
             --city-manifest .hotspots/cities.json \
             --output .hotspots/snapshot.json \
             --download-metadata .hotspots/ecmwf-download.json \
-            --pinned-five-day true \
             --batch-size 100
 
       - name: Rank every global model-grid cell from the same initialization
@@ -230,11 +229,6 @@ jobs:
               raise SystemExit(f'Hotspot products have mismatched initializations: {sorted(initializations)}')
           if len(inhabited['hotspots']) != 50 or inhabited['counts']['published'] != 50:
               raise SystemExit('Inhabited snapshot must publish exactly 50 locations')
-          if any(not isinstance(hotspot.get('fiveDay'), dict)
-                 or hotspot['fiveDay'].get('initialization') != readiness['initialization']
-                 or len(hotspot['fiveDay'].get('days', [])) < 5
-                 for hotspot in inhabited['hotspots']):
-              raise SystemExit('Every published hotspot needs five complete local dates from the pinned run')
           if inhabited['validFrom'] != download['windowStart'] or inhabited['validTo'] != download['validTo']:
               raise SystemExit('Inhabited snapshot does not match the publication-relative 24-hour window')
           if global_grid['model']['validTimeBounds'] != {'start': download['windowStart'], 'end': download['windowEnd']}:
