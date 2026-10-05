@@ -100,6 +100,16 @@ describe("pinned Top-50 five-day data", () => {
     expect(validateHotspotSnapshot(early).success).toBe(false);
   });
 
+  it("accepts full pinned local dates in half-hour-offset timezones", () => {
+    const [daily] = normalizePinnedDailyForecastResponse(singleRun(19_800, "Asia/Kolkata"), [bangkok], RUN, "2026-10-04T13:45:00Z");
+    expect(daily.days).toHaveLength(5);
+    expect(daily.days[0].peakLocalTime).toMatch(/T\d{2}:30$/);
+    expect(validateHotspotSnapshot(attachPinnedFiveDay(snapshot(), [daily])).success).toBe(true);
+    const published = attachPinnedFiveDay(snapshot(), [daily]);
+    const malformedMinute = { ...published, hotspots: [{ ...published.hotspots[0], fiveDay: { ...published.hotspots[0].fiveDay!, days: [{ ...daily.days[0], peakLocalTime: "2026-10-05T14:99" }, ...daily.days.slice(1)] } }] };
+    expect(validateHotspotSnapshot(malformedMinute).success).toBe(false);
+  });
+
   it("warns and retains the prior snapshot when the pinned provider fails", async () => {
     const warnings: string[] = [];
     await expect(addPinnedFiveDay({

@@ -28,7 +28,7 @@ const pinnedFiveDay = z.object({
   days: z.array(z.object({
     date: localDate,
     maximumWetBulbC: z.number().finite(),
-    peakLocalTime: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:00$/),
+    peakLocalTime: z.string().regex(/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d$/),
   }).strict()).max(7),
 }).strict();
 const candidate = z.object({
