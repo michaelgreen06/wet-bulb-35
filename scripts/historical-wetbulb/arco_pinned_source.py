@@ -179,6 +179,10 @@ class ArcoPinnedSource:
     def chunk_count(self, tile, cells):
         return self.last_index // CHUNK[0] - self.first_index // CHUNK[0] + 1
 
+    def expected_cells(self, tile, cells):
+        """Pinned chunks always carry every planned cell (absent objects decode to NaN fill)."""
+        return list(cells)
+
     def fetch(self, tile, cells, index):
         k = self.first_index // CHUNK[0] + index
         lo = max(k * CHUNK[0], self.first_index)

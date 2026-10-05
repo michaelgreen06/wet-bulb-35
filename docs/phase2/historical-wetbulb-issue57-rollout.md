@@ -56,6 +56,7 @@ Routes whose tile is wholly absent from ARCO (all-ocean in ERA5-Land) will becom
   - A cell with a gap or invalid input becomes `unavailableCells` with a reason.
   - A group failing period validation becomes `failedGroups`.
   - A tile-level integrity failure writes `failed.json` and the stage continues; a rerun retries that tile.
+  - Retained chunks are reduced only if their cell set equals what the current plan expects from the source; a tile fetched under an earlier plan (fewer or other cells) stops with an explicit error instead of labelling the new cells `notInSourceCells` and sealing the tile as complete.
   - Reproducibility mismatches still stop the run.
 - **Zones that skipped a calendar date use their own calendar.** Pacific/Apia and Fakaofo skipped 2011-12-30; Kwajalein skipped 1993-08-21; Kiritimati and Kanton skipped 1994-12-31. The record lists these dates in `skip`, and the decoder counts years with them excluded.
 - **Negative cases under test:**

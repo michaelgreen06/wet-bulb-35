@@ -217,6 +217,36 @@ class TestEndToEnd(unittest.TestCase):
         again, fetched = self.run_tile()
         self.assertEqual((fetched, again['periods']), (1, status['periods']))
 
+    def test_restart_refuses_retained_chunks_whose_cells_no_longer_match_the_plan(self):
+        """A plan that gains a cell on a tile with retained chunks must not reduce the stale
+        chunks, label the new cell absent from the source and seal the tile as complete."""
+        class Pinned(RUN.ArchiveSource):
+            name, chunk_type = 'arco', 'ARCO-pinned-chunks'
+
+            def expected_cells(self, tile, cells):
+                return list(cells)
+
+            def fetch(self, tile, cells, index):
+                chunk = super().fetch(tile, [c for c in cells if c in self.years], index)
+                missing = [c for c in cells if c not in self.years]
+                values, n = [], len(chunk['cells'])
+                for h in range(chunk['hours']):
+                    values += chunk['values'][h * n * 3:(h + 1) * n * 3] + [float('nan')] * (3 * len(missing))
+                return {**chunk, 'cells': list(cells), 'values': values,
+                        'source': {'type': 'ARCO-pinned-chunks', 'pinned': True, 'objects': [{'key': f'k{index}', 'bytes': 1, 'sha256': 'a' * 64}]}}
+        source = Pinned(self.jobs, 1950, 1951)
+        status, fetched = self.run_tile(source)
+        self.assertEqual((fetched, status['notInSourceCells'], len(status['periods'])), (3, [], 3))
+        tile_dir = self.out / 'tiles' / 'arco' / 't001-002'
+        (tile_dir / 'status.json').unlink()
+        grown = {**self.groups, '1.1,2.0': ['UTC']}
+        with self.assertRaisesRegex(ValueError, 'retained chunk cells differ from the current plan'):
+            RUN.run_tile((1, 2), grown, source, self.out, start_year=1950, end_year=1951, budget={'remaining': 10}, pause=0)
+        self.assertFalse((tile_dir / 'status.json').exists())
+        # Replaying the same plan still works, fetching nothing.
+        again, fetched = self.run_tile(source)
+        self.assertEqual((fetched, again['periods']), (0, status['periods']))
+
     def test_restart_refuses_chunks_or_status_from_another_source(self):
         self.run_tile()
         class Other(RUN.ArchiveSource):

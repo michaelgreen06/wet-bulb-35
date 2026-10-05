@@ -283,6 +283,10 @@ class ArchiveSource:
     def chunk_count(self, tile, cells):
         return self.end_year - self.start_year + 2  # each year plus the final padded tail
 
+    def expected_cells(self, tile, cells):
+        """Cells every chunk of this tile must carry: those retained for every year."""
+        return [c for c in cells if all(y in self.years.get(c, {}) for y in range(self.start_year, self.end_year + 1))]
+
     def _rows(self, cell_key, year):
         job = self.years[cell_key][year]
         status = json.loads((job / 'status.json').read_text())
@@ -298,7 +302,7 @@ class ArchiveSource:
                 for r in map(json.loads, raw.decode().splitlines())}, manifest['sourceSha256']
 
     def fetch(self, tile, cells, index):
-        available = [c for c in cells if all(y in self.years.get(c, {}) for y in range(self.start_year, self.end_year + 1))]
+        available = self.expected_cells(tile, cells)
         if not available:
             return None
         if index <= self.end_year - self.start_year:
@@ -424,9 +428,19 @@ def run_tile(tile, groups, source, out, *, start_year, end_year, budget, pause, 
         return status, 0
     fetched = 0
     cells = sorted(groups)
+    # Every chunk of a tile must carry exactly the cells the current plan expects from this
+    # source. A retained chunk fetched under an earlier plan (fewer or other cells) is stale:
+    # reducing it would silently drop the new cells and record them as absent from the source.
+    expected = getattr(source, 'expected_cells', lambda tile, cells: list(cells))(tile, cells)
+    if not expected:
+        return {'status': 'source-unavailable'}, fetched
     total = source.chunk_count(tile, cells)
     for index in range(total):
-        if verified_chunk(tile_dir, index, source.chunk_type):
+        retained = verified_chunk(tile_dir, index, source.chunk_type)
+        if retained:
+            if retained['cells'] != expected:
+                raise ValueError(f'{tile_dir.name}/chunk-{index:04d}: retained chunk cells differ from the current plan; '
+                                 'move the stale tile aside before re-running')
             continue
         if budget['remaining'] <= 0:
             return {'status': 'bounded'}, fetched
@@ -439,11 +453,13 @@ def run_tile(tile, groups, source, out, *, start_year, end_year, budget, pause, 
         chunk = source.fetch(tile, cells, index)
         if chunk is None:
             return {'status': 'source-unavailable'}, fetched
+        if chunk['cells'] != expected:
+            raise ValueError(f'{tile_dir.name}/chunk-{index:04d}: source returned a different cell set than expected')
         if archive is not None:
             self_check(chunk, archive, out)
         write_chunk(tile_dir, index, cells=chunk['cells'], start_ms=chunk['start_ms'], hours=chunk['hours'],
                     values=chunk['values'], data_start_ms=source.data_start_ms, source=chunk['source'])
-    present = json.loads((tile_dir / 'chunk-0000.json').read_text())['cells']
+    present = expected
     reduce_groups = {c: z for c, z in groups.items() if c in present}
     groups_file = tile_dir / 'groups.json'
     groups_file.write_text(json.dumps(reduce_groups, sort_keys=True) + '\n')
