@@ -13,6 +13,7 @@ Sources:
            approval file naming Michael, the plan digest, stages and byte/fetch caps.
 """
 import argparse
+import contextlib
 import fcntl
 import hashlib
 import json
@@ -145,48 +146,77 @@ class ApprovalLedger:
 
     def __init__(self, out, approval_sha256, approval):
         self.path = Path(out) / f'approval-ledger-{approval_sha256[:16]}.json'
-        self.approval = approval
-        if self.path.exists():
-            self.state = json.loads(self.path.read_text())
-            if (self.state.get('schemaVersion') != 2 or self.state.get('approvalSha256') != approval_sha256
-                    or not isinstance(self.state.get('reservations'), dict)):
-                raise PermissionError('Approval ledger is unreadable or belongs to another approval; refusing to guess')
-        else:
-            self.state = {'schemaVersion': 2, 'approvalSha256': approval_sha256, 'chunkAttempts': 0,
-                          'settledBytes': 0, 'reservations': {}, 'nextReservation': 0}
-            durable_write(self.path, self.state)
+        self.lock_path = self.path.with_suffix('.lock')
+        self.approval, self.approval_sha256 = approval, approval_sha256
+        with self._locked():
+            if not self.path.exists():
+                durable_write(self.path, {'schemaVersion': 2, 'approvalSha256': approval_sha256, 'chunkAttempts': 0,
+                                          'settledBytes': 0, 'reservations': {}, 'nextReservation': 0})
+            self._load()
+
+    @contextlib.contextmanager
+    def _locked(self):
+        # Every read-modify-write reloads the on-disk state under an exclusive lock, so
+        # two ledger objects (or processes) can never spend the same allowance twice.
+        with self.lock_path.open('a+') as handle:
+            fcntl.flock(handle, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(handle, fcntl.LOCK_UN)
+
+    def _load(self):
+        state = json.loads(self.path.read_text())
+        if (state.get('schemaVersion') != 2 or state.get('approvalSha256') != self.approval_sha256
+                or not isinstance(state.get('reservations'), dict)):
+            raise PermissionError('Approval ledger is unreadable or belongs to another approval; refusing to guess')
+        self.state = state
+        return state
 
     def charged_bytes(self):
-        return self.state['settledBytes'] + sum(r['bytes'] for r in self.state['reservations'].values())
+        with self._locked():
+            return self._charged(self._load())
+
+    @staticmethod
+    def _charged(state):
+        return state['settledBytes'] + sum(r['bytes'] for r in state['reservations'].values())
 
     def remaining_chunks(self):
-        return self.approval['maxChunkFetches'] - self.state['chunkAttempts']
+        with self._locked():
+            return self.approval['maxChunkFetches'] - self._load()['chunkAttempts']
 
     def remaining_bytes(self):
-        return self.approval['maxBytes'] - self.charged_bytes()
+        with self._locked():
+            return self.approval['maxBytes'] - self._charged(self._load())
 
     def begin_chunk(self):
-        if self.remaining_chunks() <= 0:
-            raise PermissionError('Approved chunk-fetch cap reached; stopping')
-        self.state['chunkAttempts'] += 1
-        durable_write(self.path, self.state)
+        with self._locked():
+            state = self._load()
+            if state['chunkAttempts'] >= self.approval['maxChunkFetches']:
+                raise PermissionError('Approved chunk-fetch cap reached; stopping')
+            state['chunkAttempts'] += 1
+            durable_write(self.path, state)
 
     def reserve(self, url, allowance):
-        if not isinstance(allowance, int) or allowance < 1 or allowance > self.remaining_bytes():
-            raise PermissionError('Approved ARCO byte cap reached; stopping before the request')
-        rid = str(self.state['nextReservation'])
-        self.state['nextReservation'] += 1
-        self.state['reservations'][rid] = {'url': url, 'bytes': allowance}
-        durable_write(self.path, self.state)
-        return rid
+        with self._locked():
+            state = self._load()
+            if not isinstance(allowance, int) or allowance < 1 or allowance > self.approval['maxBytes'] - self._charged(state):
+                raise PermissionError('Approved ARCO byte cap reached; stopping before the request')
+            rid = str(state['nextReservation'])
+            state['nextReservation'] += 1
+            state['reservations'][rid] = {'url': url, 'bytes': allowance}
+            durable_write(self.path, state)
+            return rid
 
     def settle(self, rid, received):
-        reserved = self.state['reservations'].get(rid)
-        if reserved is None or not isinstance(received, int) or not 0 <= received <= reserved['bytes']:
-            raise PermissionError('Ledger settlement does not match its reservation')
-        del self.state['reservations'][rid]
-        self.state['settledBytes'] += received
-        durable_write(self.path, self.state)
+        with self._locked():
+            state = self._load()
+            reserved = state['reservations'].get(rid)
+            if reserved is None or not isinstance(received, int) or not 0 <= received <= reserved['bytes']:
+                raise PermissionError('Ledger settlement does not match its reservation')
+            del state['reservations'][rid]
+            state['settledBytes'] += received
+            durable_write(self.path, state)
 
 
 class ArchiveSource:
@@ -428,19 +458,35 @@ def main():
     tiles = stage_tiles(plan['rows'], a.stage)
     if not tiles:
         raise ValueError(f'No tiles in stage {a.stage}')
-    archive = ledger = None
-    if a.source == 'arco' and a.archive_jobs:
-        archive = ArchiveSource(a.archive_jobs, a.start_year, a.end_year)
-    if a.source == 'archive':
-        if not a.archive_jobs:
-            raise ValueError('--archive-jobs is required for the archive source')
-        source = ArchiveSource(a.archive_jobs, a.start_year, a.end_year)
-    else:
+    if a.source == 'archive' and not a.archive_jobs:
+        raise ValueError('--archive-jobs is required for the archive source')
+    approval = None
+    if a.source == 'arco':
         approval = load_approval(a.approval, plan_sha, a.stage) if a.approval else None
         if a.execute and approval is None:
             raise PermissionError('ARCO acquisition is approval-gated; no --approval supplied')
-        if a.execute:
-            out.mkdir(parents=True, exist_ok=True, mode=0o700)
+    print(json.dumps({'dryRun': not a.execute, 'stage': a.stage, 'source': a.source, 'tiles': len(tiles),
+                      'cells': sum(len(c) for c in tiles.values()),
+                      'groups': sum(len(z) for c in tiles.values() for z in c.values()),
+                      'maxNewChunks': a.max_new_chunks, 'planSha256': plan_sha}), flush=True)
+    if not a.execute:
+        return  # dry run: no ledger, no source construction, no request
+    out.mkdir(parents=True, exist_ok=True, mode=0o700)
+    budget = {'remaining': a.max_new_chunks}
+    # The exclusive run lock is taken BEFORE anything that reads or charges the
+    # ledger or can send a request (ledger load, cap checks, self-check, source
+    # initialization with its metadata/time-axis GETs) and is held for the whole run.
+    with (out / '.run.lock').open('a+') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise SystemExit('Another run holds the lock for this output folder; refusing to start') from None
+        archive = ledger = None
+        if a.source == 'archive':
+            source = ArchiveSource(a.archive_jobs, a.start_year, a.end_year)
+        else:
+            if a.archive_jobs:
+                archive = ArchiveSource(a.archive_jobs, a.start_year, a.end_year)
             ledger = ApprovalLedger(out, sha256_file(a.approval), approval)
             if a.max_new_chunks > ledger.remaining_chunks() or ledger.remaining_bytes() <= 0:
                 raise PermissionError('Chunk/byte budget exceeds what remains of the approved cap')
@@ -451,16 +497,6 @@ def main():
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             source = module.ArcoPinnedSource(ledger=ledger)
-    print(json.dumps({'dryRun': not a.execute, 'stage': a.stage, 'source': a.source, 'tiles': len(tiles),
-                      'cells': sum(len(c) for c in tiles.values()),
-                      'groups': sum(len(z) for c in tiles.values() for z in c.values()),
-                      'maxNewChunks': a.max_new_chunks, 'planSha256': plan_sha}), flush=True)
-    if not a.execute:
-        return
-    out.mkdir(parents=True, exist_ok=True, mode=0o700)
-    budget = {'remaining': a.max_new_chunks}
-    with (out / '.run.lock').open('a+') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         summary = defaultdict(int)
         outcome, error = 'finished', None
         try:

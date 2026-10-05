@@ -1,7 +1,11 @@
 import hashlib
 import json
 import math
+import fcntl
+import os
 import struct
+import subprocess
+import sys
 import tempfile
 import unittest
 from importlib.util import module_from_spec, spec_from_file_location
@@ -256,6 +260,94 @@ class TestEndToEnd(unittest.TestCase):
         tile_dir = self.out / 'tiles' / 'arco' / 't001-002'
         self.assertFalse((tile_dir / 'status.json').exists())
         self.assertFalse(list(tile_dir.glob('chunk-*')) if tile_dir.exists() else [])
+
+
+LEDGER_WORKER = '''
+import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location('run', sys.argv[1]); run = importlib.util.module_from_spec(spec); spec.loader.exec_module(run)
+approval = json.loads(sys.argv[3])
+ledger = run.ApprovalLedger(sys.argv[2], 'd' * 64, approval)   # constructed early: in-memory state goes stale
+settled = refused = 0
+for i in range(40):
+    try:
+        ledger.begin_chunk()
+        rid = ledger.reserve(f'u{i}', 30)
+        ledger.settle(rid, 20)
+        settled += 20
+    except PermissionError:
+        refused += 1
+print(json.dumps({'settled': settled, 'refused': refused}))
+'''
+
+
+class TestConcurrency(unittest.TestCase):
+    """Serialized, fail-closed accounting even with several ledger objects or processes."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.out = Path(self.tmp.name)
+
+    def test_stale_ledger_objects_cannot_spend_the_same_allowance(self):
+        approval = {'maxChunkFetches': 2, 'maxBytes': 1000}
+        first = RUN.ApprovalLedger(self.out, 'a' * 64, approval)
+        second = RUN.ApprovalLedger(self.out, 'a' * 64, approval)   # loaded before first spends
+        first.begin_chunk()
+        first.reserve('u1', 700)
+        with self.assertRaises(PermissionError):
+            second.reserve('u2', 400)                                # sees first's reservation on disk
+        second.begin_chunk()
+        with self.assertRaises(PermissionError):
+            first.begin_chunk()                                      # cap of 2 attempts already used
+        self.assertEqual(RUN.ApprovalLedger(self.out, 'a' * 64, approval).charged_bytes(), 700)
+
+    def race(self, approval, workers=6):
+        procs = [subprocess.Popen([sys.executable, '-c', LEDGER_WORKER, str(SCRIPTS / 'run_tile_backfill.py'),
+                                   str(self.out), json.dumps(approval)], stdout=subprocess.PIPE, text=True)
+                 for _ in range(workers)]
+        results = [json.loads(p.communicate(timeout=120)[0]) for p in procs]
+        final = RUN.ApprovalLedger(self.out, 'd' * 64, approval)
+        self.assertEqual(final.state['reservations'], {})
+        self.assertEqual(final.charged_bytes(), sum(r['settled'] for r in results))
+        self.assertLessEqual(final.charged_bytes(), approval['maxBytes'])
+        self.assertLessEqual(final.state['chunkAttempts'], approval['maxChunkFetches'])
+        return final, results
+
+    def test_parallel_processes_respect_the_attempt_cap_exactly(self):
+        final, results = self.race({'maxChunkFetches': 100, 'maxBytes': 10 ** 6})
+        self.assertEqual(final.state['chunkAttempts'], 100)
+        self.assertEqual(sum(r['settled'] for r in results), 100 * 20)    # 240 tries, exactly 100 spent, none twice
+
+    def test_parallel_processes_respect_the_byte_cap(self):
+        final, results = self.race({'maxChunkFetches': 10 ** 6, 'maxBytes': 2000})
+        self.assertGreater(final.charged_bytes(), 2000 - 30)                 # filled up to the last whole reservation
+
+    def test_main_takes_the_run_lock_before_any_ledger_or_source_work(self):
+        plan = self.out / 'plan.json'
+        plan.write_text(json.dumps({'rows': [{'group': '1.0,2.0|UTC', 'tile': [1, 2], 'stage': 'pilot'}]}))
+        approval = self.out / 'approval.json'
+        approval.write_text(json.dumps({'scope': 'acquire-era5land-arco', 'approvedBy': 'Test fixture (not an approval)',
+                                        'approvedAt': '2026-10-05', 'planSha256': RUN.sha256_file(plan),
+                                        'stages': ['pilot'], 'maxChunkFetches': 1, 'maxBytes': 1}))
+        run_out = self.out / 'run'
+        run_out.mkdir()
+        home = self.out / 'home'  # no ~/.cdsapirc: a constructed source fails on the token, never on the network
+        home.mkdir()
+        cmd = [sys.executable, str(SCRIPTS / 'run_tile_backfill.py'), '--plan', str(plan), '--stage', 'pilot',
+               '--source', 'arco', '--approval', str(approval), '--out', str(run_out), '--max-new-chunks', '1', '--execute']
+        env = {**os.environ, 'HOME': str(home)}
+        with (run_out / '.run.lock').open('a+') as held:
+            fcntl.flock(held, fcntl.LOCK_EX)
+            blocked = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=60)
+        self.assertNotEqual(blocked.returncode, 0)
+        self.assertIn('Another run holds the lock', blocked.stderr)
+        self.assertEqual(list(run_out.glob('approval-ledger-*')), [], 'no ledger touched while another run holds the lock')
+        free = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=60)
+        self.assertNotEqual(free.returncode, 0)
+        self.assertIn('cdsapirc', free.stderr)                       # failed on the missing token, after locking
+        self.assertEqual(len(list(run_out.glob('approval-ledger-*.json'))), 1)
+        progress = run_out / 'progress-pilot-arco.json'
+        self.assertFalse(progress.exists() and json.loads(progress.read_text()).get('outcome') == 'finished')
 
 
 class FakeArco:
