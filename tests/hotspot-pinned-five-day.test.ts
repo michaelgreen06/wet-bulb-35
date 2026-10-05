@@ -152,7 +152,7 @@ describe("pinned Top-50 five-day data", () => {
       .toMatchObject({ retrievedAt: "2026-10-04T13:30:05Z", firstSeenReadyAt: "2026-10-04T13:25:00Z" });
   });
 
-  it("adds pinned days in the full generation path with one extra request for published locations", async () => {
+  it("does not prefetch five-day data during snapshot generation", async () => {
     const requests: URL[] = [];
     const candidateDocument = {
       schemaVersion: 1,
@@ -184,11 +184,10 @@ describe("pinned Top-50 five-day data", () => {
       options: {},
       generatedAt: "2026-10-04T13:40:00Z",
       downloadMetadata: { initialization: RUN, retrievedAt: "2026-10-04T13:30:00Z", firstSeenReadyAt: "2026-10-04T13:25:00Z" },
-      pinnedFiveDay: true,
     });
-    expect(requests).toHaveLength(2);
-    expect(requests.every((url) => url.searchParams.get("run") === "2026-10-04T06:00")).toBe(true);
-    expect(result.hotspots[0].fiveDay?.initialization).toBe(RUN);
+    expect(requests).toHaveLength(1);
+    expect(requests[0].searchParams.get("run")).toBe("2026-10-04T06:00");
+    expect(result.hotspots[0].fiveDay).toBeUndefined();
     expect(result.discovery.firstSeenReadyAt).toBe("2026-10-04T13:25:00Z");
   });
 });

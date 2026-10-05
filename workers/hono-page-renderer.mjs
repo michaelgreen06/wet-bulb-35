@@ -3,7 +3,7 @@ import { pageHtml, renderBrowsePage, renderCountryPage, renderGlobalGridHotspotP
 import { expandNearby } from "../lib/nearby.mjs";
 import { createClimateExpander, validCell, validClimateTuple } from "../lib/climate-classes.mjs";
 import { hotspotSnapshotState } from "../lib/hotspots/snapshot.ts";
-import { forecastResponse } from "./forecast-edge.ts";
+import { forecastResponse, SNAPSHOT_FORECAST_UNAVAILABLE } from "./forecast-edge.ts";
 import { hotspotApiResponse, readHotspotSnapshot, warnExpiredSnapshot } from "./hotspots-edge.ts";
 import { globalGridHotspotApiResponse, readGlobalGridHotspotSnapshot } from "./global-grid-hotspots-edge.ts";
 import { createObservability, weatherResponse } from "./weather-edge.mjs";
@@ -382,12 +382,13 @@ export function createHonoPageRenderer({ cache = () => globalThis.caches?.defaul
         longitude: Number(result.city.longitude),
       };
     };
-    // Top-50 locations reuse the published snapshot's pinned run; this is a read-only snapshot lookup.
-    const resolvePinnedForecast = async (path) => {
+    // The current snapshot supplies the exact IFS initialization for every city view.
+    // No snapshot, expired snapshot, or read failure may fall back to latest.
+    const resolvePinnedForecast = async () => {
       if (context.env.HOTSPOT_FEATURE_MODE !== "enabled") return null;
       const result = await readHotspotSnapshot(context.env, cache());
-      if (!result.ok || hotspotSnapshotState(result.snapshot) === "expired") return null;
-      return result.snapshot.hotspots.find((hotspot) => hotspot.path === path)?.fiveDay ?? null;
+      if (!result.ok || hotspotSnapshotState(result.snapshot) === "expired") return SNAPSHOT_FORECAST_UNAVAILABLE;
+      return result.snapshot.discovery.initialization;
     };
     return forecastResponse(context.req.raw, context.env, executionContext, resolveForecastLocation, undefined, resolvePinnedForecast);
   });
