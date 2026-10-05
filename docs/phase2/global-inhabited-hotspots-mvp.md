@@ -4,14 +4,14 @@
 
 Implemented behind two independent gates:
 
-- The per-cycle GitHub Actions job does not run on schedule unless `GLOBAL_HOTSPOTS_ENABLED=true` is configured as a repository variable.
+- The once-daily GitHub Actions job does not run on schedule unless `GLOBAL_HOTSPOTS_ENABLED=true` is configured as a repository variable.
 - The Worker page and API return `404` unless `HOTSPOT_FEATURE_MODE=enabled` and an approved `HOTSPOT_SNAPSHOTS` R2 binding are configured.
 
-The MVP does not create an R2 bucket, alter production configuration, deploy a Worker, or merge its branch.
+The review branch adds a private R2 binding to the production-domain Wrangler config but leaves both serving gates unset. The bucket exists privately; no snapshot is published, Worker deployed, or PR merged by this change.
 
 ## Product
 
-For every ECMWF IFS cycle (00/06/12/18Z), the pipeline identifies high forecast wet bulb regions on the public ECMWF IFS 0.25° grid over the first 24 complete UTC hours after retrieval, intersects buffered cells with the complete canonical WetBulb35 location manifest, refines only those locations with the same 24 hourly values from one fixed ECMWF model through Open-Meteo, and publishes one validated snapshot.
+Once daily, the pipeline targets the 00Z ECMWF IFS cycle, identifies high forecast wet bulb regions on the public ECMWF IFS 0.25° grid over the first 24 complete UTC hours after retrieval, intersects buffered cells with the complete canonical WetBulb35 location manifest, refines only those locations with the same 24 hourly values from one fixed ECMWF model through Open-Meteo, and prepares one validated snapshot per product. Actual scheduled publication remains disabled pending separate approval.
 
 Public wording remains deliberately narrow:
 
@@ -45,14 +45,14 @@ The page does not claim a measured value, official record, city-center precision
    - calculates each hourly Romps value before selecting each location maximum;
    - deduplicates only the presentation results by the model cell returned by Open-Meteo;
    - validates the complete snapshot and atomically writes one local JSON file.
-5. `.github/workflows/global-inhabited-hotspots.yml` uploads:
+5. After explicit activation, `.github/workflows/global-inhabited-hotspots.yml` uploads:
    - a content-addressed immutable object at `inhabited-hotspots/v1/snapshots/sha256-<digest>.json`;
    - only after read-back verification, the current alias at `inhabited-hotspots/v1/latest.json`.
    - The guard described under *Run readiness and publication* decides each product independently.
 
 ## Run readiness and publication
 
-- One scheduled job starts 6 h 35 min after each IFS initialization (`35 0,6,12,18 * * *`), before ECMWF's documented 7–9 hour dissemination delay ends.
+- One scheduled job starts at 06:35Z for the day's 00Z initialization (`35 6 * * *`), before ECMWF's documented 7–9 hour dissemination delay ends. The daily job will not fall back to yesterday's 18Z run; a delayed job may use a newer complete run.
 - `scripts/await-ifs-run-readiness.py` polls for at most 285 minutes, every five minutes plus up to one minute of jitter. It honors `Retry-After` and backs off exponentially on 429/5xx/transport errors.
 - Each poll reads only the Azure mirror's `.index` files (the downloader's mirror; about 40 KB each), never GRIB data. It parses their JSON rows: every step covering the 24 future hours from the next full UTC hour must list `2t`, `2d`, and `sp` for that exact run and step with a nonempty byte range, and step 0 must list `lsm`. An index that exists but lacks a required row is not ready. The last bracketing step is checked first.
 - If retrieval of a ready cycle still fails, the downloader (`--retry-until`) retries every five minutes plus jitter until the same deadline. It then warns, generates nothing, and keeps the prior immutable snapshots.
@@ -65,7 +65,7 @@ The page does not claim a measured value, official record, city-center precision
   - an older one is refused;
   - the same run publishes a new future window only after the published window has ended;
   - an unreadable R2 response (anything other than a missing object) stops the job rather than letting an older run through.
-- The workflow's single concurrency group serializes read-compare-write. Read-back verification still applies.
+- The workflow's single concurrency group serializes read-compare-write. It verifies a backup of each existing alias and **both** content-addressed new objects before either `latest` alias is changed. A pre-commit pair check requires matching initialization and native grid source bounds bracketing the inhabited hourly window (the two bounds are not identical). If a write/read-back fails, a best-effort trap restores both old aliases (or deletes a newly-created alias), verifies restored bytes, and fails the job. The final step separately re-reads both remote aliases and checks pair identity and expiry, so a crash between writes is detectable. R2 does not provide an atomic transaction across these two keys: readers can briefly see a split pair, and SIGKILL or failed rollback can leave one; a failed remote pair check blocks release and requires manual reconciliation from the verified immutable objects with the feature gates off. Do not describe this as atomic paired publication.
 - If no usable cycle arrives within the bounded window, the job warns and keeps the prior immutable snapshot. When a published product has no current snapshot (missing or past `validTo`), a final step fails the job so the failure alerts. It keeps failing on each cycle until a valid snapshot is published.
 
 A failed download, incomplete GRIB, budget overrun, provider failure, malformed response, validation error, or R2 verification failure stops the run. It cannot replace the prior current snapshot before a new snapshot has passed generation and immutable-object verification.
@@ -133,22 +133,24 @@ Generation variables/secrets:
 - `OPEN_METEO_API_MODE=public-noncommercial` or `customer-commercial` — explicit licensing mode.
 - `OPEN_METEO_BASE_URL` — optional approved endpoint override.
 - `OPEN_METEO_API_KEY` — required only for customer-commercial mode.
-- `HOTSPOT_RUN_LOCATION_LIMIT` — hard per-run ceiling (default 2,000); the pipeline fails rather than truncating. With four cycles a day plus 50 pinned five-day locations per run, scheduled public-endpoint demand is at most 8,200 weighted Open-Meteo calls/day before retries. That is separate from the Worker's 2,000-attempt city-forecast limit. `HOTSPOT_DAILY_LOCATION_LIMIT` remains a legacy fallback name.
+- `HOTSPOT_RUN_LOCATION_LIMIT` — fixed to 1,500 for this scheduled public job, inclusive of excluded controls; the pipeline fails rather than truncating. The shared Open-Meteo location-attempt envelope is 1,500 × 3 refinement attempts + 50 × 3 pinned five-day attempts + 2,000 city-forecast attempts = **6,650/day** in the worst case of one job. Current weather uses **OpenWeather**, not Open-Meteo, and is not added here. `scripts/hotspot-provider-budget.mjs` fails before provider work above 9,000 location attempts. Open-Meteo's actual call-equivalence can depend on locations, variables, time range, and models, so this proxy is **not** a verified provider-side quota ledger: manual reruns, other projects using the service, weighted calls, and a delayed job crossing UTC days can breach the public API's fewer-than-10,000/day limit. Do not activate without confirming the representative request's actual equivalence and accounting for other traffic; do not enable overlapping/manual provider runs without a shared daily ledger or separately budgeted provider plan. `HOTSPOT_DAILY_LOCATION_LIMIT` remains a legacy fallback name for local callers.
 - `HOTSPOT_EXCLUDED_SAMPLE_SIZE` — deterministic excluded-location control count; default 100.
-- `HOTSPOT_INTER_BATCH_DELAY_MS` — provider pacing between multi-location batches; scheduled default 20,000 ms. With batches of 100, this caps normal demand at 300 location-equivalents per minute before retry/backoff handling.
+- `HOTSPOT_INTER_BATCH_DELAY_MS` — fixed at 20,000 ms for the scheduled job, between both successful batches **and retries**. With batches of 100, this caps the generator's sustained demand at about 300 location-equivalents per minute. This does not centrally meter concurrent city-page traffic, so the provider's 600/minute shared limit still requires monitoring.
 - `HOTSPOT_R2_BUCKET` — approved existing R2 bucket name.
 - `CLOUDFLARE_ACCOUNT_ID` and `WETBULB35_CLOUDFLARE_API_TOKEN` — required only for publishing.
 
-Serving requires an approved Worker configuration change after storage authorization:
+Serving still requires separate approval to deploy the reviewed binding **and** to set feature gates. The PR only adds this binding to `wrangler.weather-production-domain.toml`:
 
 ```toml
 [[r2_buckets]]
 binding = "HOTSPOT_SNAPSHOTS"
-bucket_name = "<approved-existing-bucket>"
+bucket_name = "wetbulb35-hotspot-snapshots-prod"
 
 [vars]
-HOTSPOT_FEATURE_MODE = "enabled"
+# HOTSPOT_FEATURE_MODE and GLOBAL_GRID_HOTSPOT_FEATURE_MODE remain unset
 ```
+
+**Hosted credential preflight (not yet run):** Once this workflow exists on the default branch after a separately authorized merge, invoke a read-only, non-publishing `workflow_dispatch` path that checks the stored token against a known harmless test object in this bucket, confirms the object bytes and reports no unexpected permissions. Do not use the current `publish=false` dispatch for this: it still performs a full ECMWF download and Open-Meteo refinement. An account-scoped Workers token with R2 access supports the Wrangler REST commands here; a bucket-scoped R2 token would require an S3-compatible client and code changes. GitHub secret values are opaque, so local token success does not establish hosted-token access. Any write/delete preflight or snapshot publication needs separate explicit authorization. Before activation, verify the remote alias pair independently and establish an alert for failed/stale/split pointers. Leave both feature gates off until a current, paired, complete 50/50 snapshot is verified.
 
 Do not add Cloudflare or Open-Meteo credentials to Git.
 

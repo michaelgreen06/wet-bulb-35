@@ -71,13 +71,14 @@ class Mirror:
         return 200, {}, index_body(run, step, params)
 
 
-def run_poll(clock, mirror, read_metadata, deadline_hours=4, published=None, logs=None):
+def run_poll(clock, mirror, read_metadata, deadline_hours: float = 4, published=None, logs=None, earliest=None):
     return MODULE.poll(
         fetch_index=mirror,
         read_metadata=read_metadata,
         base_url="https://mirror.test/ecmwf",
         deadline=clock.now + dt.timedelta(hours=deadline_hours),
         published_initialization=published,
+        earliest_initialization=earliest,
         clock=clock,
         sleep=clock.sleep,
         rng=random.Random(7),
@@ -86,6 +87,15 @@ def run_poll(clock, mirror, read_metadata, deadline_hours=4, published=None, log
 
 
 class ReadinessTests(unittest.TestCase):
+    def test_daily_attempt_never_falls_back_to_yesterdays_complete_18z_cycle(self):
+        previous = dt.datetime(2026, 10, 4, 18, tzinfo=UTC)
+        target = dt.datetime(2026, 10, 5, 0, tzinfo=UTC)
+        clock = Clock(dt.datetime(2026, 10, 5, 6, 35, tzinfo=UTC))
+        mirror = Mirror(clock, {previous: previous})
+        result = run_poll(clock, mirror, lambda: metadata(previous, previous), deadline_hours=0.2, earliest=target)
+        self.assertFalse(result["ready"])
+        self.assertTrue(all("/20261005/00z/" in url for url in mirror.calls))
+
     def test_cycles_are_newest_first_and_skip_published_or_older_runs(self):
         now = dt.datetime(2026, 10, 4, 13, 10, tzinfo=UTC)
         cycles = MODULE.candidate_cycles(now, None)

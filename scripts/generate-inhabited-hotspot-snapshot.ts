@@ -184,7 +184,7 @@ async function wait(milliseconds: number): Promise<void> {
 export async function refineAllHotspotCandidates({
   candidates,
   batchSize = 100,
-  attempts = 4,
+  attempts = 3,
   interBatchDelayMs = 20_000,
   fetchImplementation = fetch,
   options = {},
@@ -213,7 +213,9 @@ export async function refineAllHotspotCandidates({
           const providerDelay = error instanceof HotspotProviderError && error.status === 429
             ? (error.retryAfterMs ?? 15 * 60_000)
             : 0;
-          await wait(Math.max(providerDelay, 2_000 * 2 ** (attempt - 1)));
+          // Failed batches still spend provider quota. Pace retries just like
+          // successful batches; exponential/Retry-After may require longer.
+          await wait(Math.max(providerDelay, interBatchDelayMs, 2_000 * 2 ** (attempt - 1)));
         }
       }
     }
@@ -384,7 +386,7 @@ async function main(): Promise<void> {
     candidateDocument,
     cityManifest,
     batchSize: Number(args.get("batch-size") ?? process.env.HOTSPOT_BATCH_SIZE) || 100,
-    // Runs follow every IFS cycle, so the ceiling applies per run; the daily name remains a legacy fallback.
+    // One scheduled daily run; the daily name remains a legacy fallback for local callers.
     dailyLocationLimit: Number(process.env.HOTSPOT_RUN_LOCATION_LIMIT ?? process.env.HOTSPOT_DAILY_LOCATION_LIMIT) || 5_000,
     excludedControlSampleSize: Number(args.get("excluded-control-sample") ?? process.env.HOTSPOT_EXCLUDED_SAMPLE_SIZE) || 100,
     interBatchDelayMs: Number(args.get("inter-batch-delay-ms") ?? process.env.HOTSPOT_INTER_BATCH_DELAY_MS) || 20_000,

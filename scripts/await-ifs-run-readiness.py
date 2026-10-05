@@ -169,6 +169,7 @@ def poll(
     base_url: str,
     deadline: dt.datetime,
     published_initialization: dt.datetime | None,
+    earliest_initialization: dt.datetime | None = None,
     interval_seconds: float = 300,
     jitter_seconds: float = 60,
     max_backoff_seconds: float = 1_800,
@@ -187,6 +188,8 @@ def poll(
         wait = interval_seconds + rng.uniform(0, jitter_seconds)
         try:
             for run in candidate_cycles(now, published_initialization):
+                if earliest_initialization is not None and run < earliest_initialization:
+                    continue
                 try:
                     steps = required_steps(run, now)
                 except ValueError:
@@ -275,6 +278,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--deadline", required=True, help="UTC ISO timestamp after which polling stops")
     parser.add_argument("--published-initialization", help="initialization of the currently published snapshot; older or equal cycles are skipped")
+    parser.add_argument("--earliest-initialization", help="do not fall back to a previous day's cycle during the daily publication attempt")
     parser.add_argument("--source", default="azure", choices=("ecmwf", "aws", "azure"), help="must match the downloader's mirror")
     parser.add_argument("--open-meteo-metadata-url", default=OPEN_METEO_METADATA_URL)
     parser.add_argument("--interval-seconds", type=float, default=300)
@@ -288,6 +292,7 @@ def main(argv: list[str] | None = None) -> int:
         base_url=fetch_index.base_url,
         deadline=parse_iso(args.deadline),
         published_initialization=published,
+        earliest_initialization=parse_iso(args.earliest_initialization) if args.earliest_initialization else None,
         interval_seconds=args.interval_seconds,
         jitter_seconds=args.jitter_seconds,
     )
