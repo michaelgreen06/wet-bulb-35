@@ -1,0 +1,94 @@
+{
+ "estimateBasis": {
+  "confidence": "moderate for bytes (80 HEAD samples, 40 tiles); low for time (sequential single-cell 2026-09-30 rate; throughput/throttling at scale unmeasured)",
+  "secondsPerTileChunkFetch": 11.5,
+  "tileChunkBytes": 6139869
+ },
+ "gridTieNorthEastRoutes": 3215,
+ "inputSha256": {
+  "identities": "059c18566abab00ec7340f6f1234878d04275dacb48257cfe70d00b9b7ad69ee",
+  "ranking": "a7875dd663eba5e81782fe37e53328391d9ce0cb6a3c24bfa126083b38bbc625",
+  "routes": "d63edff4b7c96d7a8ed425f4e5c86685059b8176ba0ca507ae527dbbc44ed955"
+ },
+ "remainingBatches": 70,
+ "reviewQueue": {
+  "unavailable-identity-ambiguous": [
+   "/wetbulb-temperature/mexico/coahuila/coyote/",
+   "/wetbulb-temperature/mexico/coahuila/san-antonio-del-coyote/",
+   "/wetbulb-temperature/mexico/michoacan/zacapu-19-8140-w101-7916/",
+   "/wetbulb-temperature/mexico/michoacan/zacapu-19-8219-w101-7893/",
+   "/wetbulb-temperature/ukraine/donetsk/kurakhove/",
+   "/wetbulb-temperature/ukraine/donetsk/kurakhovo/"
+  ],
+  "unavailable-masked-cell": [
+   "/wetbulb-temperature/angola/luanda/luanda/",
+   "/wetbulb-temperature/brazil/rio-de-janeiro/rio-de-janeiro/",
+   "/wetbulb-temperature/india/tamil-nadu/chennai/",
+   "/wetbulb-temperature/singapore/singapore/singapore/",
+   "/wetbulb-temperature/somalia/banaadir/mogadishu/",
+   "/wetbulb-temperature/tanzania/dar-es-salaam-region/dar-es-salaam/",
+   "/wetbulb-temperature/tanzania/dar-es-salaam-region/magomeni/"
+  ]
+ },
+ "routeToCellKm": {
+  "max": 7.86
+ },
+ "routes": 130686,
+ "schemaVersion": 1,
+ "stages": {
+  "pilot": {
+   "cellTimezoneGroups": 130,
+   "cells": 130,
+   "estimatedChunkFetchBytes": 1473568560,
+   "estimatedSequentialHours": 0.8,
+   "pendingRoutes": 327,
+   "routes": 529,
+   "tiles": 12
+  },
+  "remaining": {
+   "cellTimezoneGroups": 72383,
+   "cells": 72092,
+   "estimatedChunkFetchBytes": 2015105005800,
+   "estimatedSequentialHours": 1048.4,
+   "pendingRoutes": 113892,
+   "routes": 113892,
+   "tiles": 16410
+  },
+  "top50": {
+   "cellTimezoneGroups": 308,
+   "cells": 305,
+   "estimatedChunkFetchBytes": 4052313540,
+   "estimatedSequentialHours": 2.1,
+   "pendingRoutes": 885,
+   "routes": 885,
+   "tiles": 33
+  },
+  "varied-regions": {
+   "cellTimezoneGroups": 3688,
+   "cells": 3588,
+   "estimatedChunkFetchBytes": 24682273380,
+   "estimatedSequentialHours": 12.8,
+   "pendingRoutes": 14000,
+   "routes": 14000,
+   "tiles": 201
+  }
+ },
+ "statusCounts": {
+  "pending-acquisition": 129104,
+  "research-complete-unpublished": 199,
+  "unavailable-identity-ambiguous": 6,
+  "unavailable-identity-unmatched": 1367,
+  "unavailable-incomplete-period": 3,
+  "unavailable-masked-cell": 7
+ },
+ "statusMeaning": {
+  "pending-acquisition": "Mapped and planned; source data not yet acquired",
+  "research-complete-unpublished": "Complete private research period; publication approval/provenance pending",
+  "supported": "Published, approved complete-period history",
+  "unavailable-identity-ambiguous": "GeoNames identity shared by several canonical routes",
+  "unavailable-identity-unmatched": "No verified GeoNames identity/IANA timezone",
+  "unavailable-incomplete-period": "Only partial private research years exist",
+  "unavailable-masked-cell": "Nearest ERA5-Land cell has no land data (coastal/island review queue)"
+ },
+ "timeChunksPerTile": 20
+}
