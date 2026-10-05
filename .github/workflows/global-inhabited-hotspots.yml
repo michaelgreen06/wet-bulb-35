@@ -88,16 +88,17 @@ jobs:
           }
           read_current inhabited-hotspots/v1/latest.json .hotspots/current-inhabited.json
           read_current global-grid-hotspots/v1/latest.json .hotspots/current-global-grid.json
-          # Poll only for cycles newer than the older of the two published products.
+          # Reject split current aliases before polling for a newer cycle.
           node --input-type=module -e "
             import fs from 'node:fs';
-            import { snapshotRun } from './scripts/hotspot-publish-guard.mjs';
+            import { pairedRun } from './scripts/hotspot-pair-check.mjs';
             const read = (file) => fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null;
-            const runs = [snapshotRun('inhabited', read('.hotspots/current-inhabited.json')), snapshotRun('global-grid', read('.hotspots/current-global-grid.json'))];
-            for (const [index, file] of ['.hotspots/current-inhabited.json', '.hotspots/current-global-grid.json'].entries()) {
-              if (fs.existsSync(file) && !runs[index]) throw new Error('Invalid current snapshot: ' + file);
-            }
-            const value = runs.every(Boolean) ? new Date(Math.min(...runs.map((run) => run.initialization))).toISOString().replace('.000Z', 'Z') : '';
+            const inhabited = read('.hotspots/current-inhabited.json');
+            const grid = read('.hotspots/current-global-grid.json');
+            // One missing alias or a split pair needs reconciliation before ANY provider work.
+            if (Boolean(inhabited) !== Boolean(grid)) throw new Error('Only one current hotspot alias exists; reconcile the remote pair');
+            const run = inhabited ? pairedRun(inhabited, grid) : null;
+            const value = run ? new Date(run.initialization).toISOString().replace('.000Z', 'Z') : '';
             fs.appendFileSync(process.env.GITHUB_OUTPUT, 'initialization=' + value + '\n');
           "
 
