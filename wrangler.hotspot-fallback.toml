@@ -1,0 +1,23 @@
+name = "wetbulb35-hotspot-fallback"
+main = "workers/hotspot-fallback.ts"
+compatibility_date = "2026-10-06"
+workers_dev = false
+preview_urls = false
+routes = []
+
+# Independent of GitHub's scheduler. The second tick retries only failed dispatches.
+[triggers]
+crons = ["45 11 * * *", "15 12 * * *"]
+
+[[r2_buckets]]
+binding = "HOTSPOT_SNAPSHOTS"
+bucket_name = "wetbulb35-hotspot-snapshots-prod"
+
+[observability]
+enabled = true
+redact_query_string = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+persist = true

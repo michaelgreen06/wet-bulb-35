@@ -1,0 +1,16 @@
+# Independent daily hotspot fallback
+
+`wetbulb35-hotspot-fallback` is a Cloudflare Cron-only Worker. It has no HTTP route, `workers.dev` URL, preview URL, or browser surface. GitHub's `06:35 UTC` scheduled publisher remains primary. Cloudflare invokes the backup at `11:45` and `12:15 UTC` daily; Cron Trigger times are UTC and may themselves propagate with delay. A second invocation is a retry only when dispatch failed before the private marker was written.
+
+The Worker reads both private R2 latest aliases, verifies their model initialization, 50-entry counts, and matching 24-hour window. It does nothing if the paired model initialization is already dated today in UTC. Otherwise it checks for an active publisher run via GitHub's Actions API. It dispatches the **existing** workflow on `main` with `publish=true` only if no publisher is active and the once-per-day marker is absent, then writes a small private marker under `automation/hotspot-fallback/v1/`. Split or unreadable snapshots and GitHub API errors fail closed. No ranking generation or Open-Meteo request runs in the fallback Worker; the existing workflow retains its provider budget and publish guards.
+
+The sole GitHub credential is the Cloudflare Worker secret binding `GITHUB_DISPATCH_TOKEN` (Actions write for this repo). Never commit, print, or place its value in a Wrangler config. The repository's sanitized Worker code and Wrangler config contain no secret. Existing snapshots and current aliases are never mutated by the fallback Worker; its only R2 write is its dated marker. Cloudflare observability contains only fixed outcome/error labels. The project's backup/restore baseline and prior weather Worker version remain separate; disabling this fallback does not change the primary GitHub workflow, weather Worker, DNS, or snapshot pair.
+
+Verification:
+
+1. `npm run test:global-hotspots`, `npx tsc --noEmit -p tsconfig.json`, and `wrangler deploy --dry-run --config wrangler.hotspot-fallback.toml`.
+2. Read back the active fallback Worker deployment, R2 and secret **binding names**, and both Cloudflare Cron Triggers. Confirm that it has no routes or public hostname and that the weather Worker version/domain remain unchanged.
+3. Verify token dispatch permission with a harmless release-monitor `rehearse` action, not by launching an unnecessary hotspot publication.
+4. Inspect the first actual `11:45`/`12:15 UTC` Cron invocation and next day's paired publication. A dry run or trigger registration alone is not proof that Cloudflare's scheduler fired.
+
+A late GitHub primary run can still publish a newer model initialization after a fallback-run publication. Its existing pair guard prevents older-run overwrites, but the extra run can consume additional provider allowance. A genuinely independent scheduler also needs monitoring: the private admin collector and public-pair monitor must continue to alert on stale or split snapshots. If the fallback Worker credential fails, rotate its secret without changing the weather Worker. To pause the backup without affecting primary publication, deploy a reviewed copy of this config with `crons = []`; verify the trigger list afterward. Do not delete or modify snapshot aliases to pause it.
