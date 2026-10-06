@@ -10,7 +10,8 @@ export const OPEN_METEO_PROVIDER = "open-meteo" as const;
 export const OPEN_METEO_MODEL = "ecmwf_ifs025" as const;
 // Version 3 keys separate IFS results from earlier best_match cache entries.
 export const OPEN_METEO_SCHEMA_VERSION = 4 as const;
-export const FORECAST_SCHEMA_VERSION = 4 as const;
+// Current-day, remaining-hour maxima must not reuse the old future-only cache.
+export const FORECAST_SCHEMA_VERSION = 5 as const;
 export const OPEN_METEO_MODEL_METADATA_URL = "https://api.open-meteo.com/data/ecmwf_ifs025/static/meta.json" as const;
 // Open-Meteo copies new runs across redundant servers for several minutes after availability.
 export const OPEN_METEO_RUN_SETTLE_MS = 10 * 60_000;
@@ -59,8 +60,9 @@ export interface OpenMeteoSource {
 
 export interface DailyWetBulbForecast {
   date: string;
-  maximumWetBulbC: number;
-  peakLocalTime: string;
+  /** Null only for today's slot after its last available future model hour. */
+  maximumWetBulbC: number | null;
+  peakLocalTime: string | null;
   runId: ForecastRunId;
 }
 
@@ -325,6 +327,8 @@ export function calculateFiveDayWetBulbForecast(source: OpenMeteoSource): WetBul
   if (!isOpenMeteoSource(source)) throw new TypeError("Normalized Open-Meteo source is invalid.");
   const byDate = new Map<string, DailyWetBulbForecast>();
   for (const observation of source.hourly) {
+    const hourStart = Date.parse(`${observation.localTime}:00Z`) - source.utcOffsetSeconds * 1_000;
+    if (hourStart <= source.retrievedAt) continue;
     const wetBulbC = calculateRompsWetBulbFromVaporPressureKelvin({
       pressurePa: observation.surfacePressurePa,
       airTemperatureK: observation.temperatureC + 273.15,
@@ -332,7 +336,7 @@ export function calculateFiveDayWetBulbForecast(source: OpenMeteoSource): WetBul
     }) - 273.15;
     const date = observation.localTime.slice(0, 10);
     const current = byDate.get(date);
-    if (!current || wetBulbC > current.maximumWetBulbC) {
+    if (!current || current.maximumWetBulbC === null || wetBulbC > current.maximumWetBulbC) {
       byDate.set(date, {
         date,
         maximumWetBulbC: wetBulbC,
@@ -341,6 +345,8 @@ export function calculateFiveDayWetBulbForecast(source: OpenMeteoSource): WetBul
       });
     }
   }
+  const today = localDateAt(source.utcOffsetSeconds, source.retrievedAt);
+  if (!byDate.has(today)) byDate.set(today, { date: today, maximumWetBulbC: null, peakLocalTime: null, runId: "latest" });
   const days = [...byDate.values()].sort((left, right) => left.date.localeCompare(right.date));
   if (days.length !== FORECAST_DAYS) throw new TypeError("Forecast aggregation did not produce five days.");
   return {
@@ -393,19 +399,22 @@ export function isWetBulbForecast(value: unknown): value is WetBulbForecast {
       && typeof day.date === "string"
       && LOCAL_DATE.test(day.date)
       && (index === 0 || day.date === addDays((value.days as DailyWetBulbForecast[])[0].date, index))
-      && finiteNumber(day.maximumWetBulbC)
-      && typeof day.peakLocalTime === "string"
-      && day.peakLocalTime.slice(0, 10) === day.date
+      && ((index === 0 && day.maximumWetBulbC === null && day.peakLocalTime === null)
+        || (finiteNumber(day.maximumWetBulbC) && typeof day.peakLocalTime === "string"
+          && day.peakLocalTime.slice(0, 10) === day.date))
       && (value.runs as ForecastModelRun[]).some((run) => run.id === day.runId))
     && (value.runs as ForecastModelRun[]).every((run) => (value.days as DailyWetBulbForecast[]).some((day) => day.runId === run.id));
 }
 
-/** A latest forecast starts today; an aligned exact-run forecast starts on the next complete local day. */
+/** Both forecast types start today; an elapsed current-day peak cannot remain cached. */
 export function isCurrentForecast(forecast: WetBulbForecast, now: number): boolean {
   const today = localDateAt(forecast.utcOffsetSeconds, now);
-  return forecast.runs.some((run) => run.id === "snapshot-pinned")
-    ? forecast.days[0]?.date === addDays(today, 1)
-    : forecast.days[0]?.date === today;
+  const first = forecast.days[0];
+  if (first?.date !== today) return false;
+  if (first.peakLocalTime === null && first.maximumWetBulbC === null) return true;
+  if (first.peakLocalTime === null) return false;
+  const peakStart = Date.parse(`${first.peakLocalTime}:00Z`) - forecast.utcOffsetSeconds * 1_000;
+  return Number.isFinite(peakStart) && peakStart > now;
 }
 
 function validPinnedForecast(value: unknown): value is PinnedDailyForecast {
@@ -483,7 +492,7 @@ export function combinePinnedForecast(
   return isWetBulbForecast(combined) ? combined : null;
 }
 
-/** Validates one exact-run payload and returns five complete future local dates only. */
+/** Validates one exact-run payload: remaining hours today and four complete future local dates. */
 export function normalizePinnedOpenMeteoForecast(
   value: unknown,
   location: ForecastLocation,
@@ -504,10 +513,14 @@ export function normalizePinnedOpenMeteoForecast(
   const [times, temperatures, dewPoints, pressures] = arrays as unknown[][];
   const offset = value.utc_offset_seconds as number;
   const start = Date.parse(initialization);
+  const today = localDateAt(offset, retrievedAt);
+  let expectedRemainingHours = 0;
   const byDate = new Map<string, Array<{ time: string; temperature: number; dewPoint: number; pressure: number }>>();
   for (let index = 0; index < PINNED_FORECAST_HOURS; index += 1) {
     const time = new Date(start + index * 3_600_000 + offset * 1_000).toISOString().slice(0, 16);
     if (times[index] !== time) throw new TypeError("Pinned Open-Meteo timestamps do not start at the requested initialization.");
+    if (time.slice(0, 10) < today || (time.slice(0, 10) === today && start + index * 3_600_000 <= retrievedAt)) continue;
+    if (time.slice(0, 10) === today) expectedRemainingHours += 1;
     const temperature = temperatures[index]; const dewPoint = dewPoints[index]; const pressure = pressures[index];
     if (temperature === null || dewPoint === null || pressure === null) continue;
     if (!finiteNumber(temperature) || !finiteNumber(dewPoint) || !finiteNumber(pressure) || pressure <= 0) throw new TypeError(`Pinned Open-Meteo hourly row ${index} is invalid.`);
@@ -515,10 +528,10 @@ export function normalizePinnedOpenMeteoForecast(
     entries.push({ time, temperature, dewPoint: Math.min(dewPoint, temperature), pressure });
     byDate.set(time.slice(0, 10), entries);
   }
-  const today = localDateAt(offset, retrievedAt);
   const days: DailyWetBulbForecast[] = [];
+  if (expectedRemainingHours === 0) days.push({ date: today, maximumWetBulbC: null, peakLocalTime: null, runId: "snapshot-pinned" });
   for (const [date, entries] of [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-    if (date <= today || entries.length !== 24) continue;
+    if (date === today ? entries.length !== expectedRemainingHours : entries.length !== 24) continue;
     let maximumWetBulbC = Number.NEGATIVE_INFINITY; let peakLocalTime = "";
     for (const entry of entries) {
       const wetBulbC = calculateRompsWetBulbFromVaporPressureKelvin({ pressurePa: entry.pressure * 100, airTemperatureK: entry.temperature + 273.15, vaporPressurePa: calculateRompsLiquidSaturationVaporPressurePa(entry.dewPoint + 273.15) }) - 273.15;
@@ -526,9 +539,9 @@ export function normalizePinnedOpenMeteoForecast(
     }
     days.push({ date, maximumWetBulbC, peakLocalTime, runId: "snapshot-pinned" });
   }
-  if (days.length < FORECAST_DAYS || days[0]?.date !== addDays(today, 1)
+  if (days.length < FORECAST_DAYS || days[0]?.date !== today
     || days.some((day, index) => index > 0 && day.date !== addDays(days[0].date, index))) {
-    throw new TypeError("Pinned IFS run does not cover five complete future local dates.");
+    throw new TypeError("Pinned IFS run does not cover today’s remaining hours and four complete future local dates.");
   }
   const forecast: WetBulbForecast = { schemaVersion: FORECAST_SCHEMA_VERSION, method: ROMPS_METHOD, methodVersion: ROMPS_METHOD_VERSION, phasePolicy: FORECAST_PHASE_POLICY, provider: OPEN_METEO_PROVIDER, providerModel: OPEN_METEO_MODEL, location: { ...location }, timezone: value.timezone, utcOffsetSeconds: offset, retrievedAt, runs: [{ id: "snapshot-pinned", model: OPEN_METEO_MODEL, initialization, retrievedAt }], days: days.slice(0, FORECAST_DAYS) };
   if (!isWetBulbForecast(forecast)) throw new TypeError("Pinned Open-Meteo forecast is malformed.");

@@ -8,7 +8,7 @@ Each daily card shows the maximum hourly wet bulb value and its expected local p
 
 ## Calculation
 
-The Worker requests these hourly Open-Meteo fields for five local calendar days:
+The Worker requests these hourly Open-Meteo fields and displays five local calendar dates: today's remaining forecast hours plus four complete future dates:
 
 - `temperature_2m` in °C;
 - `dew_point_2m` in °C; and
@@ -44,7 +44,7 @@ The Worker explicitly uses `models=ecmwf_ifs025` (ECMWF IFS 0.25°, the same nam
 
 ### Model run attribution
 
-When the inhabited hotspot feature is enabled, the current snapshot supplies one exact IFS initialization for **every canonical city**. On a human forecast view and cache miss, the Worker requests only that city from Open-Meteo Single Runs with `models=ecmwf_ifs025`, `run=<snapshot initialization>`, `forecast_hours=169`, and `timezone=auto`. It requires simultaneous hourly temperature, dew point and pressure for five full *future* local dates; missing coverage returns an aligned-forecast-unavailable state rather than mixing in a newer run. The snapshot publication itself makes no five-day city forecast calls. Outside that gated feature, the existing explicit-model `forecast_days=5` path remains separate.
+When the inhabited hotspot feature is enabled, the current snapshot supplies one exact IFS initialization for **every canonical city**. On a human forecast view and cache miss, the Worker requests only that city from Open-Meteo Single Runs with `models=ecmwf_ifs025`, `run=<snapshot initialization>`, `forecast_hours=193`, and `timezone=auto`. It requires simultaneous hourly temperature, dew point and pressure for today's remaining model hours and four full future local dates; missing coverage returns an aligned-forecast-unavailable state rather than mixing in a newer run. The snapshot publication itself makes no five-day city forecast calls. Outside that gated feature, the existing explicit-model `forecast_days=5` path remains separate.
 
 For the ungated latest-model path, metadata run attribution may remain unconfirmed. The gated pinned path needs no metadata inference because `run=` is explicit, and its response is labeled with that initialization. Never present a different run as aligned with the Top-50 ranking.
 
@@ -61,7 +61,7 @@ The existing WeatherGate Durable Object handles a distinct `/forecast` operation
 - three hours of freshness; and
 - twelve hours of stale availability.
 
-Normalized Open-Meteo observations and Romps results use versioned keys. Version 4 separates on-view run-keyed forecasts from earlier `best_match` and latest-IFS entries. The gated aligned path caches by canonical city and exact initialization, for three hours fresh and at most twelve hours stale, without substituting an older or newer run. The public Cache API stores validated envelopes; browser responses remain `private, no-store`. Ungated latest-model forecasts retain five dates beginning today; aligned forecasts require five complete local dates beginning tomorrow and reject incomplete hourly inputs.
+Normalized Open-Meteo observations and Romps results use versioned keys. Forecast version 5 invalidates earlier future-only cached results. The gated aligned path caches by canonical city and exact initialization, for three hours fresh and at most twelve hours stale, without substituting an older or newer run. A current-day peak is invalidated as soon as its hourly timestamp passes, even inside the TTL. The public Cache API stores validated envelopes; browser responses remain `private, no-store`. Both paths return exactly five dates beginning today: only still-upcoming hourly peaks today, followed by four complete local days. If no forecast hour remains today, its card has no numeric high; incomplete future dates fail closed.
 
 Known crawlers receive `204` before route resolution, cache lookup, or provider access. Server-side HTML rendering never fetches a forecast.
 

@@ -90,6 +90,27 @@ describe("Open-Meteo forecast adapter", () => {
     expect(isWetBulbForecast(forecast)).toBe(true);
   });
 
+  it("ignores an elapsed high when calculating the current local day's remaining-hour maximum", () => {
+    const fixture = upstreamFixture();
+    fixture.hourly.temperature_2m[8] = 45; // 08:00 local, before the 10:00 retrieval.
+    fixture.hourly.dew_point_2m[8] = 35;
+    const source = normalizeOpenMeteoForecast(fixture, location, RETRIEVED_AT);
+    const forecast = calculateFiveDayWetBulbForecast(source);
+    expect(forecast.days[0].date).toBe("2026-09-20");
+    expect(forecast.days[0].peakLocalTime).toBe("2026-09-20T15:00");
+  });
+
+  it("shows no upcoming hourly high for the last local hour while retaining four future dates", () => {
+    const almostMidnight = Date.parse("2026-09-21T04:59:00Z"); // Houston: Sep 20, 23:59.
+    const source = normalizeOpenMeteoForecast(upstreamFixture(), location, almostMidnight);
+    const forecast = calculateFiveDayWetBulbForecast(source);
+    expect(forecast.days.map((day) => day.date)).toEqual([
+      "2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24",
+    ]);
+    expect(forecast.days[0]).toMatchObject({ maximumWetBulbC: null, peakLocalTime: null });
+    expect(isWetBulbForecast(forecast)).toBe(true);
+  });
+
   it("derives subfreezing vapor pressure from dew point without a provider RH phase assumption", () => {
     const cold = upstreamFixture();
     cold.hourly.temperature_2m.fill(-5);
