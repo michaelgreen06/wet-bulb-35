@@ -34,7 +34,7 @@ interface GridPair {
   model: { initialization: string; validTimeBounds: { start: string; end: string } };
   cells: unknown[];
 }
-export type FallbackResult = "current" | "already_dispatched" | "run_active" | "dispatched";
+export type FallbackResult = "current" | "disabled" | "already_dispatched" | "run_active" | "dispatched";
 
 function timestamp(value: unknown): number {
   if (typeof value !== "string" || !/^\d{4}-\d\d-\d\dT/.test(value)) throw new Error("invalid_snapshot_time");
@@ -87,6 +87,14 @@ export async function evaluateFallback(
     "X-GitHub-Api-Version": "2022-11-28",
     "User-Agent": "wetbulb35-hotspot-fallback",
   };
+  // Respect the publisher's explicit emergency-off switch before any dispatch.
+  const gate = await request(`https://api.github.com/repos/${REPO}/actions/variables/GLOBAL_HOTSPOTS_ENABLED`,
+    { headers, redirect: "error" });
+  if (!gate.ok) throw new Error("github_gate_unavailable");
+  const setting = await gate.json() as { name?: string; value?: string };
+  if (setting.name !== "GLOBAL_HOTSPOTS_ENABLED" || !["true", "false"].includes(setting.value || ""))
+    throw new Error("github_gate_invalid");
+  if (setting.value !== "true") return "disabled";
   const runs = await request(`${API}/runs?per_page=20`, { headers, redirect: "error" });
   if (!runs.ok) throw new Error("github_runs_unavailable");
   const body = await runs.json() as { workflow_runs?: Array<{ event?: string; status?: string }> };

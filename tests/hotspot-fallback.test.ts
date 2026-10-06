@@ -25,8 +25,10 @@ function fixture(snapshots: readonly unknown[] = pair(), token = "fake-token") {
   const env = { HOTSPOT_SNAPSHOTS: { get, head, put }, GITHUB_DISPATCH_TOKEN: token } as unknown as FallbackEnv;
   return { env, get, head, put, marker };
 }
-function github(runs: Array<{ event: string; status: string }> = [], fail?: number) {
+function github(runs: Array<{ event: string; status: string }> = [], fail?: number, enabled = true) {
   const request = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.endsWith("/actions/variables/GLOBAL_HOTSPOTS_ENABLED"))
+      return Response.json({ name: "GLOBAL_HOTSPOTS_ENABLED", value: String(enabled) });
     if (url.endsWith("/runs?per_page=20")) return Response.json({ workflow_runs: runs });
     if (url.endsWith("/dispatches")) return fail
       ? Response.json({ message: "Denied" }, { status: fail })
@@ -48,8 +50,8 @@ describe("independent hotspot fallback", () => {
   it("dispatches the approved main workflow once, with explicit publication and a private marker", async () => {
     const f = fixture(); const h = github();
     expect(await evaluateFallback(f.env, TODAY, h.request)).toBe("dispatched");
-    expect(h.calls).toHaveBeenCalledTimes(2);
-    const [url, init] = h.calls.mock.calls[1] as [string, RequestInit];
+    expect(h.calls).toHaveBeenCalledTimes(3);
+    const [url, init] = h.calls.mock.calls[2] as [string, RequestInit];
     expect(url).toBe("https://api.github.com/repos/michaelgreen06/wet-bulb-35/actions/workflows/375800198/dispatches");
     expect(init.method).toBe("POST");
     expect(init.redirect).toBe("error");
@@ -57,14 +59,21 @@ describe("independent hotspot fallback", () => {
     expect([...f.marker.keys()]).toEqual(["automation/hotspot-fallback/v1/2026-10-07.json"]);
     expect(f.put.mock.calls[0][0]).not.toContain("/latest.json");
     expect(await evaluateFallback(f.env, TODAY, h.request)).toBe("already_dispatched");
-    expect(h.calls).toHaveBeenCalledTimes(2);
+    expect(h.calls).toHaveBeenCalledTimes(3);
+  });
+
+  it("honors the publisher's emergency-off switch", async () => {
+    const f = fixture(); const h = github([], undefined, false);
+    expect(await evaluateFallback(f.env, TODAY, h.request)).toBe("disabled");
+    expect(h.calls).toHaveBeenCalledTimes(1);
+    expect(f.put).not.toHaveBeenCalled();
   });
 
   it("does not race an active scheduled or manual publisher", async () => {
     for (const event of ["schedule", "workflow_dispatch"]) {
       const f = fixture(); const h = github([{ event, status: "in_progress" }]);
       expect(await evaluateFallback(f.env, TODAY, h.request)).toBe("run_active");
-      expect(h.calls).toHaveBeenCalledTimes(1);
+      expect(h.calls).toHaveBeenCalledTimes(2);
       expect(f.put).not.toHaveBeenCalled();
     }
   });
@@ -88,7 +97,7 @@ describe("independent hotspot fallback", () => {
     expect(f.put).not.toHaveBeenCalled();
     const other = fixture();
     const denied = vi.fn(async () => new Response(null, { status: 503 })) as unknown as typeof fetch;
-    await expect(evaluateFallback(other.env, TODAY, denied)).rejects.toThrow("github_runs_unavailable");
+    await expect(evaluateFallback(other.env, TODAY, denied)).rejects.toThrow("github_gate_unavailable");
     expect(other.put).not.toHaveBeenCalled();
   });
 
