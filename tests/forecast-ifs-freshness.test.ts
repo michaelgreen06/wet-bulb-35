@@ -42,6 +42,13 @@ function upstream(firstDay = 20) {
   };
 }
 
+function upstreamWithLatePeak() {
+  const fixture = upstream();
+  fixture.hourly.temperature_2m[22] = 45;
+  fixture.hourly.dew_point_2m[22] = 35;
+  return fixture;
+}
+
 const metadata = (availableAt: string) => ({
   last_run_initialisation_time: Date.parse(RUN) / 1_000,
   last_run_availability_time: Date.parse(availableAt) / 1_000,
@@ -165,7 +172,9 @@ describe("five-day local-date freshness", () => {
   });
 
   it("stops serving stale data at the existing twelve-hour bound", async () => {
-    const envelope = await latestEnvelope();
+    const { storage } = fakeStorage();
+    stubProvider(undefined, () => Response.json(upstreamWithLatePeak()));
+    const envelope = await refreshForecast(storage, gateEnv, { key: forecastKey(location.path), location, state: "miss" });
     const cache = new FakeCache();
     await forecastResponse(request(), gateFrom(() => Response.json(envelope)).env, undefined, async () => location, cache);
 
@@ -184,7 +193,7 @@ describe("five-day local-date freshness", () => {
 
   it("returns stale WeatherGate results only while day one is still current", async () => {
     const { storage } = fakeStorage();
-    stubProvider();
+    stubProvider(undefined, () => Response.json(upstreamWithLatePeak()));
     const body = { key: forecastKey(location.path), location, state: "miss" as const };
     await refreshForecast(storage, gateEnv, body);
     stubProvider(undefined, () => new Response("down", { status: 503 }));

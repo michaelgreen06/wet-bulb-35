@@ -278,7 +278,7 @@ export async function forecastResponse(
   const respond = (payload: WetBulbForecast): Response => browser(payload);
   const cache = injectedCache ?? (globalThis as typeof globalThis & { caches?: { default?: CacheLike } }).caches?.default;
   const stored = await readCache(cache, request, key, modelInitialization);
-  // Past local dates are never served as a five-day forecast, even inside the stale window.
+  // An elapsed current-day peak or yesterday's row cannot survive in the cache.
   const cached = stored && isCurrentForecast(stored.payload, now) ? stored : null;
   if (cached && now < cached.freshUntil) return respond(cached.payload);
   if (cached && now < cached.staleUntil) {
@@ -296,7 +296,7 @@ export async function forecastResponse(
     return respond(envelope.payload);
   } catch {
     return modelInitialization
-      ? json({ error: "Forecast unavailable: the hotspot snapshot's pinned IFS run does not provide five complete future local dates or is temporarily unavailable." }, 503)
+      ? json({ error: "Forecast unavailable: the hotspot snapshot's pinned IFS run does not provide today's remaining hours and four complete future local dates or is temporarily unavailable." }, 503)
       : json({ error: FORECAST_ERROR }, 500);
   }
 }

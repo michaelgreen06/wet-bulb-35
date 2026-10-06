@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { forecastKey, forecastResponse, refreshForecast, SNAPSHOT_FORECAST_UNAVAILABLE } from "../workers/forecast-edge.ts";
-import { buildPinnedOpenMeteoForecastUrl, normalizePinnedOpenMeteoForecast } from "../lib/forecast/open-meteo.ts";
+import { buildPinnedOpenMeteoForecastUrl, isCurrentForecast, normalizePinnedOpenMeteoForecast } from "../lib/forecast/open-meteo.ts";
 
 const RUN = "2026-10-05T00:00:00Z";
 const NOW = Date.parse("2026-10-05T12:30:00Z");
@@ -59,7 +59,9 @@ describe("on-view snapshot-run equality", () => {
       expect(forecast.providerModel).toBe("ecmwf_ifs025");
       expect(forecast.runs).toEqual([{ id: "snapshot-pinned", model: "ecmwf_ifs025", initialization: RUN, retrievedAt: NOW }]);
       expect(forecast.days).toHaveLength(5);
-      expect(forecast.days[0].date).toBe("2026-10-06");
+      expect(forecast.days.map((day: { date: string }) => day.date)).toEqual([
+        "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09",
+      ]);
       expect((await forecastResponse(request(city.path), gate, undefined, resolver, cache, pinned)).status).toBe(200);
     }
     expect(urls).toHaveLength(2);
@@ -79,11 +81,55 @@ describe("on-view snapshot-run equality", () => {
     const halfHour = source(19800);
     expect(normalizePinnedOpenMeteoForecast(halfHour, ranked, NOW, RUN).days[0].peakLocalTime).toMatch(/:30$/);
     const incomplete = source();
-    incomplete.hourly.surface_pressure[100] = null as unknown as number;
-    expect(() => normalizePinnedOpenMeteoForecast(incomplete, ranked, NOW, RUN)).toThrow(/five complete future local dates/);
+    incomplete.hourly.surface_pressure[16] = null as unknown as number;
+    expect(() => normalizePinnedOpenMeteoForecast(incomplete, ranked, NOW, RUN)).toThrow(/today’s remaining hours/);
   });
 
-  it("keeps five complete future local dates for east-offset cities near snapshot expiry", () => {
+  it("shows only remaining hours today, then four complete local days; a passed peak invalidates the cached value", () => {
+    const hourly = source();
+    hourly.hourly.temperature_2m[10] = 45; // 05:00 local, already passed at 07:30.
+    hourly.hourly.temperature_2m[16] = 31; // 11:00 local, still ahead.
+    const result = normalizePinnedOpenMeteoForecast(hourly, ranked, NOW, RUN);
+    expect(result.days).toHaveLength(5);
+    expect(result.days[0].date).toBe("2026-10-05");
+    expect(result.days[0].peakLocalTime).toBe("2026-10-05T11:00");
+    expect(isCurrentForecast(result, NOW)).toBe(true);
+    expect(isCurrentForecast(result, Date.parse("2026-10-05T16:00:00Z"))).toBe(false);
+  });
+
+  it("recalculates today's high when the displayed peak becomes passed, without changing the pinned run", async () => {
+    const { api } = storage(); const cache = new Cache();
+    const fixture = source(); fixture.hourly.temperature_2m[16] = 31;
+    let providerCalls = 0;
+    vi.stubGlobal("fetch", async () => { providerCalls += 1; return Response.json(fixture); });
+    const gate = { WEATHER_GATE: { idFromName: () => "WeatherGate", get: () => ({ fetch: async (_url: string, options: RequestInit) => {
+      return Response.json(await refreshForecast(api, env, JSON.parse(String(options.body))));
+    } }) } };
+    const resolver = async () => ranked;
+    const first = await forecastResponse(request(ranked.path), gate, undefined, resolver, cache, async () => RUN);
+    expect((await first.json()).days[0].peakLocalTime).toBe("2026-10-05T11:00");
+    expect(providerCalls).toBe(1);
+    vi.setSystemTime(Date.parse("2026-10-05T16:00:00Z")); // Peak hour is now marked passed.
+    const second = await forecastResponse(request(ranked.path), gate, undefined, resolver, cache, async () => RUN);
+    expect(second.status).toBe(200);
+    const updated = await second.json();
+    expect(updated.days[0].peakLocalTime).toBe("2026-10-05T12:00");
+    expect(updated.runs[0].initialization).toBe(RUN);
+    expect(providerCalls).toBe(2);
+  });
+
+  it("keeps today's fifth-day slot honest when every hourly peak has passed", () => {
+    const endOfDay = Date.parse("2026-10-06T04:59:00Z"); // 23:59 local in Houston.
+    const result = normalizePinnedOpenMeteoForecast(source(), ranked, endOfDay, RUN);
+    expect(result.days.map((day) => day.date)).toEqual([
+      "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09",
+    ]);
+    expect(result.days[0]).toMatchObject({ maximumWetBulbC: null, peakLocalTime: null });
+    expect(isCurrentForecast(result, endOfDay)).toBe(true);
+    expect(isCurrentForecast(result, Date.parse("2026-10-06T05:00:00Z"))).toBe(false);
+  });
+
+  it("keeps today and four complete future local dates for east-offset cities near snapshot expiry", () => {
     const late = Date.parse("2026-10-06T20:59:00Z");
     const eastOffset = 4 * 3600;
     expect(() => normalizePinnedOpenMeteoForecast(source(eastOffset, 169), ranked, late, RUN)).toThrow(/full run horizon/);
@@ -91,7 +137,7 @@ describe("on-view snapshot-run equality", () => {
     expect(url.searchParams.get("forecast_hours")).toBe("193");
     const result = normalizePinnedOpenMeteoForecast(source(eastOffset, 193), ranked, late, RUN);
     expect(result.days.map((day) => day.date)).toEqual([
-      "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12",
+      "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11",
     ]);
   });
 
