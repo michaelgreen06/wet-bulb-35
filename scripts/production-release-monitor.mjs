@@ -267,7 +267,7 @@ export async function runReleaseChecks({
   void robots;
   const sitemap = await checkText(fetchImpl, origin, "/sitemap.xml", (body) => {
     const members = [...body.matchAll(/<loc>/g)].length;
-    return body.includes("<sitemapindex") && members === (recovery ? 227 : EXPECTED_SITEMAP_MEMBER_COUNT);
+    return body.includes("<sitemapindex") && members === EXPECTED_SITEMAP_MEMBER_COUNT;
   }, criticalFailures, "sitemap_index");
 
   if (!recovery) {

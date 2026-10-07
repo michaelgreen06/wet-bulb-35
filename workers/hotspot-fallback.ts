@@ -89,13 +89,13 @@ export async function evaluateFallback(
   };
   // Respect the publisher's explicit emergency-off switch before any dispatch.
   const gate = await request(`https://api.github.com/repos/${REPO}/actions/variables/GLOBAL_HOTSPOTS_ENABLED`,
-    { headers, redirect: "error" });
+    { headers, redirect: "manual" });
   if (!gate.ok) throw new Error("github_gate_unavailable");
   const setting = await gate.json() as { name?: string; value?: string };
   if (setting.name !== "GLOBAL_HOTSPOTS_ENABLED" || !["true", "false"].includes(setting.value || ""))
     throw new Error("github_gate_invalid");
   if (setting.value !== "true") return "disabled";
-  const runs = await request(`${API}/runs?per_page=20`, { headers, redirect: "error" });
+  const runs = await request(`${API}/runs?per_page=20`, { headers, redirect: "manual" });
   if (!runs.ok) throw new Error("github_runs_unavailable");
   const body = await runs.json() as { workflow_runs?: Array<{ event?: string; status?: string }> };
   if (!Array.isArray(body.workflow_runs)) throw new Error("github_runs_invalid");
@@ -104,7 +104,7 @@ export async function evaluateFallback(
     ["requested", "queued", "pending", "waiting", "in_progress"].includes(run.status || ""))) return "run_active";
   const dispatch = await request(`${API}/dispatches`, {
     method: "POST", headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({ ref: "main", inputs: { publish: "true" } }), redirect: "error",
+    body: JSON.stringify({ ref: "main", inputs: { publish: "true" } }), redirect: "manual",
   });
   if (dispatch.status !== 204) throw new Error("github_dispatch_failed");
   // Private marker suppresses a second scheduled tick. Never write the snapshot aliases.

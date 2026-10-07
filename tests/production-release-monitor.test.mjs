@@ -77,7 +77,7 @@ async function fixture() {
     if (url.pathname === "/assets/locations.json") return send(200, "application/json", "[]");
     if (url.pathname === "/robots.txt") return send(200, "text/plain", "Sitemap: https://www.wetbulb35.com/sitemap.xml");
     if (url.pathname === "/sitemap.xml") {
-      const members = Array.from({ length: fixtureState.activeVersion === ROLLBACK ? 227 : 228 }, (_, index) => `<sitemap><loc>https://www.wetbulb35.com/sitemaps/sitemap-${index}.xml</loc></sitemap>`).join("");
+      const members = Array.from({ length: 228 }, (_, index) => `<sitemap><loc>https://www.wetbulb35.com/sitemaps/sitemap-${index}.xml</loc></sitemap>`).join("");
       return send(200, "application/xml", `<sitemapindex>${members}</sitemapindex>`);
     }
     if (url.pathname === "/api/weather") return fixtureState.failWeather

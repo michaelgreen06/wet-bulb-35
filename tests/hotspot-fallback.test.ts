@@ -54,7 +54,7 @@ describe("independent hotspot fallback", () => {
     const [url, init] = h.calls.mock.calls[2] as [string, RequestInit];
     expect(url).toBe("https://api.github.com/repos/michaelgreen06/wet-bulb-35/actions/workflows/375800198/dispatches");
     expect(init.method).toBe("POST");
-    expect(init.redirect).toBe("error");
+    expect(init.redirect).toBe("manual");
     expect(JSON.parse(String(init.body))).toEqual({ ref: "main", inputs: { publish: "true" } });
     expect([...f.marker.keys()]).toEqual(["automation/hotspot-fallback/v1/2026-10-07.json"]);
     expect(f.put.mock.calls[0][0]).not.toContain("/latest.json");
@@ -98,6 +98,16 @@ describe("independent hotspot fallback", () => {
     const other = fixture();
     const denied = vi.fn(async () => new Response(null, { status: 503 })) as unknown as typeof fetch;
     await expect(evaluateFallback(other.env, TODAY, denied)).rejects.toThrow("github_gate_unavailable");
+    expect(other.put).not.toHaveBeenCalled();
+  });
+
+  it("uses a Worker-supported redirect mode and refuses redirected GitHub replies", async () => {
+    const f = fixture(); const h = github();
+    expect(await evaluateFallback(f.env, TODAY, h.request)).toBe("dispatched");
+    for (const [, init] of h.calls.mock.calls as Array<[string, RequestInit]>) expect(init.redirect).toBe("manual");
+    const other = fixture();
+    const redirect = vi.fn(async () => new Response(null, { status: 302, headers: { location: "https://example.org/" } })) as unknown as typeof fetch;
+    await expect(evaluateFallback(other.env, TODAY, redirect)).rejects.toThrow("github_gate_unavailable");
     expect(other.put).not.toHaveBeenCalled();
   });
 
