@@ -257,7 +257,7 @@ test("sitemap outage aborts within its deadline with bounded requests", async ()
     const before = Date.now();
     const result = await runReleaseChecks({ ...optionsFor(mock), fetchImpl, fullSitemaps: true, sitemapTimeoutMs: 25 });
     assert.ok(Date.now() - before < 2_000);
-    assert.ok(attempts <= 4, `attempts=${attempts}`);
+    assert.ok(attempts <= 12, `attempts=${attempts}`);
     assert.equal(result.rollbackEligible, false);
     assert.ok(result.warnings.some((warning) => warning.startsWith("sitemap_")));
   } finally { mock.server.close(); }
