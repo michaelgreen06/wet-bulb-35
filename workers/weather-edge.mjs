@@ -1,15 +1,12 @@
-import { forecastTunables, refreshForecast, validForecastGateRequest } from "./forecast-edge.ts";
+import { forecastTunables, peekForecast, refreshForecast, validForecastGateRequest } from "./forecast-edge.ts";
+import { TURNSTILE_TOKEN_HEADER, hasPass, issuePass, turnstileMode, turnstileReady, verifyWeatherToken } from "./weather-turnstile.ts";
 
 export const BROWSER_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-revalidate";
 export const BOT_PATTERN = /(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|bytespider|crawler|spider|bot)/i;
 const CACHE_ENVELOPE_VERSION = 1;
 const ERROR_INVALID = { error: "Valid lat and lon are required." };
 const ERROR_REFRESH = { error: "Failed to refresh weather data." };
-const TURNSTILE_ACTION = "weather_refresh";
-const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
-const TURNSTILE_TOKEN_HEADER = "x-weather-turnstile";
-const PASS_COOKIE = "wb35_weather_pass";
-const PASS_SECONDS = 86400;
+
 
 const OBSERVABILITY_UNKNOWN_VERSION = "unknown";
 const PROVIDER_ERROR_KEYS = { weather: "provider-error:weather", forecast: "provider-error:forecast" };
@@ -210,49 +207,6 @@ function json(payload, status = 200, headers = {}) {
   });
 }
 function browser(payload) { return json(payload, 200, { "cache-control": BROWSER_CACHE_CONTROL }); }
-function turnstileMode(env) {
-  if (env.WEATHER_TURNSTILE_MODE === undefined || env.WEATHER_TURNSTILE_MODE === "off") return "off";
-  return env.WEATHER_TURNSTILE_MODE === "enforce" ? "enforce" : "misconfigured";
-}
-function turnstileReady(env) {
-  return typeof env.WEATHER_TURNSTILE_SITE_KEY === "string" && env.WEATHER_TURNSTILE_SITE_KEY.trim() !== ""
-    && typeof env.WEATHER_TURNSTILE_SECRET_KEY === "string" && env.WEATHER_TURNSTILE_SECRET_KEY.trim() !== ""
-    && typeof env.WEATHER_TURNSTILE_HOSTNAME === "string" && /^[a-z0-9.-]+$/.test(env.WEATHER_TURNSTILE_HOSTNAME);
-}
-async function verifyWeatherToken(token, env) {
-  if (typeof token !== "string" || token.length < 1 || token.length > 2048) return false;
-  try {
-    const response = await fetch(TURNSTILE_VERIFY_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ secret: env.WEATHER_TURNSTILE_SECRET_KEY, response: token }),
-      signal: AbortSignal.timeout(4000),
-    });
-    if (!response.ok) return false;
-    const result = await response.json();
-    return result?.success === true && result.hostname === env.WEATHER_TURNSTILE_HOSTNAME
-      && result.action === TURNSTILE_ACTION;
-  } catch { return false; }
-}
-
-async function hmacHex(secret, message) {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
-  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-/** A verified browser gets a signed 24h pass so it is challenged once, not per cache miss. */
-async function issuePass(env) {
-  const expires = Math.floor(Date.now() / 1000) + PASS_SECONDS;
-  const signature = await hmacHex(env.WEATHER_TURNSTILE_SECRET_KEY, String(expires));
-  return `${PASS_COOKIE}=${expires}.${signature}; Max-Age=${PASS_SECONDS}; Path=/api/weather; Secure; HttpOnly; SameSite=Lax`;
-}
-async function hasPass(request, env) {
-  if (!turnstileReady(env)) return false;
-  const match = new RegExp(`(?:^|;\\s*)${PASS_COOKIE}=(\\d{1,12})\\.([a-f0-9]{64})(?:;|$)`).exec(request.headers.get("cookie") ?? "");
-  if (!match || Number(match[1]) * 1000 < Date.now()) return false;
-  try { return (await hmacHex(env.WEATHER_TURNSTILE_SECRET_KEY, match[1])) === match[2]; } catch { return false; }
-}
 
 async function readEnvelope(cache, request, key) {
   if (!cache) return null;
@@ -398,7 +352,7 @@ export class WeatherGate {
   async fetch(request) {
     if (request.method !== "POST") return new Response("Not found", { status: 404 });
     const pathname = new URL(request.url).pathname;
-    if (pathname !== "/refresh" && pathname !== "/forecast" && pathname !== "/peek" && pathname !== "/budget") return new Response("Not found", { status: 404 });
+    if (pathname !== "/refresh" && pathname !== "/forecast" && pathname !== "/forecast-peek" && pathname !== "/peek" && pathname !== "/budget") return new Response("Not found", { status: 404 });
     if (pathname === "/budget") return json(await this.budgetSummary());
     let body;
     try { body = await request.json(); } catch { return json(ERROR_INVALID, 400); }
@@ -407,6 +361,12 @@ export class WeatherGate {
       if (!this.validRequest({ ...body, state: "miss" })) return json(ERROR_INVALID, 400);
       const stored = await this.state.storage.get(`weather:${body.key}`);
       return validEnvelope(stored, body.key) && Date.now() < stored.staleUntil ? json(stored) : json(null, 404);
+    }
+
+    if (pathname === "/forecast-peek") {
+      if (!validForecastGateRequest(body)) return json(ERROR_INVALID, 400);
+      const stored = await peekForecast(this.state.storage, body);
+      return stored ? json(stored) : json(null, 404);
     }
 
     if (pathname === "/forecast") {
