@@ -265,10 +265,12 @@ export async function runReleaseChecks({
   await checkHead(fetchImpl, origin, "/assets/locations.json", (response) => (response.headers.get("content-type") || "").includes("application/json"), criticalFailures, "search_index");
   const robots = await checkText(fetchImpl, origin, "/robots.txt", (body) => body.includes("Sitemap: https://www.wetbulb35.com/sitemap.xml") && robotsAllowPublicPages(body, ["/", "/wetbulb-temperature/", "/wetbulb-temperature/united-states/texas/houston/", "/wetbulb-temperature/singapore/singapore/singapore/", "/wetbulb-temperature/hong-kong/hong-kong/hong-kong/"]), criticalFailures, "robots");
   void robots;
+  // Inventory drift is an indexing warning, not evidence that a Worker rollback
+  // will restore forecasts. A stale hard-coded sitemap count caused the PR #64 rollback.
   const sitemap = await checkText(fetchImpl, origin, "/sitemap.xml", (body) => {
     const members = [...body.matchAll(/<loc>/g)].length;
-    return body.includes("<sitemapindex") && members === (recovery ? 227 : EXPECTED_SITEMAP_MEMBER_COUNT);
-  }, criticalFailures, "sitemap_index");
+    return body.includes("<sitemapindex") && members === EXPECTED_SITEMAP_MEMBER_COUNT;
+  }, warnings, "sitemap_index");
 
   if (!recovery) {
     const popular = browse.match(/<section aria-labelledby="popular-wet-bulb-temperatures"[^>]*>([\s\S]*?)<\/section>/)?.[1] || "";
@@ -286,7 +288,7 @@ export async function runReleaseChecks({
     ]) {
       await checkText(fetchImpl, origin, path, htmlCheck(path), criticalFailures, path.includes("singapore") ? "singapore" : "hong_kong");
     }
-    if (fullSitemaps && sitemap && !criticalFailures.length) await checkAllSitemaps(fetchImpl, origin, sitemap, criticalFailures, { timeoutMs: sitemapTimeoutMs });
+    if (fullSitemaps && sitemap && !criticalFailures.length) await checkAllSitemaps(fetchImpl, origin, sitemap, warnings, { timeoutMs: sitemapTimeoutMs });
   }
 
   // Weather depends on OpenWeather upstream; an outage there is not a release regression, so it never triggers rollback.

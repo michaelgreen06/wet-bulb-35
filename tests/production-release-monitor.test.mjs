@@ -34,6 +34,7 @@ function state() {
     domains: [{ id: "domain-1", hostname: "www.wetbulb35.com", service: "wetbulb35-weather-production", environment: "production", cert_id: "cert-1" }],
     failBrowse: false,
     failWeather: false,
+    sitemapMemberCount: 228,
     requests: [],
   };
 }
@@ -77,7 +78,7 @@ async function fixture() {
     if (url.pathname === "/assets/locations.json") return send(200, "application/json", "[]");
     if (url.pathname === "/robots.txt") return send(200, "text/plain", "Sitemap: https://www.wetbulb35.com/sitemap.xml");
     if (url.pathname === "/sitemap.xml") {
-      const members = Array.from({ length: fixtureState.activeVersion === ROLLBACK ? 227 : 228 }, (_, index) => `<sitemap><loc>https://www.wetbulb35.com/sitemaps/sitemap-${index}.xml</loc></sitemap>`).join("");
+      const members = Array.from({ length: fixtureState.sitemapMemberCount }, (_, index) => `<sitemap><loc>https://www.wetbulb35.com/sitemaps/sitemap-${index}.xml</loc></sitemap>`).join("");
       return send(200, "application/xml", `<sitemapindex>${members}</sitemapindex>`);
     }
     if (url.pathname === "/api/weather") return fixtureState.failWeather
@@ -226,6 +227,21 @@ test("live-shaped health fixture with Disallow or noindex is never healthy", asy
   } finally { mock.server.close(); }
 });
 
+test("sitemap inventory drift warns but cannot roll back a healthy forecast Worker", async () => {
+  const mock = await fixture();
+  try {
+    mock.state.sitemapMemberCount = 227;
+    const result = await runReleaseChecks(optionsFor(mock));
+    assert.equal(result.status, "healthy");
+    assert.equal(result.rollbackEligible, false);
+    assert.ok(result.warnings.includes("sitemap_index:200"));
+    mock.state.activeVersion = ROLLBACK;
+    const recovery = await runReleaseChecks(optionsFor(mock));
+    assert.equal(recovery.status, "recovered");
+    assert.ok(recovery.warnings.includes("sitemap_index:200"));
+  } finally { mock.server.close(); }
+});
+
 test("sitemap outage aborts within its deadline with bounded requests", async () => {
   const mock = await fixture();
   try {
@@ -241,8 +257,9 @@ test("sitemap outage aborts within its deadline with bounded requests", async ()
     const before = Date.now();
     const result = await runReleaseChecks({ ...optionsFor(mock), fetchImpl, fullSitemaps: true, sitemapTimeoutMs: 25 });
     assert.ok(Date.now() - before < 2_000);
-    assert.ok(attempts <= 4, `attempts=${attempts}`);
-    assert.equal(result.rollbackEligible, true);
+    assert.ok(attempts <= 12, `attempts=${attempts}`);
+    assert.equal(result.rollbackEligible, false);
+    assert.ok(result.warnings.some((warning) => warning.startsWith("sitemap_")));
   } finally { mock.server.close(); }
 });
 
