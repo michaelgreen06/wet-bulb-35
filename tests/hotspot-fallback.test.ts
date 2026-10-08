@@ -15,6 +15,10 @@ function pair(run = "2026-10-06T06:00:00Z", start = "2026-10-06T14:00:00Z") {
 function fixture(snapshots: readonly unknown[] = pair(), token = "fake-token") {
   const marker = new Map<string, string>();
   const get = vi.fn(async (key: string) => {
+    if (marker.has(key)) {
+      const text = marker.get(key)!;
+      return { size: text.length, text: async () => text };
+    }
     const value = key.startsWith("inhabited-") ? snapshots[0] : key.startsWith("global-grid-") ? snapshots[1] : null;
     if (!value) return null;
     const text = JSON.stringify(value);
@@ -25,7 +29,7 @@ function fixture(snapshots: readonly unknown[] = pair(), token = "fake-token") {
   const env = { HOTSPOT_SNAPSHOTS: { get, head, put }, GITHUB_DISPATCH_TOKEN: token } as unknown as FallbackEnv;
   return { env, get, head, put, marker };
 }
-function github(runs: Array<{ event: string; status: string }> = [], fail?: number, enabled = true) {
+function github(runs: Array<{ event: string; status: string; conclusion?: string; created_at?: string }> = [], fail?: number, enabled = true) {
   const request = vi.fn(async (url: string, init?: RequestInit) => {
     if (url.endsWith("/actions/variables/GLOBAL_HOTSPOTS_ENABLED"))
       return Response.json({ name: "GLOBAL_HOTSPOTS_ENABLED", value: String(enabled) });
@@ -60,6 +64,42 @@ describe("independent hotspot fallback", () => {
     expect(f.put.mock.calls[0][0]).not.toContain("/latest.json");
     expect(await evaluateFallback(f.env, TODAY, h.request)).toBe("already_dispatched");
     expect(h.calls).toHaveBeenCalledTimes(3);
+  });
+
+  it("retries a finished failed publisher at the second tick, but never dispatches a third time", async () => {
+    const f = fixture(); const first = github();
+    expect(await evaluateFallback(f.env, TODAY, first.request)).toBe("dispatched");
+    const completed = github([{ event: "workflow_dispatch", status: "completed", conclusion: "failure",
+      created_at: "2026-10-07T11:45:05Z" }]);
+    expect(await evaluateFallback(f.env, new Date("2026-10-07T12:15:00Z"), completed.request)).toBe("dispatched");
+    expect(JSON.parse([...f.marker.values()][0]).attempts).toBe(2);
+    expect(await evaluateFallback(f.env, new Date("2026-10-07T12:16:00Z"), completed.request)).toBe("already_dispatched");
+    expect(completed.calls.mock.calls.filter(([url]) => String(url).endsWith("/dispatches"))).toHaveLength(1);
+  });
+
+  it("reads a legacy one-dispatch marker before retrying once", async () => {
+    const f = fixture();
+    f.marker.set("automation/hotspot-fallback/v1/2026-10-07.json",
+      JSON.stringify({ schema: 1, date: "2026-10-07", dispatchedAt: "2026-10-07T11:45:00Z" }));
+    const h = github([{ event: "workflow_dispatch", status: "completed", conclusion: "failure",
+      created_at: "2026-10-07T11:45:05Z" }]);
+    expect(await evaluateFallback(f.env, new Date("2026-10-07T12:15:00Z"), h.request)).toBe("dispatched");
+    expect(JSON.parse([...f.marker.values()][0]).attempts).toBe(2);
+  });
+
+  it("cannot retry without proof the previous dispatched run finished", async () => {
+    const f = fixture(); expect(await evaluateFallback(f.env, TODAY, github().request)).toBe("dispatched");
+    for (const runs of [[],
+      [{ event: "workflow_dispatch", status: "completed", conclusion: "failure" }],
+      [{ event: "workflow_dispatch", status: "completed", conclusion: "failure", created_at: "2026-10-07T11:40:00Z" }],
+      [{ event: "workflow_dispatch", status: "in_progress", created_at: "2026-10-07T11:45:05Z" }]]) {
+      const h = github(runs);
+      const result = await evaluateFallback(f.env, new Date("2026-10-07T12:15:00Z"), h.request);
+      expect(["already_dispatched", "run_active"]).toContain(result);
+      expect(h.calls.mock.calls.some(([url]) => String(url).endsWith("/dispatches"))).toBe(false);
+    }
+    const h = github([{ event: "workflow_dispatch", status: "completed", conclusion: "failure", created_at: "2026-10-07T11:45:05Z" }]);
+    expect(await evaluateFallback(f.env, new Date("2026-10-07T11:47:00Z"), h.request)).toBe("already_dispatched");
   });
 
   it("honors the publisher's emergency-off switch", async () => {

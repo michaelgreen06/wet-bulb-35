@@ -83,12 +83,12 @@ class Mirror:
         return 200, {}, index_body(run, step, params)
 
 
-def run_poll(clock, mirror, read_metadata, deadline_hours: float = 4, published=None, logs=None, earliest=None, read_point=None):
+def run_poll(clock, mirror, read_metadata, deadline_hours: float = 4, published=None, logs=None, earliest=None, read_point=None, base_url="https://mirror.test/ecmwf"):
     return MODULE.poll(
         fetch_index=mirror,
         read_metadata=read_metadata,
         read_point=read_point or (lambda _run: (200, {}, point_payload(clock.now))),
-        base_url="https://mirror.test/ecmwf",
+        base_url=base_url,
         deadline=clock.now + dt.timedelta(hours=deadline_hours),
         published_initialization=published,
         earliest_initialization=earliest,
@@ -100,6 +100,26 @@ def run_poll(clock, mirror, read_metadata, deadline_hours: float = 4, published=
 
 
 class ReadinessTests(unittest.TestCase):
+    def test_transient_mirror_token_failure_retries_inside_deadline(self):
+        run = dt.datetime(2026, 10, 4, 6, tzinfo=UTC)
+        clock = Clock(dt.datetime(2026, 10, 4, 13, tzinfo=UTC))
+        mirror = Mirror(clock, {run: clock.now})
+        calls = []
+        logs = []
+        def base_url():
+            calls.append(clock.now)
+            if len(calls) == 1:
+                from requests.exceptions import HTTPError
+                raise HTTPError("504 Server Error: Gateway Timeout from mirror token service")
+            return "https://mirror.test/ecmwf"
+        result = run_poll(clock, mirror, lambda: metadata(run, clock.now - dt.timedelta(minutes=20)),
+                          base_url=base_url, logs=logs)
+        self.assertTrue(result["ready"])
+        self.assertEqual(result["checks"], 2)
+        self.assertEqual(len(calls), 2)
+        self.assertGreaterEqual(clock.sleeps[0], 300)
+        self.assertTrue(any("retrying" in line for line in logs))
+
     def test_exact_run_point_requires_all_future_hourly_inputs_and_five_local_days(self):
         now = dt.datetime(2026, 10, 4, 13, tzinfo=UTC)
         self.assertTrue(MODULE.point_ready(point_payload(now), now))

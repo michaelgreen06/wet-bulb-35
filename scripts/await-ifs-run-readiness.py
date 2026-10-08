@@ -238,7 +238,7 @@ def poll(
     fetch_index: IndexFunction,
     read_metadata: MetadataFunction,
     read_point: PointFunction = _http_point,
-    base_url: str,
+    base_url: str | Callable[[], str],
     deadline: dt.datetime,
     published_initialization: dt.datetime | None,
     earliest_initialization: dt.datetime | None = None,
@@ -261,6 +261,9 @@ def poll(
         checks += 1
         wait = interval_seconds + rng.uniform(0, jitter_seconds)
         try:
+            # Azure's short-lived SAS-token service can transiently return 5xx.
+            # Resolve the mirror inside the bounded polling loop, not before it.
+            mirror_url = base_url() if callable(base_url) else base_url
             for run in candidate_cycles(now, published_initialization):
                 if earliest_initialization is not None and run < earliest_initialization:
                     continue
@@ -268,7 +271,7 @@ def poll(
                     steps = required_steps(run, now)
                 except ValueError:
                     continue
-                if not ecmwf_ready(fetch_index, base_url, run, steps, now, log):
+                if not ecmwf_ready(fetch_index, mirror_url, run, steps, now, log):
                     continue
                 ecmwf_first_seen.setdefault(iso(run), iso(now))
                 status, headers, metadata = read_metadata()
@@ -370,7 +373,7 @@ def main(argv: list[str] | None = None) -> int:
         fetch_index=fetch_index,
         read_metadata=lambda: _http_metadata(args.open_meteo_metadata_url),
         read_point=_http_point,
-        base_url=fetch_index.base_url,
+        base_url=lambda: fetch_index.base_url,
         deadline=parse_iso(args.deadline),
         published_initialization=published,
         earliest_initialization=parse_iso(args.earliest_initialization) if args.earliest_initialization else None,
