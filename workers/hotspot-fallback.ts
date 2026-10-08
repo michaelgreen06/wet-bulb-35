@@ -79,7 +79,20 @@ export async function evaluateFallback(
   const publishedDay = pairedInitialization(inhabited, grid, now);
   if (publishedDay >= today && timestamp((inhabited as InhabitedPair).validTo) > now.getTime()) return "current";
   const marker = `${MARKER_PREFIX}${today}.json`;
-  if (await env.HOTSPOT_SNAPSHOTS.head(marker)) return "already_dispatched";
+  let attempts = 0;
+  let previousDispatch = 0;
+  if (await env.HOTSPOT_SNAPSHOTS.head(marker)) {
+    const previous = await readJson(env.HOTSPOT_SNAPSHOTS, marker) as {
+      schema?: number; date?: string; dispatchedAt?: string; attempts?: number;
+    };
+    if (previous?.schema !== 1 || previous.date !== today ||
+        (previous.attempts !== undefined && previous.attempts !== 1 && previous.attempts !== 2))
+      throw new Error("invalid_dispatch_marker");
+    attempts = previous.attempts ?? 1; // Legacy v1 marker recorded the first dispatch only.
+    previousDispatch = timestamp(previous.dispatchedAt);
+    if (previousDispatch > now.getTime()) throw new Error("invalid_dispatch_marker");
+    if (attempts >= 2 || now.getTime() - previousDispatch < 15 * 60_000) return "already_dispatched";
+  }
   if (!env.GITHUB_DISPATCH_TOKEN) throw new Error("missing_github_token");
   const headers = {
     Authorization: `Bearer ${env.GITHUB_DISPATCH_TOKEN}`,
@@ -97,19 +110,28 @@ export async function evaluateFallback(
   if (setting.value !== "true") return "disabled";
   const runs = await request(`${API}/runs?per_page=20`, { headers, redirect: "manual" });
   if (!runs.ok) throw new Error("github_runs_unavailable");
-  const body = await runs.json() as { workflow_runs?: Array<{ event?: string; status?: string }> };
+  const body = await runs.json() as { workflow_runs?: Array<{
+    event?: string; status?: string; conclusion?: string; created_at?: string;
+  }> };
   if (!Array.isArray(body.workflow_runs)) throw new Error("github_runs_invalid");
   if (body.workflow_runs.some((run) =>
     ["schedule", "workflow_dispatch"].includes(run.event || "") &&
     ["requested", "queued", "pending", "waiting", "in_progress"].includes(run.status || ""))) return "run_active";
+  if (attempts && !body.workflow_runs.some((run) =>
+    ["schedule", "workflow_dispatch"].includes(run.event || "") && run.status === "completed" &&
+    ["failure", "timed_out", "startup_failure", "cancelled"].includes(run.conclusion || "") &&
+    typeof run.created_at === "string" && /^\d{4}-\d\d-\d\dT/.test(run.created_at) &&
+    Date.parse(run.created_at) >= previousDispatch && Date.parse(run.created_at) <= now.getTime()))
+    return "already_dispatched";
   const dispatch = await request(`${API}/dispatches`, {
     method: "POST", headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify({ ref: "main", inputs: { publish: "true" } }), redirect: "manual",
   });
   if (dispatch.status !== 204) throw new Error("github_dispatch_failed");
-  // Private marker suppresses a second scheduled tick. Never write the snapshot aliases.
+  // Suppress duplicates, but leave the second tick available for a verified failed publisher.
+  // Never write the snapshot aliases from this dispatcher.
   await env.HOTSPOT_SNAPSHOTS.put(marker,
-    JSON.stringify({ schema: 1, date: today, dispatchedAt: now.toISOString() }),
+    JSON.stringify({ schema: 1, date: today, dispatchedAt: now.toISOString(), attempts: attempts + 1 }),
     { httpMetadata: { contentType: "application/json" } });
   return "dispatched";
 }
