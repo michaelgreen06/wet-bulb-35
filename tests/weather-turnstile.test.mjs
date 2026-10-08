@@ -103,7 +103,7 @@ test("valid single-use token, site hostname and action are required before refre
     verified = { success: true, hostname: "www.wetbulb35.com", action: "weather_refresh" };
     const response = await weatherResponse(request("token-once"), env(freshGate(counter)));
     assert.equal(response.status, 200);
-    assert.match(response.headers.get("set-cookie"), /^wb35_weather_pass=\d+\.[a-f0-9]{64}; Max-Age=86400; Path=\/api\/weather; Secure; HttpOnly; SameSite=Lax$/);
+    assert.match(response.headers.get("set-cookie"), /^wb35_weather_pass=\d+\.[a-f0-9]{64}; Max-Age=86400; Path=\/api; Secure; HttpOnly; SameSite=Lax$/);
     assert.equal(requests.length, 4);
     assert.equal(counter.calls, 1);
   });

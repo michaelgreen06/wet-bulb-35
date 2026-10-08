@@ -20,6 +20,7 @@ import {
   type PinnedDailyForecast,
   type WetBulbForecast,
 } from "../lib/forecast/open-meteo.ts";
+import { TURNSTILE_TOKEN_HEADER, hasPass, issuePass, turnstileMode, turnstileReady, verifyWeatherToken, type TurnstileEnvironment } from "./weather-turnstile.ts";
 
 export const FORECAST_BROWSER_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-revalidate";
 const FORECAST_CACHE_ENVELOPE_VERSION = 1;
@@ -75,7 +76,7 @@ interface ExecutionContextLike {
   waitUntil?(promise: Promise<unknown>): void;
 }
 
-interface ForecastEnvironment {
+interface ForecastEnvironment extends TurnstileEnvironment {
   WEATHER_GATE?: {
     idFromName(name: string): unknown;
     get(id: unknown): { fetch(input: string, init?: RequestInit): Promise<Response> };
@@ -243,6 +244,21 @@ async function callGate(
   return envelope;
 }
 
+/** Read-only global cache check: an edge miss need not challenge for an existing result. */
+async function peekGate(env: ForecastEnvironment, body: ForecastGateBody): Promise<ForecastEnvelope | null> {
+  if (!env.WEATHER_GATE) return null;
+  try {
+    const id = env.WEATHER_GATE.idFromName("WeatherGate");
+    const response = await env.WEATHER_GATE.get(id).fetch("https://weather-gate/forecast-peek", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    });
+    if (!response.ok) return null;
+    const envelope: unknown = await response.json();
+    return isForecastEnvelope(envelope, body.key, body.modelInitialization ?? null)
+      && isCurrentForecast(envelope.payload, Date.now()) && Date.now() < envelope.staleUntil ? envelope : null;
+  } catch { return null; }
+}
+
 export async function forecastResponse(
   request: Request,
   env: ForecastEnvironment,
@@ -282,23 +298,52 @@ export async function forecastResponse(
   const cached = stored && isCurrentForecast(stored.payload, now) ? stored : null;
   if (cached && now < cached.freshUntil) return respond(cached.payload);
   if (cached && now < cached.staleUntil) {
-    const refresh = callGate(env, { key, location, state: "stale", modelInitialization })
-      .then((envelope) => writeCache(cache, request, key, envelope, modelInitialization))
-      .catch(() => undefined);
-    executionContext?.waitUntil?.(refresh);
+    if (turnstileMode(env) === "off" || await hasPass(request, env)) {
+      const refresh = callGate(env, { key, location, state: "stale", modelInitialization })
+        .then((envelope) => writeCache(cache, request, key, envelope, modelInitialization))
+        .catch(() => undefined);
+      executionContext?.waitUntil?.(refresh);
+    }
     return respond(cached.payload);
+  }
+
+  const mode = turnstileMode(env);
+  let cookie: string | null = null;
+  if (mode !== "off") {
+    if (mode !== "enforce" || !turnstileReady(env)) return json({ code: "forecast_unavailable" }, 503, { "cache-control": "no-store" });
+    if (!await hasPass(request, env)) {
+      const peeked = await peekGate(env, { key, location, state: "miss", modelInitialization });
+      if (peeked) {
+        await writeCache(cache, request, key, peeked, modelInitialization);
+        return respond(peeked.payload);
+      }
+      const token = request.headers.get(TURNSTILE_TOKEN_HEADER);
+      if (!token) return json({ code: "verification_required", sitekey: env.WEATHER_TURNSTILE_SITE_KEY }, 403, { "cache-control": "no-store" });
+      if (!await verifyWeatherToken(token, env)) return json({ code: "verification_failed" }, 403, { "cache-control": "no-store" });
+      cookie = await issuePass(env);
+    }
   }
 
   try {
     const envelope = await callGate(env, { key, location, state: "miss", modelInitialization });
     if (!isCurrentForecast(envelope.payload, Date.now())) throw new Error(FORECAST_ERROR);
     await writeCache(cache, request, key, envelope, modelInitialization);
-    return respond(envelope.payload);
+    const response = respond(envelope.payload);
+    if (cookie) response.headers.set("set-cookie", cookie);
+    return response;
   } catch {
     return modelInitialization
       ? json({ error: "Forecast unavailable: the hotspot snapshot's pinned IFS run does not provide today's remaining hours and four complete future local dates or is temporarily unavailable." }, 503)
       : json({ error: FORECAST_ERROR }, 500);
   }
+}
+
+/** Validate gate-side cached results before serving them to an unverified browser. */
+export async function peekForecast(storage: Storage, body: ForecastGateBody): Promise<ForecastEnvelope | null> {
+  if (!validForecastGateRequest(body)) return null;
+  const envelope = await storage.get(`forecast-result:${body.key}`);
+  return isForecastEnvelope(envelope, body.key, body.modelInitialization ?? null)
+    && isCurrentForecast(envelope.payload, Date.now()) && Date.now() < envelope.staleUntil ? envelope : null;
 }
 
 export function validForecastGateRequest(value: unknown): value is ForecastGateBody {

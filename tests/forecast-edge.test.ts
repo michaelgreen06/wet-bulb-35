@@ -9,6 +9,7 @@ import {
 } from "../workers/forecast-edge.ts";
 import { createHonoPageRenderer } from "../workers/hono-page-renderer.mjs";
 import { createObservability, WeatherGate } from "../workers/weather-edge.mjs";
+import { hasPass, issuePass } from "../workers/weather-turnstile.ts";
 
 const location = {
   path: "/wetbulb-temperature/united-states/texas/houston/",
@@ -221,6 +222,117 @@ describe("forecast edge and WeatherGate integration", () => {
     const cached = await forecastResponse(request, env, undefined, async () => location, cache);
     expect(cached.status).toBe(200);
     expect(gateCalls).toBe(1);
+  });
+
+  it("challenges an uncached forecast before invoking the provider gate", async () => {
+    let gateCalls = 0;
+    const guarded = {
+      WEATHER_TURNSTILE_MODE: "enforce", WEATHER_TURNSTILE_SITE_KEY: "public-test-key",
+      WEATHER_TURNSTILE_SECRET_KEY: "private-test-secret", WEATHER_TURNSTILE_HOSTNAME: "www.wetbulb35.com",
+      WEATHER_GATE: { idFromName: () => "WeatherGate", get: () => ({ fetch: async (url: string) => { if (url.endsWith("/forecast-peek")) return new Response(null, { status: 404 }); gateCalls++; return new Response(null, { status: 500 }); } }) },
+    };
+    const request = new Request("https://www.wetbulb35.com/api/forecast?path=" + encodeURIComponent(location.path));
+    const response = await forecastResponse(request, guarded, undefined, async () => location, new FakeCache());
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ code: "verification_required", sitekey: "public-test-key" });
+    expect(gateCalls).toBe(0);
+  });
+
+  it("accepts one Siteverify token and shares the signed pass with current conditions", async () => {
+    const { storage } = fakeStorage();
+    stubProvider(async () => Response.json(upstreamFixture()));
+    const envelope = await refreshForecast(storage, gateEnv(), gateBody());
+    const calls: string[] = [];
+    const env = {
+      WEATHER_TURNSTILE_MODE: "enforce", WEATHER_TURNSTILE_SITE_KEY: "public-test-key",
+      WEATHER_TURNSTILE_SECRET_KEY: "private-test-secret", WEATHER_TURNSTILE_HOSTNAME: "www.wetbulb35.com",
+      WEATHER_GATE: { idFromName: () => "WeatherGate", get: () => ({ fetch: async (url: string) => {
+        calls.push(url);
+        return url.endsWith("/forecast-peek") ? new Response(null, { status: 404 }) : Response.json(envelope);
+      } }) },
+    };
+    const url = "https://www.wetbulb35.com/api/forecast?path=" + encodeURIComponent(location.path);
+    const tokenRequest = () => new Request(url, { headers: { "x-weather-turnstile": "one-use-token" } });
+    for (const verification of [{ success: false }, { success: true, hostname: "other.example", action: "weather_refresh" }, { success: true, hostname: "www.wetbulb35.com", action: "other" }]) {
+      vi.stubGlobal("fetch", vi.fn(async () => Response.json(verification)));
+      const response = await forecastResponse(tokenRequest(), env, undefined, async () => location, new FakeCache());
+      expect(response.status).toBe(403);
+      expect(calls.every((call) => call.endsWith("/forecast-peek"))).toBe(true);
+    }
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ success: true, hostname: "www.wetbulb35.com", action: "weather_refresh" })));
+    const accepted = await forecastResponse(tokenRequest(), env, undefined, async () => location, new FakeCache());
+    expect(accepted.status).toBe(200);
+    const cookie = accepted.headers.get("set-cookie")!;
+    expect(cookie).toMatch(/; Path=\/api; Secure; HttpOnly; SameSite=Lax$/);
+    expect(await hasPass(new Request("https://www.wetbulb35.com/api/weather", { headers: { cookie: cookie.split(";")[0] } }), env)).toBe(true);
+    const withPass = await forecastResponse(new Request(url, { headers: { cookie: cookie.split(";")[0] } }), env, undefined, async () => location, new FakeCache());
+    expect(withPass.status).toBe(200);
+    expect(calls.filter((call) => call.endsWith("/forecast"))).toHaveLength(2);
+    const tampered = cookie.split(";")[0].slice(0, -1) + (cookie.split(";")[0].endsWith("0") ? "1" : "0");
+    expect(await hasPass(new Request("https://www.wetbulb35.com/api/weather", { headers: { cookie: tampered } }), env)).toBe(false);
+    expect(await hasPass(new Request("https://www.wetbulb35.com/api/weather", { headers: { cookie: `${tampered}; ${cookie.split(";")[0]}` } }), env)).toBe(true);
+  });
+
+  it("serves stale forecasts without an unverified background provider refresh", async () => {
+    const { storage } = fakeStorage();
+    stubProvider(async () => {
+      const fixture = upstreamFixture();
+      fixture.hourly.temperature_2m[20] = 40;
+      fixture.hourly.dew_point_2m[20] = 33;
+      return Response.json(fixture);
+    });
+    const envelope = await refreshForecast(storage, gateEnv(), gateBody());
+    const cache = new FakeCache();
+    const gateUrls: string[] = [];
+    const env = {
+      WEATHER_TURNSTILE_MODE: "enforce", WEATHER_TURNSTILE_SITE_KEY: "public-test-key",
+      WEATHER_TURNSTILE_SECRET_KEY: "private-test-secret", WEATHER_TURNSTILE_HOSTNAME: "www.wetbulb35.com",
+      WEATHER_GATE: { idFromName: () => "WeatherGate", get: () => ({ fetch: async (url: string) => { gateUrls.push(url); return Response.json(envelope); } }) },
+    };
+    const url = "https://www.wetbulb35.com/api/forecast?path=" + encodeURIComponent(location.path);
+    expect((await forecastResponse(new Request(url), { ...env, WEATHER_TURNSTILE_MODE: "off" }, undefined, async () => location, cache)).status).toBe(200);
+    gateUrls.length = 0;
+    vi.setSystemTime(NOW + 4 * 60 * 60 * 1_000);
+    const waitUntil = vi.fn();
+    const stale = await forecastResponse(new Request(url), env, { waitUntil }, async () => location, cache);
+    expect(stale.status).toBe(200);
+    expect(waitUntil).not.toHaveBeenCalled();
+    expect(gateUrls).toHaveLength(0);
+    const cookie = (await issuePass(env)).split(";")[0];
+    const authorized = await forecastResponse(new Request(url, { headers: { cookie } }), env, { waitUntil }, async () => location, cache);
+    expect(authorized.status).toBe(200);
+    expect(waitUntil).toHaveBeenCalledTimes(1);
+    await waitUntil.mock.calls[0][0];
+    expect(gateUrls).toEqual(["https://weather-gate/forecast"]);
+  });
+
+  it("fails closed on misconfigured enforcement before any provider call", async () => {
+    const gate = vi.fn(async () => new Response(null, { status: 500 }));
+    const env = { WEATHER_TURNSTILE_MODE: "enforce", WEATHER_GATE: { idFromName: () => "WeatherGate", get: () => ({ fetch: gate }) } };
+    const url = "https://www.wetbulb35.com/api/forecast?path=" + encodeURIComponent(location.path);
+    const response = await forecastResponse(new Request(url), env, undefined, async () => location, new FakeCache());
+    expect(response.status).toBe(503);
+    expect(gate).not.toHaveBeenCalled();
+  });
+
+  it("reads the global forecast gate without challenge when another POP cached the same run", async () => {
+    const { storage, values } = fakeStorage();
+    stubProvider(async () => Response.json(upstreamFixture()));
+    const envelope = await refreshForecast(storage, gateEnv(), gateBody());
+    const gate = new WeatherGate({ storage }, gateEnv());
+    const calls: string[] = [];
+    const env = {
+      WEATHER_TURNSTILE_MODE: "enforce", WEATHER_TURNSTILE_SITE_KEY: "public-test-key",
+      WEATHER_TURNSTILE_SECRET_KEY: "private-test-secret", WEATHER_TURNSTILE_HOSTNAME: "www.wetbulb35.com",
+      WEATHER_GATE: { idFromName: () => "WeatherGate", get: () => ({ fetch: async (url: string, init?: RequestInit) => {
+        calls.push(url); return gate.fetch(new Request(url, init));
+      } }) },
+    };
+    const url = "https://www.wetbulb35.com/api/forecast?path=" + encodeURIComponent(location.path);
+    expect((await forecastResponse(new Request(url), env, undefined, async () => location, new FakeCache())).status).toBe(200);
+    expect(calls).toEqual(["https://weather-gate/forecast-peek"]);
+    expect(values.get(`forecast-attempts:${new Date().toISOString().slice(0, 10)}`)).toBe(1);
+    expect(envelope.payload.days).toHaveLength(5);
   });
 
   it("fails closed when the independent forecast budget is disabled", async () => {
