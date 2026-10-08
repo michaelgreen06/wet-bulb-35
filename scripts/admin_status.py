@@ -341,8 +341,9 @@ def collect_top50(origin: str = DEFAULT_ORIGIN, fetch=http_get, now: datetime | 
     states = [classify_snapshot(meta, now, max_age) for meta in products.values()]
     if any(state in ("expired", "invalid") for state in states):
         status = "down"
-    elif any(state in ("behind", "unavailable", "run_unknown") for state in states) or (latest_failure and latest_failure["outcome"] == "failure"
-                                                                      and (not last_cycle or last_cycle["outcome"] != "success")):
+    elif any(state in ("behind", "unavailable", "run_unknown") for state in states):
+        # A failed publication attempt is operational context, not a bad public
+        # snapshot. The separate hourly pair monitor alerts before expiry.
         status = "degraded"
     elif all(state == "not_published" for state in states):
         status = "unknown"

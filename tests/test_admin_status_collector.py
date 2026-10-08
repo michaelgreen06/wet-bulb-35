@@ -118,6 +118,16 @@ class Top50Tests(unittest.TestCase):
         for leaked in (SECRET, "Somewhere", "1.2345", "33.3"):
             self.assertNotIn(leaked, encoded)
 
+    def test_failed_publication_is_visible_but_current_snapshot_remains_ok(self):
+        fetch = self.fetch((200, "application/json", snapshot(), 5),
+                           (200, "application/json", snapshot(), 5),
+                           runs({"created_at": "2026-10-04T11:45:00Z", "status": "completed", "conclusion": "failure"}))
+        state, data = status.collect_top50(ORIGIN, fetch=fetch, now=NOW,
+                                           environ={"ADMIN_TOP50_MAX_INIT_AGE_HOURS": "32"})
+        self.assertEqual(state, "ok", "valid published products should not trigger a degraded alert")
+        self.assertEqual(data["lastCycle"]["outcome"], "failure")
+        self.assertEqual(data["latestFailure"]["outcome"], "failure")
+
     def test_adaptable_fields_for_issue_50_and_expiry(self):
         payload = json.loads(snapshot(run={"initialization": "2026-10-04T00:00:00Z", "retrievedAt": "2026-10-04T07:00:00+00:00"}))
         del payload["discovery"]  # Legacy fallback when #50's discovery field is absent.
