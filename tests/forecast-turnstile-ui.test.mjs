@@ -16,11 +16,12 @@ const forecast = {
 const conditions = { location: { name: "Houston", lat: 29.7, lng: -95.3 }, weather: { temperature: 26, humidity: 50, wetBulb: 19, timestamp: Date.now() } };
 const json = (status, value) => ({ status, ok: status >= 200 && status < 300, json: async () => value });
 
-async function run({ challenge = true, reject = false, scriptFails = false } = {}) {
+async function run({ challenge = true, challengeWeather = false, reject = false, scriptFails = false } = {}) {
   const html = pageHtml(city, { forecastEnabled: true });
   const dom = new JSDOM(html.replace('<script src="/assets/app.js" defer></script>', ""), { url: `https://www.wetbulb35.com${path}`, runScripts: "outside-only", pretendToBeVisual: true });
   const { window } = dom;
   const calls = [], scripts = [], widgets = [], events = [];
+  let verified = false;
   window.Date.now = () => Date.parse("2026-09-20T15:00:00Z");
   window.gtag = (...args) => events.push(args);
   const append = window.document.head.appendChild.bind(window.document.head);
@@ -37,10 +38,17 @@ async function run({ challenge = true, reject = false, scriptFails = false } = {
     return append(element);
   };
   window.fetch = async (url, options = {}) => {
-    if (!String(url).startsWith("/api/forecast")) return json(200, conditions);
+    if (!String(url).startsWith("/api/forecast")) {
+      if (String(url).startsWith("/api/weather") && challengeWeather) {
+        if (!verified && !options.headers?.["x-weather-turnstile"]) return json(403, { code: "verification_required", sitekey: "public-key" });
+        if (options.headers?.["x-weather-turnstile"]) verified = true;
+      }
+      return json(200, conditions);
+    }
     calls.push({ url: String(url), options });
-    if (challenge && !options.headers?.["x-weather-turnstile"]) return json(403, { code: "verification_required", sitekey: "public-key" });
+    if (challenge && !verified && !options.headers?.["x-weather-turnstile"]) return json(403, { code: "verification_required", sitekey: "public-key" });
     if (reject) return json(403, { code: "verification_failed" });
+    if (options.headers?.["x-weather-turnstile"]) verified = true;
     return json(200, forecast);
   };
   window.eval(clientRuntimeSource());
@@ -69,6 +77,15 @@ test("an uncached city forecast verifies, retries once and renders five days", a
   assert.equal(calls[0].url, calls[1].url);
   assert.equal(document.querySelectorAll("[data-forecast-days] > div").length, 5);
   assert.ok(!JSON.stringify(events).includes("single-use-token"));
+});
+
+test("simultaneous cold weather and forecast requests share one browser verification", async () => {
+  const { document, scripts, widgets, calls } = await run({ challengeWeather: true });
+  assert.equal(widgets.length, 1);
+  assert.equal(scripts.length, 1);
+  assert.equal(document.querySelector("[data-weather-status]")?.textContent, "Live");
+  assert.equal(document.querySelectorAll("[data-forecast-days] > div").length, 5);
+  assert.equal(calls.filter((call) => call.options.headers?.["x-weather-turnstile"]).length, 0);
 });
 
 test("a failed or blocked challenge does not loop or expose a provider request", async () => {
