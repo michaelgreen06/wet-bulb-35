@@ -23,6 +23,7 @@
 /build
 /dist
 /worker-assets
+/worker-assets-historical/
 
 # misc
 .DS_Store
