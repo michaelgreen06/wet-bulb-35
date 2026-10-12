@@ -43,8 +43,44 @@ Access uses the existing CDS token and is free of charge; no billing account is 
 |---|---|---|---|---|
 | `pilot-staging-20261011` (Michael Green, 2026-10-11) | pilot | 240 sets / 1.50 GB | 240 / 1.426 GB | 12/12 tiles sealed |
 | `top50-20261011` (Michael Green, 2026-10-11 `/goal`: pilot + Top 50 ≤ 5.6 GB) | top50 | 660 sets / 4.174 GB (5.6 GB − pilot) | _see results_ | 29 of 33 tiles run; 4 deferred |
+| `campaign-20261011-job-NNN` (Michael Green, 2026-10-11 overnight authorization) | top50, then varied-regions | ≤ 10 GB each; 40 GB campaign ceiling | `campaign-20261011/state.json` | sequential, unattended |
 
 The probe showed the full Top 50 does not fit the 5.6 GB ceiling. The run was bounded to the 29 tiles that fit with a 5% margin. The other four tiles (`t301-320`, `t303-376`, `t311-394`, `t314-399`) need about 0.5 GB more approval.
+
+## Unattended campaign (from 2026-10-12T03:28Z)
+
+**Authority.** Michael authorized sequential source-transfer jobs of at most 10,000,000,000 bytes each, including the four deferred Top-50 tiles (`approvals/michael-overnight-20261011.md`, SHA-256 `33100a62…`). He confirmed the persistent launch directly.
+
+**Runner.** `campaign_supervisor.py` runs as the `systemd --user` transient unit `wetbulb-history-campaign` (linger on, so it survives logout but not a reboot). The plan is Top 50, then varied-regions. The `remaining` stage is refused until the storage decision below is made.
+
+**Gates before every job.** Each check below fails closed:
+
+- **Frozen inputs.** Plan, authority and pipeline-code SHA-256s must match `campaign-20261011/frozen.json`. Any code edit stops the campaign.
+- **One writer.** The output folder's run lock must be free.
+- **Approval and ledger.** Each job gets its own approval file and ledger (≤ 10 GB). Chunk sets are budgeted at the worst probed size, 8.5 MB.
+- **Campaign ceiling.** 40 GB in total.
+- **Disk.** Projected disk use must leave ≥ 40 GB free; the runner rechecks before every tile.
+- **QA lag.** Independent vectorized QA of job *k* runs while job *k*+1 fetches. Job *k*+2 never starts unless QA *k* passed and route accounting succeeded.
+
+**Stop conditions.** The campaign stops on any of these:
+
+- HTTP 429 or 5xx;
+- HTTP 401, 402 or 403 (auth or billing);
+- a checksum, self-check or layout integrity error;
+- a reduce failure or QA failure;
+- a disk-floor or ceiling breach;
+- code drift;
+- a `STOP` file in the campaign folder.
+
+Transient network errors get two retries, 15 minutes apart. Raw chunks are never deleted.
+
+**Readback.**
+
+```sh
+~/.local/share/wetbulb35/historical-wbt/venv/bin/python scripts/historical-wetbulb/campaign_supervisor.py --status
+systemctl --user status wetbulb-history-campaign; tail ~/.local/share/wetbulb35/historical-wbt/issue57-private/campaign-20261011/supervisor.log
+touch ~/.local/share/wetbulb35/historical-wbt/issue57-private/campaign-20261011/STOP   # graceful stop between jobs
+```
 
 ## Results
 
