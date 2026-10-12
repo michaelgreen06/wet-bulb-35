@@ -38,12 +38,13 @@ def head(url, token):
         raise
 
 
-def sample_tiles(plan_rows, per_stage, seed):
+def sample_tiles(plan_rows, per_stage, seed, stages=None):
     tiles = defaultdict(set)
     for row in plan_rows:
         if row.get('stage') and 'group' in row:
             stage = 'remaining' if row['stage'].startswith('remaining-') else row['stage']
-            tiles[stage].add(tuple(row['tile']))
+            if stages is None or stage in stages:
+                tiles[stage].add(tuple(row['tile']))
     rng = random.Random(seed)
     return {stage: sorted(rng.sample(sorted(found), min(per_stage, len(found)))) for stage, found in sorted(tiles.items())}
 
@@ -56,9 +57,10 @@ def main():
     p.add_argument('--chunks', default='0,10')
     p.add_argument('--seed', type=int, default=20261004)
     p.add_argument('--pause-seconds', type=float, default=0.5)
+    p.add_argument('--stage', action='append', help='Probe only these stages (repeatable); default all')
     a = p.parse_args()
     chunks = [int(x) for x in a.chunks.split(',')]
-    tiles = sample_tiles(json.loads(a.plan.read_text())['rows'], a.per_stage, a.seed)
+    tiles = sample_tiles(json.loads(a.plan.read_text())['rows'], a.per_stage, a.seed, set(a.stage) if a.stage else None)
     total = sum(len(t) for t in tiles.values()) * len(chunks) * len(FIELDS)
     if total > MAX_REQUESTS or a.pause_seconds < 0.2:
         raise ValueError('Probe exceeds the HEAD request bound or pacing')

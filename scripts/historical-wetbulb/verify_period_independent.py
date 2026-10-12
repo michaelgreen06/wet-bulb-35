@@ -99,6 +99,127 @@ def hourly_wet_bulb_c(row):
     return wet_bulb_from_vapor(p, t, esat_liquid(min(t, d))) - 273.15
 
 
+# --- Vectorized path (NumPy, opt-in) -------------------------------------------------
+# The same bisection algorithm as the scalar reference above, applied element-wise.
+# Every verified group re-solves sampled hours with the scalar solver and must agree
+# within VECTOR_CHECK_K, so the fast path can never silently replace the reference.
+VECTOR_CHECK_K = 1e-9
+VECTOR_SAMPLE_HOURS = 512
+
+
+def _np():
+    import numpy  # optional: the private research venv has it; scalar path needs nothing
+    return numpy
+
+
+def esat_liquid_vec(t):
+    np = _np()
+    safe = np.where(t > 0, t, T0)
+    value = P0 * (safe / T0) ** ((CPV - CVL) / RV) * np.exp((E0V - (CVV - CVL) * T0) / RV * (1 / T0 - 1 / safe))
+    return np.where(t > 0, value, 0.0)
+
+
+def qsat_liquid_vec(p, t):
+    np = _np()
+    safe = np.where(t > 0, t, T0)
+    es = esat_liquid_vec(safe)
+    denom = (RV * p / (RA * P0) * (T0 / safe) ** ((CPV - CVL) / RV)
+             * np.exp(-(E0V - (CVV - CVL) * T0) / RV * (1 / T0 - 1 / safe)) - RV / RA + 1)
+    return np.where(t <= 0, 0.0, np.where(es > p, es / p, 1 / denom))
+
+
+def bisect_vec(fn, lo, hi, tol=1e-12):
+    """Element-wise twin of bisect(): same stopping rules, per-element freeze when done."""
+    np = _np()
+    lo, hi = lo.astype(float).copy(), hi.astype(float).copy()
+    flo = fn(lo, np.ones(lo.shape, bool))
+    result = np.where(flo == 0, lo, np.nan)
+    active = flo != 0
+    for _ in range(200):
+        if not active.any():
+            break
+        mid = (lo + hi) / 2
+        fmid = fn(mid, active)
+        stop = active & ((fmid == 0) | (hi - lo < tol))
+        result = np.where(stop, mid, result)
+        active &= ~stop
+        same = (fmid < 0) == (flo < 0)
+        move_lo = active & same
+        lo = np.where(move_lo, mid, lo)
+        flo = np.where(move_lo, fmid, flo)
+        hi = np.where(active & ~same, mid, hi)
+    return np.where(active, (lo + hi) / 2, result)
+
+
+def saturation_temperature_vec(e):
+    np = _np()
+    hi = np.full(e.shape, T0)
+    grow = esat_liquid_vec(hi) < e
+    while grow.any():
+        hi = np.where(grow, hi * 1.25, hi)
+        grow = esat_liquid_vec(hi) < e
+    out = bisect_vec(lambda t, _m: esat_liquid_vec(t) - e, np.full(e.shape, 1e-9), hi)
+    return np.where(e == 0, 0.0, out)
+
+
+def wet_bulb_from_vapor_vec(p, t, e):
+    np = _np()
+    rv = RA * e / (RV * p - RV * e + RA * e)
+    cp = (1 - rv) * CPA + rv * CPV
+    lo = saturation_temperature_vec(e)
+    hi = np.minimum(t, saturation_temperature_vec(p))
+
+    def residual(tw, _m=None):
+        qs = qsat_liquid_vec(p, tw)
+        return cp * (tw - t) * (1 - qs) + (qs - rv) * (E0V + (CVV - CVL) * (tw - T0) + RV * tw)
+    rlo, rhi = residual(lo), residual(hi)
+    solved = bisect_vec(residual, lo, hi)
+    return np.where(rlo == 0, lo, np.where((rhi == 0) | (rlo * rhi > 0), hi, solved))
+
+
+def hourly_wet_bulb_c_vec(t, d, p):
+    np = _np()
+    with np.errstate(all='ignore'):  # frozen/inactive lanes may overflow; their values are discarded
+        return wet_bulb_from_vapor_vec(p, t, esat_liquid_vec(np.minimum(t, d))) - 273.15
+
+
+def load_tile_cell_arrays(tile_dir, manifest):
+    """(UTC hour index, t, d, p) arrays for the manifest's cell from checksummed tile chunks."""
+    np = _np()
+    cell = manifest['gridCell']
+    key = f'{cell[0]:.1f},{cell[1]:.1f}'
+    stamps, triples = [], []
+    for record in manifest['hourlyChunks']:
+        head = json.loads((tile_dir / f"{record['chunk']}.json").read_text())
+        raw = (tile_dir / f"{record['chunk']}.bin").read_bytes()
+        if hashlib.sha256(raw).hexdigest() != record['sha256'] or head['sha256'] != record['sha256']:
+            raise ValueError(f"{record['chunk']}: hourly chunk differs from the period's recorded provenance")
+        cells, hours = head['cells'], head['hours']
+        values = np.frombuffer(raw, dtype='<f4').reshape(hours, len(cells), 3)[:, cells.index(key), :].astype(float)
+        start = int(datetime.fromisoformat(head['startUTC'].replace('Z', '+00:00')).timestamp()) // 3600
+        stamps.append(np.arange(start, start + hours, dtype=np.int64))
+        triples.append(values)
+    stamps, triples = np.concatenate(stamps), np.concatenate(triples)
+    if len(np.unique(stamps)) != len(stamps):
+        raise ValueError('Duplicate UTC hour across chunks')
+    finite = np.isfinite(triples).all(axis=1)
+    return stamps[finite], triples[finite, 0], triples[finite, 1], triples[finite, 2]
+
+
+def vector_wet_bulb_hours(stamps, t, d, p, sample_seed):
+    """{UTC datetime: wet bulb °C} for every hour, after a scalar cross-check on sampled hours."""
+    import random
+    values = hourly_wet_bulb_c_vec(t, d, p)
+    rng = random.Random(sample_seed)
+    picks = rng.sample(range(len(stamps)), min(VECTOR_SAMPLE_HOURS, len(stamps)))
+    for i in picks:
+        scalar = hourly_wet_bulb_c({'temperatureK': float(t[i]), 'dewpointK': float(d[i]), 'pressurePa': float(p[i])})
+        if not abs(scalar - float(values[i])) <= VECTOR_CHECK_K:
+            raise ValueError(f'Vectorized solver disagrees with the scalar reference by {abs(scalar - float(values[i]))} K')
+    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return {epoch + timedelta(hours=int(h)): float(v) for h, v in zip(stamps, values)}, len(picks)
+
+
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -317,7 +438,7 @@ def load_tile_cell_rows(tile_dir, manifest):
     return rows
 
 
-def verify_tile_group(group_dir, tile_dir, workers):
+def verify_tile_group(group_dir, tile_dir, workers, vectorized=False):
     """Independent check of a tile-pipeline period (reduce-tile-chunks.mjs output)."""
     manifest = json.loads((group_dir / 'manifest.json').read_text())
     period_raw = (group_dir / 'period.json').read_bytes()
@@ -331,17 +452,41 @@ def verify_tile_group(group_dir, tile_dir, workers):
     for record in manifest['annualDigests']:
         if sha(group_dir / f"y{record['year']}.json") != record['sha256']:
             raise ValueError(f"Annual digest mismatch for {record['year']}")
-    rows = load_tile_cell_rows(Path(tile_dir), manifest)
     years = list(range(manifest['startYear'], manifest['endYear'] + 1))
-    jobs = []
-    for year in years:
-        lo = f'{year - 1}-12-31T00:00:00.000Z'
-        hi = f'{year + 1}-01-02T23:00:00.000Z'
-        jobs.append(([r for r in rows if lo <= r['timeUTC'] <= hi], cell, zone_name, year))
-    results = parallel_map(reduce_rows_year, jobs, workers)
+    sampled = 0
+    if vectorized:
+        # Every local date of `year` lies inside its padded UTC window, so one dict of all
+        # hours answers exactly the lookups the per-year windows would.
+        hours, sampled = vector_wet_bulb_hours(*load_tile_cell_arrays(Path(tile_dir), manifest), manifest['periodSha256'])
+        zone = ZoneInfo(zone_name)
+        results = [(year, *days_from_hours(hours, zone, year)) for year in years]
+    else:
+        rows = load_tile_cell_rows(Path(tile_dir), manifest)
+        jobs = []
+        for year in years:
+            lo = f'{year - 1}-12-31T00:00:00.000Z'
+            hi = f'{year + 1}-01-02T23:00:00.000Z'
+            jobs.append(([r for r in rows if lo <= r['timeUTC'] <= hi], cell, zone_name, year))
+        results = parallel_map(reduce_rows_year, jobs, workers)
     tz = {'python': python_tzdata_version(), 'pipeline': manifest.get('tzdata')}
-    return {'groupKey': manifest['groupKey'], 'tzdata': tz, 'tzdataMatches': tz['python'] == tz['pipeline'],
-            **compare_period(period, results, years, zone_name)}
+    result = compare_period(period, results, years, zone_name)
+    result['ok'] = result['ok'] and tz['python'] == tz['pipeline']
+    # The digest binds this verdict to the exact period bytes, so later accounting can
+    # never credit a verification to a period that was rebuilt or replaced since.
+    return {'groupKey': manifest['groupKey'], 'periodSha256': manifest['periodSha256'], 'tzdata': tz,
+            'solver': {'mode': 'vectorized', 'scalarCrossChecks': sampled} if vectorized else {'mode': 'scalar'},
+            'tzdataMatches': tz['python'] == tz['pipeline'], **result}
+
+
+def previously_verified(paths):
+    """(groupKey, periodSha256) pairs that already passed in earlier verifier output."""
+    done = set()
+    for path in paths:
+        for line in Path(path).read_text().splitlines():
+            row = json.loads(line)
+            if row.get('ok') is True and row.get('groupKey') and row.get('periodSha256'):
+                done.add((row['groupKey'], row['periodSha256']))
+    return done
 
 
 def reference_vectors(path):
@@ -360,6 +505,10 @@ def main():
     p.add_argument('--source', default='archive')
     p.add_argument('--vectors', type=Path, default=Path(__file__).resolve().parents[2] / 'tests/fixtures/romps-reference-vectors.v1.json')
     p.add_argument('--workers', type=int, default=3)
+    p.add_argument('--skip-verified', type=Path, action='append', default=[],
+                   help='Earlier --tile-run output; groups that passed with the same period digest are not recomputed')
+    p.add_argument('--vectorized', action='store_true',
+                   help='NumPy element-wise bisection, cross-checked against the scalar solver on sampled hours')
     a = p.parse_args()
     count, worst = reference_vectors(a.vectors)
     if worst > 1e-6:
@@ -375,9 +524,15 @@ def main():
         for status_path in sorted((a.tile_run / 'tiles' / a.source).glob('t*/status.json')):
             for period in json.loads(status_path.read_text())['periods']:
                 tiles[period['groupKey']] = status_path.parent
+        done = previously_verified(a.skip_verified)
         for manifest_path in sorted((a.tile_run / 'groups' / a.source).glob('*/manifest.json')):
-            key = json.loads(manifest_path.read_text())['groupKey']
-            result = verify_tile_group(manifest_path.parent, tiles[key], a.workers)
+            manifest = json.loads(manifest_path.read_text())
+            key = manifest['groupKey']
+            if key not in tiles:
+                continue  # its tile has not been sealed yet; verify after the tile completes
+            if (key, manifest['periodSha256']) in done:
+                continue
+            result = verify_tile_group(manifest_path.parent, tiles[key], a.workers, a.vectorized)
             failed |= not result['ok']
             print(json.dumps(result), flush=True)
     sys.exit(1 if failed else 0)
