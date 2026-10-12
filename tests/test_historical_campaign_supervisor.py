@@ -51,6 +51,37 @@ class TestCampaignSupervisor(unittest.TestCase):
             tiles = {(1, 1): {'a': []}, (1, 2): {'b': [], 'c': []}, (1, 3): {'d': []}}
             self.assertEqual(SUP.chunks_needed(out, tiles), [((1, 2), 2, 13), ((1, 3), 1, 20)])
 
+    def test_restart_verifies_every_sealed_group_before_the_next_fetch(self):
+        """An interrupted QA must be replayed (blocking) before any new job starts."""
+        events = []
+
+        class Probe(SUP.Campaign):
+            def __init__(self, a):
+                self.a, self.dir, self.qa_proc = a, a.campaign, None
+                self.state = {'jobs': [{'id': 'job-001', 'status': 'bounded', 'ledger': '/nonexistent'}],
+                              'qa': [{'job': 'job-001', 'status': 'running', 'output': '/nonexistent'}]}
+
+            def save(self, **fields): self.state.update(fields)
+            def log(self, message): pass
+            def freeze_or_check(self, *_): pass
+            def wait_for_writer(self): events.append('writer-free')
+            def start_qa(self, label): events.append(('qa-start', label))
+            def finish_qa(self): events.append('qa-finish')
+
+            def run_job(self, *args):
+                events.append('fetch')
+                raise SystemExit('stop after first fetch')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            plan = Path(tmp) / 'plan.json'
+            plan.write_text('{"rows": []}')
+            a = type('A', (), {'plan': plan, 'authority': plan, 'expect_plan_sha256': SUP.RUN.sha256_file(plan),
+                               'stage': [], 'campaign': Path(tmp), 'out': Path(tmp)})()
+            campaign = Probe(a)
+            campaign.run()
+        self.assertEqual(campaign.state['qa'][0]['status'], 'interrupted')
+        self.assertEqual(events[:3], ['writer-free', ('qa-start', 'catchup-002'), 'qa-finish'])
+
     def test_cli_refuses_caps_above_authorization_and_the_remaining_stage(self):
         for extra in (['--job-max-bytes', '10000000001'], ['--min-free-gb', '39'], ['--pause-seconds', '1'],
                       ['--stage', 'remaining']):

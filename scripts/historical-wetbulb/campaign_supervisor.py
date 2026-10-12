@@ -299,6 +299,13 @@ class Campaign:
                 qa['status'] = 'interrupted'
         self.freeze_or_check(plan_sha, authority_sha)
         self.save(status='running', stopReason=None, stages=a.stage)
+        # Restart restores the QA-lag invariant before any new fetch: an interrupted QA, a
+        # job that ended between acquisition and QA, or a killed job all leave sealed tiles
+        # unverified. One blocking sweep verifies every sealed, not-yet-passed group (cheap
+        # when nothing is pending) and re-runs accounting; any failure stops here.
+        self.wait_for_writer()
+        self.start_qa(f'catchup-{len(self.state["qa"]) + 1:03d}')
+        self.finish_qa()
         plan_rows = json.loads(a.plan.read_text())['rows']
         transient = 0
         for stage in a.stage:
