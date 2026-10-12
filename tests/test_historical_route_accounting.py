@@ -66,7 +66,7 @@ class TestRouteAccounting(unittest.TestCase):
         cls.tmp.cleanup()
 
     def account(self, verdicts, runs=None):
-        sealed, started, periods = ACCOUNT.load_runs(runs or [self.out], 'arco')
+        sealed, started, periods = ACCOUNT.load_runs(runs or [self.out], 'arco', years=(1950, 1951))
         return {r['path']: r for r in ACCOUNT.account(self.plan, sealed, started, periods, verdicts)}
 
     def write_verdicts(self, rows):
@@ -116,9 +116,38 @@ class TestRouteAccounting(unittest.TestCase):
         try:
             period.write_bytes(original.replace(b'"groupKey"', b'"groupKey" '))
             with self.assertRaisesRegex(ValueError, 'period bytes differ'):
-                ACCOUNT.load_runs([self.out], 'arco')
+                ACCOUNT.load_runs([self.out], 'arco', years=(1950, 1951))
         finally:
             period.write_bytes(original)
+
+    def test_a_period_shorter_than_the_stated_span_never_counts(self):
+        with self.assertRaisesRegex(ValueError, 'not the stated 1950–2025 span'):
+            ACCOUNT.load_runs([self.out], 'arco')                    # fixture sealed 1950–1951 only
+
+    def test_two_runs_sealing_one_tile_differently_refuse(self):
+        other = Path(self.tmp.name) / 'other'
+        tile = self.out / 'tiles' / 'arco' / 't001-002'
+        (other / 'tiles' / 'arco' / 't001-002').mkdir(parents=True)
+        status = json.loads((tile / 'status.json').read_text())
+        (other / 'tiles' / 'arco' / 't001-002' / 'status.json').write_text(json.dumps({**status, 'maskedCells': []}))
+        import shutil
+        shutil.copytree(self.out / 'groups', other / 'groups')
+        with self.assertRaisesRegex(ValueError, 'sealed differently'):
+            ACCOUNT.load_runs([self.out, other], 'arco', years=(1950, 1951))
+
+    def test_unknown_tzdata_on_both_sides_is_not_a_pass(self):
+        manifest = next((self.out / 'groups' / 'arco').glob('*/manifest.json'))
+        real = VERIFY.python_tzdata_version
+        VERIFY.python_tzdata_version = lambda: None
+        try:
+            record = json.loads(manifest.read_text())
+            original = manifest.read_text()
+            manifest.write_text(json.dumps({**record, 'tzdata': None}))
+            result = VERIFY.verify_tile_group(manifest.parent, self.out / 'tiles' / 'arco' / 't001-002', 1)
+            self.assertFalse(result['ok'])
+        finally:
+            VERIFY.python_tzdata_version = real
+            manifest.write_text(original)
 
     def test_skip_verified_reuses_only_passing_verdicts_for_the_same_digest(self):
         path = self.write_verdicts(self.verdicts + [{**self.verdicts[0], 'periodSha256': 'c' * 64, 'ok': False}])
@@ -144,7 +173,7 @@ class TestVectorizedVerifier(unittest.TestCase):
     def tearDownClass(cls):
         TestRouteAccounting.tearDownClass()
 
-    def test_vectorized_solver_is_bit_identical_to_the_scalar_reference(self):
+    def test_vectorized_solver_matches_the_scalar_reference(self):
         import random
         rng = random.Random(57)
         t = numpy.array([rng.uniform(200, 335) for _ in range(3000)])
@@ -153,7 +182,8 @@ class TestVectorizedVerifier(unittest.TestCase):
         vec = VERIFY.hourly_wet_bulb_c_vec(t, d, p)
         for i in range(len(t)):
             scalar = VERIFY.hourly_wet_bulb_c({'temperatureK': t[i], 'dewpointK': d[i], 'pressurePa': p[i]})
-            self.assertEqual(scalar, float(vec[i]))
+            # Bit-identical where NumPy's exp is libm's; SIMD exp kernels may differ by a few ulp.
+            self.assertLessEqual(abs(scalar - float(vec[i])), VERIFY.VECTOR_CHECK_K)
 
     def test_vectorized_tile_verdicts_equal_the_scalar_verdicts(self):
         out = self.out

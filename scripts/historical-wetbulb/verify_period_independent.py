@@ -470,12 +470,13 @@ def verify_tile_group(group_dir, tile_dir, workers, vectorized=False):
         results = parallel_map(reduce_rows_year, jobs, workers)
     tz = {'python': python_tzdata_version(), 'pipeline': manifest.get('tzdata')}
     result = compare_period(period, results, years, zone_name)
-    result['ok'] = result['ok'] and tz['python'] == tz['pipeline']
+    tz_ok = tz['python'] is not None and tz['python'] == tz['pipeline']  # unknown on both sides is no evidence
+    result['ok'] = result['ok'] and tz_ok
     # The digest binds this verdict to the exact period bytes, so later accounting can
     # never credit a verification to a period that was rebuilt or replaced since.
     return {'groupKey': manifest['groupKey'], 'periodSha256': manifest['periodSha256'], 'tzdata': tz,
             'solver': {'mode': 'vectorized', 'scalarCrossChecks': sampled} if vectorized else {'mode': 'scalar'},
-            'tzdataMatches': tz['python'] == tz['pipeline'], **result}
+            'tzdataMatches': tz_ok, **result}
 
 
 def previously_verified(paths):

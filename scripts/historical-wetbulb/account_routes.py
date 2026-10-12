@@ -40,6 +40,7 @@ STATUS_MEANING = {
     'unavailable-identity-unmatched': 'No verified GeoNames identity/IANA timezone',
     'unavailable-identity-ambiguous': 'GeoNames identity shared by several canonical routes',
 }
+STATED_YEARS = (1950, 2025)
 REVIEW = ('unavailable-verification-failed', 'unavailable-masked-cell', 'unavailable-incomplete-period')
 
 
@@ -55,7 +56,7 @@ def tile_name(tile):
     return f't{tile[0]:03d}-{tile[1]:03d}'
 
 
-def load_runs(run_dirs, source):
+def load_runs(run_dirs, source, years=STATED_YEARS):
     """Tile outcomes across runs. A tile sealed in two runs must agree exactly."""
     sealed, started = {}, set()
     periods = {}
@@ -69,7 +70,8 @@ def load_runs(run_dirs, source):
             if status.get('source') != source or tile_name(status['tile']) != tile_dir.name:
                 raise ValueError(f'{tile_dir}: tile status does not match its folder or source')
             previous = sealed.get(tile_dir.name)
-            if previous and previous['periods'] != status['periods']:
+            comparable = lambda st: {k: v for k, v in st.items() if k != 'completedUTC'}
+            if previous and comparable(previous) != comparable(status):
                 raise ValueError(f'{tile_dir.name}: sealed differently in two runs; review before accounting')
             sealed[tile_dir.name] = status
             for period in status['periods']:
@@ -80,6 +82,11 @@ def load_runs(run_dirs, source):
                     raise ValueError(f"{period['groupKey']}: period bytes differ from the sealed tile status")
                 if manifest.get('sourcePinned') is not True or manifest.get('researchOnly') is not False:
                     raise ValueError(f"{period['groupKey']}: period is not content-pinned")
+                # A smoke or partial run sealed with other --start/--end years must never count.
+                if ((manifest.get('startYear'), manifest.get('endYear')) != tuple(years)
+                        or manifest.get('first') not in (f'{years[0]}-01-02', f'{years[0]}-01-03')
+                        or manifest.get('last') != f'{years[1]}-12-31'):
+                    raise ValueError(f"{period['groupKey']}: period is not the stated {years[0]}–{years[1]} span")
                 periods[period['groupKey']] = {'periodSha256': period['periodSha256'], 'completeDays': period['completeDays'],
                                                'first': manifest['first'], 'last': manifest['last']}
     return sealed, started - set(sealed), periods

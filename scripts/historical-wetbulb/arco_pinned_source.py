@@ -131,7 +131,7 @@ class ArcoPinnedSource:
         self.get, self.ledger = get, ledger
         if decode is None:
             try:
-                import numcodecs  # noqa: F401  (checked before the ledger charges the first request)
+                from numcodecs import Blosc  # noqa: F401  (the C codec itself; checked before the first charge)
             except ImportError:
                 raise SystemExit('ARCO decoding needs numcodecs (private research venv); nothing was charged') from None
         self.decode = decode or self._blosc
