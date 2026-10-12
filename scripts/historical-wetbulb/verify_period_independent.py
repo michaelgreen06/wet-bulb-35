@@ -484,7 +484,10 @@ def previously_verified(paths):
     done = set()
     for path in paths:
         for line in Path(path).read_text().splitlines():
-            row = json.loads(line)
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue  # a half-written line from a live run; skipping it can only re-verify
             if row.get('ok') is True and row.get('groupKey') and row.get('periodSha256'):
                 done.add((row['groupKey'], row['periodSha256']))
     return done
@@ -526,6 +529,7 @@ def main():
             for period in json.loads(status_path.read_text())['periods']:
                 tiles[period['groupKey']] = status_path.parent
         done = previously_verified(a.skip_verified)
+        pending = []
         for manifest_path in sorted((a.tile_run / 'groups' / a.source).glob('*/manifest.json')):
             manifest = json.loads(manifest_path.read_text())
             key = manifest['groupKey']
@@ -533,9 +537,21 @@ def main():
                 continue  # its tile has not been sealed yet; verify after the tile completes
             if (key, manifest['periodSha256']) in done:
                 continue
-            result = verify_tile_group(manifest_path.parent, tiles[key], a.workers, a.vectorized)
-            failed |= not result['ok']
-            print(json.dumps(result), flush=True)
+            pending.append((manifest_path.parent, tiles[key]))
+        if a.vectorized and a.workers > 1:
+            # One group per process; each group is single-threaded NumPy.
+            from concurrent.futures import as_completed
+            with ProcessPoolExecutor(max_workers=a.workers) as pool:
+                futures = [pool.submit(verify_tile_group, group, tile, 1, True) for group, tile in pending]
+                for future in as_completed(futures):
+                    result = future.result()
+                    failed |= not result['ok']
+                    print(json.dumps(result), flush=True)
+        else:
+            for group, tile in pending:
+                result = verify_tile_group(group, tile, a.workers, a.vectorized)
+                failed |= not result['ok']
+                print(json.dumps(result), flush=True)
     sys.exit(1 if failed else 0)
 
 

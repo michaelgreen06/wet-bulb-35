@@ -511,8 +511,9 @@ def main():
     p.add_argument('--max-new-chunks', type=int, required=True)
     p.add_argument('--pause-seconds', type=float, default=2.5)
     p.add_argument('--execute', action='store_true')
+    p.add_argument('--min-free-gb', type=float, default=10, help='Stop before a tile when free disk falls below this')
     a = p.parse_args()
-    if not (a.start_year == 1950 and a.start_year <= a.end_year <= 2025) or a.max_new_chunks < 1:
+    if not (a.start_year == 1950 and a.start_year <= a.end_year <= 2025) or a.max_new_chunks < 1 or a.min_free_gb < 10:
         raise ValueError('Unsupported period or chunk budget')
     out = check_private_out(a.out)
     plan_sha = sha256_file(a.plan)
@@ -564,8 +565,8 @@ def main():
         outcome, error = 'finished', None
         try:
             for tile, groups in tiles.items():
-                if shutil.disk_usage(out).free < 10_000_000_000:
-                    raise OSError('Stopped: less than 10 GB free')
+                if shutil.disk_usage(out).free < a.min_free_gb * 1e9:
+                    raise OSError(f'Stopped: less than {a.min_free_gb:g} GB free')
                 status, fetched = run_tile(tile, groups, source, out, start_year=a.start_year, end_year=a.end_year,
                                            budget=budget, pause=a.pause_seconds if a.source == 'arco' else 0,
                                            archive=archive, ledger=ledger)
