@@ -114,6 +114,72 @@ Byte-level re-fetch equality (same SHA-256 twice) has not been tested. It would 
    - the 4 deferred Top-50 tiles (≈0.5 GB);
    - varied-regions (201 tiles, ≈24.7 GB estimated; re-probe before approving).
 
+## Proposed Google Drive backup, restore and retention design (for approval; nothing set up)
+
+Michael chose Google Drive as the off-host target. Nothing below is installed or uploaded, and nothing is deleted, until Michael approves it.
+
+**Measured now (232 groups).** Tier A is ≈55 MB:
+
+- 78 KB per group (period + manifest);
+- 0.7 MB of tile manifests;
+- 36 MB of plan, ledgers, approvals and QA.
+
+Annual files are 0.92 GB and raw hourly data is 2.04 GB. At full scale Tier A is ≈6.5 GB.
+
+1. **Tool and scope.** Use rclone with a Google Drive remote in `drive.file` scope, so it sees only the files it created. The OAuth token stays in `~/.config/rclone` (mode 0600), never in Git. Back up into one private, unshared folder `wetbulb35-issue57-backup/`. No encryption layer: the data is public-model derived. The CDS token and `~/.cdsapirc` are excluded by an explicit allowlist.
+2. **What is backed up.**
+
+   | Tier | Contents | Upload rule |
+   |---|---|---|
+   | A, immutable | sealed `period.json`, `manifest.json`, tile `status.json`, `chunk-*.json` (upstream object SHA-256s), approvals | `objects/<relative path>`, `rclone copy --immutable --checksum`; never overwritten |
+   | A, mutable | ledgers, `state.json`, `frozen.json`, QA `*.ndjson`, accounting, plan, `self-check.json` | `snapshots/<UTC>/`; each snapshot is a complete copy |
+   | B | annual `y*.json` | Not backed up at full scale (≈48 GB gzipped exceeds Drive's free 15 GB). They are rebuildable from re-fetched raw data, and their digests sit in Tier A manifests. |
+   | Raw `.bin` | — | Never uploaded. Restore path is a pinned re-fetch from ARCO. |
+
+3. **When it runs.** A separate `systemd --user` timer runs every 6 h, plus once after each QA-passed job. It only reads the acquisition tree and never edits frozen code. Sealed files are write-once and mutable JSON is replaced atomically, so copying while the writer runs is safe.
+4. **Verification.** Each snapshot writes `backup-manifest-<UTC>.json`, with the SHA-256 and size of every file, and uploads it last. `rclone check --checksum` (Drive keeps MD5) must report 0 differences, or the snapshot is marked failed.
+5. **Restore drill.** This is required before any deletion, and is repeated weekly and before every deletion batch:
+   1. Download the latest snapshot plus `objects/` into an empty private folder.
+   2. Check every SHA-256 against the manifest.
+   3. Re-run `account_routes.py` on the restored tree; the summary must be byte-identical.
+   4. Rebuild page records from the restored `period.json` files with the publication encoder.
+6. **Raw re-fetch drill.** This is also required before any deletion. Under its own approval of ≤ 50 MB, re-fetch 3 sampled chunk sets from different tiles and eras. Each upstream object's SHA-256 must equal the recorded digest, and the decoded values must equal the retained `.bin` exactly.
+7. **Raw retention rule.** A tile's `.bin` files become deletable only when **all** of these hold:
+   - the tile is sealed with no `failed.json`;
+   - every group in it has a passing digest-bound verdict, or an explicit unavailable reason;
+   - a backup snapshot containing the tile's Tier A files passed `rclone check`;
+   - a restore drill and a raw re-fetch drill each passed within the last 7 days;
+   - no writer holds the run lock.
+
+   Deletion runs as a separate dry-run-by-default script. It writes a fsynced deletion ledger (tile, file, size, SHA-256) before each unlink.
+
+   Pilot and Top-50 raw data (≈3 GB) are kept permanently as the local self-check and reference corpus.
+
+**Disk under this rule.** Rolling raw usage per job is ≈2–3 GB. Tier A ≈6.5 GB and annual files stay local until the remaining stage. At that point annual files are dropped after verification (they are rebuildable and their digests are kept). This stays above the 40 GB floor.
+
+**Open items for Michael:**
+
+- The Drive account's free quota (unknown). Tier A at ≈6.5 GB fits the free 15 GB only if the account has room; a Google One plan would be a paid change.
+- Approval of rules 1–7.
+- One interactive `rclone config` OAuth login, done by Michael.
+
+## Known gap: supervisor restart skips catch-up QA (found by Hermes review)
+
+`run()` marks a running QA as `interrupted` but never replays it. After a restart, the next job's QA covers the gap, but that next job and the one after it start before the interrupted QA's groups pass. That breaks the "job *k*+2 waits for QA *k*" gate. The same happens if the supervisor dies between a job ending and its QA starting.
+
+Coverage is never lost: unverified groups are always re-verified later, and accounting credits only digest-bound passes. Only the ordering gate is broken. The live campaign is unaffected unless the supervisor restarts.
+
+**Fix.** Prepared privately, not applied: `campaign-20261011/pending-fixes/qa-restart-catchup.patch`, SHA-256 `f77d57a8…`. It adds one blocking catch-up QA sweep and accounting before any post-restart fetch, plus a regression test. The test fails on the live code and passes with the patch.
+
+**Applying it.** Editing the frozen supervisor stops the campaign, so apply it only at a controlled boundary:
+
+1. `touch campaign-20261011/STOP`. The supervisor finishes the current job and its QA, then stops.
+2. Apply the patch, run the tests and commit.
+3. Archive `frozen.json` as `frozen-<UTC>.json`, which re-freezes the code deliberately.
+4. Relaunch the same `systemd-run` command. The new catch-up sweep runs first.
+
+Until then, any manual restart must first run a blocking `verify_period_independent.py --vectorized --skip-verified …` sweep.
+
 ## Runtime budget at full scale (measured rates; moderate confidence)
 
 - **Fetch:** 16,656 tiles × ~150 s ≈ **694 h** (29 days), one paced worker.
