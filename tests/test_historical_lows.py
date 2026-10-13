@@ -183,7 +183,13 @@ class TestLows(unittest.TestCase):
         verdicts.write_text(full.stdout)
         again = subprocess.run(cmd + ['--skip-verified', str(verdicts)], capture_output=True, text=True)
         self.assertEqual((again.returncode, len(again.stdout.splitlines())), (0, 1), 'nothing left to verify')
-        (out / 'tiles' / 'arco' / TILE / RUN.LOW_STATUS).unlink()
+        low_path = out / 'tiles' / 'arco' / TILE / RUN.LOW_STATUS
+        record = json.loads(low_path.read_text())
+        low_path.write_text(json.dumps({**record, 'lowPeriods': record['lowPeriods'][:1]}))
+        truncated = subprocess.run(cmd + ['--skip-verified', str(verdicts)], capture_output=True, text=True)
+        self.assertEqual(truncated.returncode, 1, 'a truncated low-status never passes on earlier verdicts')
+        self.assertIn('differ from the sealed periods', truncated.stdout)
+        low_path.unlink()
         gap = subprocess.run(cmd + ['--skip-verified', str(verdicts)], capture_output=True, text=True)
         self.assertEqual(gap.returncode, 1)
         self.assertIn('low coverage absent', gap.stdout)
@@ -231,3 +237,77 @@ class TestLows(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestBackfillCli(unittest.TestCase):
+    """backfill_lows.py reports each tile as it finishes and stops cleanly on the first failure."""
+
+    def setUp(self):
+        from test_historical_tile_backfill import load
+        self.mod = load('backfill_lows.py')
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.out = Path(tmp.name)
+        for name in ('t001-001', 't001-002', 't001-003'):
+            (self.out / 'tiles' / 'arco' / name).mkdir(parents=True)
+            (self.out / 'tiles' / 'arco' / name / 'status.json').write_text('{}')
+
+    def run_main(self, backfill, workers):
+        from unittest import mock
+        lines = []
+        argv = ['backfill_lows.py', '--out', str(self.out), '--workers', str(workers)]
+        with mock.patch.object(self.mod.RUN, 'check_private_out', side_effect=lambda p: Path(p)), \
+                mock.patch.object(self.mod.RUN, 'backfill_tile_lows', side_effect=backfill), \
+                mock.patch.object(sys, 'argv', argv), \
+                mock.patch('builtins.print', side_effect=lambda text, **_: lines.append(json.loads(text))):
+            try:
+                self.mod.main()
+            except SystemExit as stop:
+                self.assertEqual(stop.code, 0)
+        return lines
+
+    def test_each_tile_is_reported_while_others_still_run(self):
+        import threading
+        first_reported = threading.Event()
+        seen = []
+
+        def backfill(tile_dir, out, **_):
+            if tile_dir.name == 't001-002':
+                seen.append(first_reported.wait(10))  # still running when t001-001 must already be reported
+            return {'lowPeriods': [{}], 'failedLowGroups': []}
+
+        from unittest import mock
+        lines = []
+
+        def capture(text, **_):
+            row = json.loads(text)
+            lines.append(row)
+            if row.get('tile') == 't001-001':
+                first_reported.set()
+
+        argv = ['backfill_lows.py', '--out', str(self.out), '--workers', '2']
+        with mock.patch.object(self.mod.RUN, 'check_private_out', side_effect=lambda p: Path(p)), \
+                mock.patch.object(self.mod.RUN, 'backfill_tile_lows', side_effect=backfill), \
+                mock.patch.object(sys, 'argv', argv), mock.patch('builtins.print', side_effect=capture):
+            with self.assertRaises(SystemExit) as stop:
+                self.mod.main()
+        self.assertEqual(stop.exception.code, 0)
+        self.assertEqual(seen, [True], 'progress must not wait for every tile to finish')
+        self.assertEqual([r['tile'] for r in lines[:-1]][0], 't001-001')
+        self.assertEqual((lines[-1]['outcome'], lines[-1]['tilesBackfilled']), ('finished', 3))
+
+    def test_first_failure_cancels_unstarted_tiles_and_is_recorded(self):
+        called = []
+
+        def backfill(tile_dir, out, **_):
+            called.append(tile_dir.name)
+            if tile_dir.name == 't001-002':
+                raise ValueError('t001-002: re-reduction differs from the sealed tile status')
+            return {'lowPeriods': [{}], 'failedLowGroups': []}
+
+        with self.assertRaisesRegex(ValueError, 'differs'):
+            self.run_main(backfill, workers=1)
+        self.assertEqual(called, ['t001-001', 't001-002'], 't001-003 never starts')
+        progress = json.loads((self.out / 'progress-lows-arco.json').read_text())
+        self.assertEqual((progress['outcome'], progress['tilesBackfilled']), ('failed', 1))
+        self.assertIn('differs', progress['error'])

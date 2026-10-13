@@ -222,6 +222,12 @@ class TestCoverageGate(unittest.TestCase):
             (copy / 'tiles' / 'arco' / 't001-002' / 'low-status.json').unlink()
             self.assertEqual(SUP.tiles_without_lows(copy), ['t001-002'])
             self.assertIn('t001-002: no low-status.json', SUP.coverage_gaps(copy, ['t001-002'], [str(both)]))
+            truncated = json.loads((out / 'tiles' / 'arco' / 't001-002' / 'low-status.json').read_text())
+            truncated['lowPeriods'] = truncated['lowPeriods'][:1]
+            (copy / 'tiles' / 'arco' / 't001-002' / 'low-status.json').write_text(json.dumps(truncated))
+            gaps = SUP.coverage_gaps(copy, ['t001-002'], [str(both)])
+            self.assertEqual(len(gaps), 1, 'remaining low entry still has its verdict')
+            self.assertIn('differ from sealed periods', gaps[0])
 
             class Probe(SUP.Campaign):
                 def __init__(self, a):

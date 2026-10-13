@@ -126,6 +126,11 @@ def coverage_gaps(out, tile_names, verdict_files):
         record = json.loads(low_path.read_text())
         if record.get('highStatusSha256') != RUN.sha256_file(folder / 'status.json'):
             gaps.append(f'{name}: low-status.json not bound to status.json')
+        # Exact group set: a truncated low-status must never pass on the strength of high verdicts.
+        listed = [p['groupKey'] for p in record['lowPeriods']] + [f['groupKey'] for f in record['failedLowGroups']]
+        sealed = {p['groupKey'] for p in status['periods']}
+        if len(listed) != len(set(listed)) or set(listed) != sealed:
+            gaps.append(f'{name}: low-status groups {sorted(set(listed) ^ sealed)[:5]} differ from sealed periods')
         gaps += [f"{name}: low failed {f['groupKey']}" for f in record['failedLowGroups']]
         gaps += [f"{name}: low {p['groupKey']}" for p in record['lowPeriods'] if (p['groupKey'], p['lowPeriodSha256']) not in low]
     return gaps

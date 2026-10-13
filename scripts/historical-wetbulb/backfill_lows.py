@@ -10,11 +10,12 @@ Holds the output folder's run lock, so it can never overlap an acquisition write
 """
 import argparse
 import fcntl
+import itertools
 import json
 import shutil
 import sys
 import time
-from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from datetime import datetime, timezone
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
@@ -58,15 +59,19 @@ def main():
             return tile_dir, RUN.backfill_tile_lows(tile_dir, out, start_year=a.start_year, end_year=a.end_year)
 
         try:
+            queue = iter(todo[:a.max_tiles])
             with ThreadPoolExecutor(max_workers=a.workers) as pool:
-                pending = {pool.submit(one, tile_dir) for tile_dir in todo[:a.max_tiles]}
+                # At most `workers` tiles in flight; the next starts only after a success, so after
+                # the first failure no new tile starts (in-flight ones finish atomically).
+                pending = {pool.submit(one, tile_dir) for tile_dir in itertools.islice(queue, a.workers)}
                 while pending:
-                    finished, pending = wait(pending, return_when=FIRST_EXCEPTION)
+                    finished, pending = wait(pending, return_when=FIRST_COMPLETED)
                     for future in finished:
                         if future.exception():
-                            for other in pending:
-                                other.cancel()  # tiles not yet started stay untouched
                             raise future.exception()
+                        following = next(queue, None)
+                        if following is not None:
+                            pending.add(pool.submit(one, following))
                         tile_dir, record = future.result()
                         done += 1
                         lows += len(record['lowPeriods'])

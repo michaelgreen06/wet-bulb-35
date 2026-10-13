@@ -648,6 +648,15 @@ def main():
                                   'error': 'sealed tile has no low-status.json (low coverage absent)'}), flush=True)
                 continue
             low_status = json.loads(low_path.read_text())
+            listed = ([e['groupKey'] for e in low_status.get('lowPeriods', [])]
+                      + [e['groupKey'] for e in low_status.get('failedLowGroups', [])])
+            sealed = {e['groupKey'] for e in json.loads(status_path.read_text())['periods']}
+            if len(listed) != len(set(listed)) or set(listed) != sealed:
+                failed = True
+                print(json.dumps({'extremum': 'low', 'tile': status_path.parent.name, 'ok': False,
+                                  'error': 'low-status.json groups differ from the sealed periods (low coverage absent)'}),
+                      flush=True)
+                continue
             if low_status.get('highStatusSha256') != sha(status_path) or low_status.get('lowSchema') != LOW_SCHEMA:
                 failed = True
                 print(json.dumps({'extremum': 'low', 'tile': status_path.parent.name, 'ok': False,
