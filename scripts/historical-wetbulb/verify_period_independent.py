@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Independently recompute a private research period from retained hourly inputs.
 
-Separate from the Node pipeline on purpose: Python zoneinfo local-day bounds
+Separate from the Node pipeline on purpose: Python zoneinfo local-day bounds from a
+pinned, vendored IANA 2026c main-data tree (tzdata-iana-2026c/, never the system's
+backzone build), checked hour-by-hour against the pipeline's ICU offsets per zone
 (not Intl adjacency checks), a bisection Romps solver (not Brent) validated
 against the heatindex 0.0.2 reference vectors, and its own checksum/identity
 joins. Compares calendar-day, monthly and period highs plus coverage, and the same
@@ -19,6 +21,77 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+TZ_DIR = Path(__file__).resolve().with_name('tzdata-iana-2026c')
+TZ_SOURCE = 'iana-2026c-main/pytz-2026.3.post1'
+_TZ_MANIFEST, _ZONES, _PARITY = None, {}, {}
+
+
+def tz_manifest():
+    global _TZ_MANIFEST
+    if _TZ_MANIFEST is None:
+        manifest = json.loads((TZ_DIR / 'MANIFEST.json').read_text())
+        tree = hashlib.sha256(json.dumps(manifest['files'], sort_keys=True).encode()).hexdigest()
+        if manifest.get('iana') != '2026c' or tree != manifest.get('treeSha256'):
+            raise ValueError('Pinned timezone tree manifest is inconsistent')
+        _TZ_MANIFEST = manifest
+    return _TZ_MANIFEST
+
+
+def pinned_zone(name):
+    """ZoneInfo from the pinned main-data tree only; each file must match its recorded SHA-256."""
+    if name not in _ZONES:
+        expected = tz_manifest()['files'].get(name)
+        if expected is None:
+            raise ValueError(f'{name}: zone absent from the pinned timezone tree')
+        raw = (TZ_DIR / 'zoneinfo' / name).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != expected:
+            raise ValueError(f'{name}: pinned timezone file checksum mismatch')
+        import io
+        _ZONES[name] = ZoneInfo.from_file(io.BytesIO(raw), key=name)
+    return _ZONES[name]
+
+
+def icu_segments(zones):
+    """The pipeline's ICU offset segments for each zone (tz-offsets.mjs), or None without Node."""
+    import shutil
+    import subprocess
+    node = shutil.which('node')
+    if not node or not zones:
+        return None
+    result = subprocess.run([node, str(Path(__file__).with_name('tz-offsets.mjs')), json.dumps(sorted(zones))],
+                            capture_output=True, text=True)
+    if result.returncode:
+        return None
+    return json.loads(result.stdout)
+
+
+def zone_parity(zones):
+    """{zone: True} only where pinned offsets equal ICU's at EVERY UTC hour 1949-12-30 → 2026-01-03.
+
+    Matching '2026c' labels are no proof: Ubuntu's system zoneinfo is built with
+    backzone and differs before 1970 in 22 of the plan's zones.
+    """
+    todo = sorted(set(zones) - set(_PARITY))
+    data = icu_segments(todo) if todo else {'zones': {}}
+    for zone in todo:
+        segments = (data or {}).get('zones', {}).get(zone)
+        if not segments:
+            _PARITY[zone] = False
+            continue
+        start = datetime.fromisoformat(data['startUTC'].replace('Z', '+00:00'))
+        tz = pinned_zone(zone)
+        bounds = [s[0] for s in segments[1:]] + [data['hours']]
+        ok = True
+        for (first, offset), end in zip(segments, bounds):
+            for h in range(first, end):
+                if int((start + timedelta(hours=h)).astimezone(tz).utcoffset().total_seconds()) != offset:
+                    ok = False
+                    break
+            if not ok:
+                break
+        _PARITY[zone] = ok
+    return {zone: _PARITY[zone] for zone in zones}
 
 T0, P0 = 273.16, 611.65
 E0V, E0S = 2.374e6, 0.3337e6
@@ -302,17 +375,17 @@ def reduce_year(args):
     plan = status['plan']
     if plan['year'] != year or plan['timeZone'] != zone_name or plan['actualEra5LandCell'] != cell:
         raise ValueError(f'{Path(job_dir).name}: plan identity mismatch')
-    return (year, *days_from_hours(wet_bulb_hours(rows, cell), ZoneInfo(zone_name), year))
+    return (year, *days_from_hours(wet_bulb_hours(rows, cell), pinned_zone(zone_name), year))
 
 
 def reduce_rows_year(args):
     rows, cell, zone_name, year = args
-    return (year, *days_from_hours(wet_bulb_hours(rows, cell), ZoneInfo(zone_name), year))
+    return (year, *days_from_hours(wet_bulb_hours(rows, cell), pinned_zone(zone_name), year))
 
 
 def skipped_dates(zone_name, first, last):
     """Plain-calendar dates the zone never had (every real local date lasts ≥ 23 h)."""
-    zone, seen = ZoneInfo(zone_name), set()
+    zone, seen = pinned_zone(zone_name), set()
     at = datetime.fromisoformat(first).replace(tzinfo=timezone.utc) - timedelta(hours=15)
     stop = datetime.fromisoformat(last).replace(tzinfo=timezone.utc) + timedelta(hours=39)
     while at <= stop:
@@ -327,17 +400,8 @@ def skipped_dates(zone_name, first, last):
 
 
 def python_tzdata_version():
-    for base in ('/usr/share/zoneinfo/tzdata.zi',):
-        try:
-            head = Path(base).read_text().split('\n', 1)[0]
-            return head.removeprefix('# version ').strip() or None
-        except OSError:
-            continue
-    try:
-        import importlib.metadata
-        return importlib.metadata.version('tzdata')
-    except Exception:
-        return None
+    """IANA release of the pinned tree the verifier actually uses (not the system's)."""
+    return tz_manifest()['iana']
 
 
 def parallel_map(fn, jobs, workers):
@@ -362,10 +426,13 @@ def compare_period(period, results, years, zone_name, extremum='high'):
         partial += p
         odd += o
     by_key, months = defaultdict(list), defaultdict(list)
+    key_hours, month_hours = defaultdict(int), defaultdict(int)
     for iso, value in all_days.items():
         item = (value[spec['value']], value[spec['time']], iso)
         by_key[iso[5:]].append(item)
         months[iso[5:7]].append(item)
+        key_hours[iso[5:]] += value[2]
+        month_hours[iso[5:7]] += value[2]
     sign = spec['sign']
     # Highest (or lowest) value; equal values go to the earliest hour.
     pick = lambda items: max(items, key=lambda v: (sign * v[0], -datetime.fromisoformat(v[1][:-5]).timestamp()))
@@ -405,6 +472,9 @@ def compare_period(period, results, years, zone_name, extremum='high'):
         # A wholly missing local date (no hours at all) must still be caught:
         'spanFullyCovered': len(all_days) == span - len(skipped),
         'firstComplete': complete[0] == coverage['firstComplete'],
+        # Local-day lengths (DST 23/25 h, offset changes) must agree, not just day counts:
+        'dailyHours': all(period['daily'].get(k, {}).get('hours') == h for k, h in key_hours.items()),
+        'monthlyHours': all(period['monthly'].get(m, {}).get('hours') == h for m, h in month_hours.items()),
         'lastComplete': complete[-1] == coverage['lastComplete'],
         'noInteriorPartial': all(d < coverage['firstComplete'] or d > coverage['lastComplete'] for d in partial),
         'leapDays': len(by_key.get('02-29', [])) == sum(1 for y in years if y % 4 == 0 and (y % 100 or y % 400 == 0)
@@ -519,7 +589,7 @@ def tile_group_results(manifest, tile_dir, workers, vectorized):
         # Every local date of `year` lies inside its padded UTC window, so one dict of all
         # hours answers exactly the lookups the per-year windows would.
         hours, sampled = vector_wet_bulb_hours(*load_tile_cell_arrays(Path(tile_dir), manifest), manifest['periodSha256'])
-        zone = ZoneInfo(zone_name)
+        zone = pinned_zone(zone_name)
         return [(year, *days_from_hours(hours, zone, year)) for year in years], years, sampled
     rows = load_tile_cell_rows(Path(tile_dir), manifest)
     jobs = []
@@ -535,8 +605,12 @@ def verify_tile_group(group_dir, tile_dir, workers, vectorized=False):
     return verify_tile_group_extrema(group_dir, tile_dir, workers, vectorized, ('high',))[0]
 
 
-def verify_tile_group_extrema(group_dir, tile_dir, workers, vectorized=False, extrema=('high', 'low'), expected_low_sha=None):
-    """High and/or low verdict rows for one group from ONE independent hourly recomputation."""
+def verify_tile_group_extrema(group_dir, tile_dir, workers, vectorized=False, extrema=('high', 'low'), expected_low_sha=None,
+                              parity=None):
+    """High and/or low verdict rows for one group from ONE independent hourly recomputation.
+
+    `parity`: precomputed zone_parity() result for this group's zone (computed here if None).
+    """
     group_dir = Path(group_dir)
     manifest, period = load_high_group(group_dir)
     low_manifest = low = None
@@ -544,8 +618,11 @@ def verify_tile_group_extrema(group_dir, tile_dir, workers, vectorized=False, ex
         low_manifest, low = load_low_group(group_dir, manifest, period, expected_low_sha)
     results, years, sampled = tile_group_results(manifest, tile_dir, workers, vectorized)
     zone_name = manifest['timeZone']
-    tz = {'python': python_tzdata_version(), 'pipeline': manifest.get('tzdata')}
-    tz_ok = tz['python'] is not None and tz['python'] == tz['pipeline']  # unknown on both sides is no evidence
+    if parity is None:
+        parity = zone_parity([zone_name])[zone_name]
+    tz = {'python': python_tzdata_version(), 'pipeline': manifest.get('tzdata'), 'source': TZ_SOURCE, 'icuParity': parity}
+    # Same release label AND the same hourly offsets as the pipeline's ICU for this zone.
+    tz_ok = tz['python'] is not None and tz['python'] == tz['pipeline'] and parity is True
     solver = {'mode': 'vectorized', 'scalarCrossChecks': sampled} if vectorized else {'mode': 'scalar'}
     rows = []
     if 'high' in extrema:
@@ -554,7 +631,7 @@ def verify_tile_group_extrema(group_dir, tile_dir, workers, vectorized=False, ex
         # The digest binds this verdict to the exact period bytes, so later accounting can
         # never credit a verification to a period that was rebuilt or replaced since.
         rows.append({'groupKey': manifest['groupKey'], 'periodSha256': manifest['periodSha256'], 'tzdata': tz,
-                     'solver': solver, 'tzdataMatches': tz_ok, **result})
+                     'tzSource': TZ_SOURCE, 'solver': solver, 'tzdataMatches': tz_ok, **result})
     if 'low' in extrema:
         result = compare_period(low, results, years, zone_name, 'low')
         tz_low = tz_ok and low_manifest.get('tzdata') == manifest.get('tzdata')
@@ -562,7 +639,7 @@ def verify_tile_group_extrema(group_dir, tile_dir, workers, vectorized=False, ex
         # No `periodSha256` key: high-only readers can never mistake a low verdict for a high one.
         rows.append({'extremum': 'low', 'lowSchema': LOW_SCHEMA, 'groupKey': manifest['groupKey'],
                      'lowPeriodSha256': low_manifest['lowPeriodSha256'], 'highPeriodSha256': manifest['periodSha256'],
-                     'tzdata': tz, 'solver': solver, 'tzdataMatches': tz_low, **result})
+                     'tzdata': tz, 'tzSource': TZ_SOURCE, 'solver': solver, 'tzdataMatches': tz_low, **result})
     return rows
 
 
@@ -575,6 +652,8 @@ def previously_verified(paths, extremum='high'):
     """(groupKey, digest) pairs that already passed in earlier verifier output.
 
     High rows are keyed by periodSha256 (legacy shape); low rows by lowPeriodSha256.
+    Only verdicts made with the pinned timezone tree count: earlier output used the
+    system's backzone build, which differs from the pipeline in 22 plan zones.
     """
     field = 'periodSha256' if extremum == 'high' else 'lowPeriodSha256'
     done = set()
@@ -586,7 +665,7 @@ def previously_verified(paths, extremum='high'):
                 continue  # a half-written line from a live run; skipping it can only re-verify
             if row.get('extremum', 'high') != extremum:
                 continue
-            if row.get('ok') is True and row.get('groupKey') and row.get(field):
+            if row.get('ok') is True and row.get('groupKey') and row.get(field) and row.get('tzSource') == TZ_SOURCE:
                 done.add((row['groupKey'], row[field]))
     return done
 
@@ -682,11 +761,16 @@ def main():
                 extrema.append('low')
             if extrema:
                 pending.append((manifest_path.parent, tiles[key], tuple(extrema), low_tiles.get(key, (None, None))[1]))
+        zones = sorted({key.split('|', 1)[1] for key in tiles})
+        parity = zone_parity(zones)
+        print(json.dumps({'tzSource': TZ_SOURCE, 'tzTreeSha256': tz_manifest()['treeSha256'], 'zones': len(zones),
+                          'icuParityFailures': sorted(z for z, ok in parity.items() if not ok)}), flush=True)
+        zone_of = lambda group: json.loads((group / 'manifest.json').read_text())['timeZone']
         if a.vectorized and a.workers > 1:
             # One group per process; each group is single-threaded NumPy.
             from concurrent.futures import as_completed
             with ProcessPoolExecutor(max_workers=a.workers) as pool:
-                futures = [pool.submit(verify_tile_group_extrema, group, tile, 1, True, extrema, low_sha)
+                futures = [pool.submit(verify_tile_group_extrema, group, tile, 1, True, extrema, low_sha, parity[zone_of(group)])
                            for group, tile, extrema, low_sha in pending]
                 for future in as_completed(futures):
                     for result in future.result():
@@ -694,7 +778,8 @@ def main():
                         print(json.dumps(result), flush=True)
         else:
             for group, tile, extrema, low_sha in pending:
-                for result in verify_tile_group_extrema(group, tile, a.workers, a.vectorized, extrema, low_sha):
+                for result in verify_tile_group_extrema(group, tile, a.workers, a.vectorized, extrema, low_sha,
+                                                        parity[zone_of(group)]):
                     failed |= not result['ok']
                     print(json.dumps(result), flush=True)
     sys.exit(1 if failed else 0)

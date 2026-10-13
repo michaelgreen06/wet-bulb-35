@@ -58,6 +58,7 @@ FROZEN_CODE = [
     'lib/historical-wetbulb/page-history.mjs', 'lib/historical-wetbulb/grid.mjs', 'lib/forecast/romps.ts',
     'lib/historical-wetbulb/lows.mjs', 'scripts/historical-wetbulb/backfill_lows.py',
     'tests/fixtures/romps-reference-vectors.v1.json', 'tests/fixtures/romps-reference-vectors-cold.v1.json',
+    'scripts/historical-wetbulb/tz-offsets.mjs', 'scripts/historical-wetbulb/tzdata-iana-2026c/MANIFEST.json',
 ]
 STOP_PATTERNS = [
     ('provider-throttle-or-error', ('HTTP Error 429', 'HTTP Error 5')),

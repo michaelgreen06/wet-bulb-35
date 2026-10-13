@@ -53,6 +53,9 @@ LOW_STATUS_MEANING = {
     'low-pending-backfill': 'High period sealed before lows existed; offline low backfill pending',
 }
 STATED_YEARS = (1950, 2025)
+# Verdicts count only when made with the verifier's pinned IANA 2026c main-data tree
+# (verify_period_independent.TZ_SOURCE); earlier output used the system backzone build.
+TZ_SOURCE = 'iana-2026c-main/pytz-2026.3.post1'
 REVIEW = ('unavailable-verification-failed', 'unavailable-masked-cell', 'unavailable-incomplete-period')
 
 
@@ -139,7 +142,8 @@ def load_low_verdicts(paths):
     for path in paths:
         for line in Path(path).read_text().splitlines():
             row = json.loads(line)
-            if row.get('extremum') != 'low' or not row.get('groupKey') or not row.get('lowPeriodSha256'):
+            if (row.get('extremum') != 'low' or not row.get('groupKey') or not row.get('lowPeriodSha256')
+                    or row.get('tzSource') != TZ_SOURCE):
                 continue
             key = (row['groupKey'], row['lowPeriodSha256'])
             verdicts[key] = verdicts.get(key, True) and row.get('ok') is True
@@ -165,8 +169,8 @@ def load_verdicts(paths):
             row = json.loads(line)
             if 'groupKey' not in row:
                 continue  # header line (reference-vector check)
-            if row.get('extremum', 'high') != 'high' or not row.get('periodSha256'):
-                continue  # low rows, or legacy output without a digest that cannot be bound to exact bytes
+            if row.get('extremum', 'high') != 'high' or not row.get('periodSha256') or row.get('tzSource') != TZ_SOURCE:
+                continue  # low rows, legacy output without a digest, or verdicts made without the pinned tz tree
             key = (row['groupKey'], row['periodSha256'])
             verdicts[key] = verdicts.get(key, True) and row.get('ok') is True
     return verdicts

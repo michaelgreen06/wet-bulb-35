@@ -178,11 +178,12 @@ class TestLows(unittest.TestCase):
         self.assertEqual(full.returncode, 0, full.stderr)
         rows = [json.loads(line) for line in full.stdout.splitlines()]
         self.assertEqual(rows[0]['coldReferenceVectors'], 500)
-        self.assertEqual(sorted(r.get('extremum', 'high') for r in rows[1:]), ['high', 'high', 'low', 'low'])
+        self.assertEqual((rows[1]['tzSource'], rows[1]['icuParityFailures']), (VERIFY.TZ_SOURCE, []))
+        self.assertEqual(sorted(r.get('extremum', 'high') for r in rows if 'groupKey' in r), ['high', 'high', 'low', 'low'])
         verdicts = Path(out.parent) / 'verdicts.ndjson'
         verdicts.write_text(full.stdout)
         again = subprocess.run(cmd + ['--skip-verified', str(verdicts)], capture_output=True, text=True)
-        self.assertEqual((again.returncode, len(again.stdout.splitlines())), (0, 1), 'nothing left to verify')
+        self.assertEqual((again.returncode, len(again.stdout.splitlines())), (0, 2), 'only headers: nothing left to verify')
         low_path = out / 'tiles' / 'arco' / TILE / RUN.LOW_STATUS
         record = json.loads(low_path.read_text())
         low_path.write_text(json.dumps({**record, 'lowPeriods': record['lowPeriods'][:1]}))
@@ -311,3 +312,73 @@ class TestBackfillCli(unittest.TestCase):
         progress = json.loads((self.out / 'progress-lows-arco.json').read_text())
         self.assertEqual((progress['outcome'], progress['tilesBackfilled']), ('failed', 1))
         self.assertIn('differs', progress['error'])
+
+
+class TestPinnedTimezones(unittest.TestCase):
+    """Local dates follow the pipeline's IANA main data, proven per zone, never a '2026c' label."""
+
+    def setUp(self):
+        VERIFY._PARITY.clear()
+        self.addCleanup(VERIFY._PARITY.clear)
+
+    def test_pinned_tree_is_complete_and_tamper_evident(self):
+        manifest = VERIFY.tz_manifest()
+        self.assertEqual((manifest['iana'], len(manifest['files'])), ('2026c', 604))
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        copy = Path(tmp.name) / 'tz'
+        shutil.copytree(VERIFY.TZ_DIR, copy)
+        (copy / 'zoneinfo' / 'Africa' / 'Bamako').write_bytes(b'TZif' + bytes(40))
+        from unittest import mock
+        with mock.patch.object(VERIFY, 'TZ_DIR', copy), mock.patch.dict(VERIFY._ZONES, clear=True):
+            with self.assertRaisesRegex(ValueError, 'checksum'):
+                VERIFY.pinned_zone('Africa/Bamako')
+
+    def test_bamako_is_utc_in_1960_as_in_the_pipeline_not_backzone_utc_minus_one(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        noon = datetime(1960, 5, 8, 12)
+        self.assertEqual(VERIFY.pinned_zone('Africa/Bamako').utcoffset(noon).total_seconds(), 0)
+        system = ZoneInfo('Africa/Bamako').utcoffset(noon).total_seconds()
+        if system != 0:  # Ubuntu's backzone build: exactly the definition that caused the false lows
+            self.assertEqual(system, -3600)
+        self.assertEqual(VERIFY.zone_parity(['Africa/Bamako', 'Europe/Oslo']), {'Africa/Bamako': True, 'Europe/Oslo': True})
+
+    def test_a_backzone_definition_fails_parity_and_the_verdict(self):
+        """A synthetic Bamako tile: pinned data passes; backzone data must fail, not pass on a label."""
+        from unittest import mock
+        from zoneinfo import ZoneInfo
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        base = Path(tmp.name)
+        fake_job(base / 'jobs', '1.0,2.0', 1950, hours('1950-01-02T00:00:00.000Z', '1951-01-02T23:00:00.000Z', vary=True))
+        fake_job(base / 'jobs', '1.0,2.0', 1951, hours('1950-12-31T00:00:00.000Z', '1952-01-02T23:00:00.000Z', vary=True))
+        RUN.run_tile((1, 2), {'1.0,2.0': ['Africa/Bamako']}, Pinned(base / 'jobs', 1950, 1951), base / 'out',
+                     start_year=1950, end_year=1951, budget={'remaining': 10}, pause=0)
+        group = next((base / 'out' / 'groups' / 'arco').glob('*/manifest.json')).parent
+        tile = base / 'out' / 'tiles' / 'arco' / TILE
+        rows = VERIFY.verify_tile_group_extrema(group, tile, 1)
+        self.assertEqual([r['ok'] for r in rows], [True, True], rows)
+        self.assertTrue(all(r['tzdata']['icuParity'] and r['tzSource'] == VERIFY.TZ_SOURCE for r in rows))
+        system = ZoneInfo('Africa/Bamako')
+        if system.utcoffset(__import__('datetime').datetime(1950, 6, 1)).total_seconds() == 0:
+            self.skipTest('system zoneinfo has no backzone history for Bamako')
+        VERIFY._PARITY.clear()
+        with mock.patch.object(VERIFY, 'pinned_zone', lambda name: system):
+            rows = VERIFY.verify_tile_group_extrema(group, tile, 1)
+        self.assertEqual([r['tzdata']['icuParity'] for r in rows], [False, False])
+        self.assertEqual([r['ok'] for r in rows], [False, False], 'same "2026c" label must not pass')
+
+    def test_verdicts_without_the_pinned_tz_source_are_never_credited(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = Path(tmp.name) / 'v.ndjson'
+        legacy = {'groupKey': 'g', 'periodSha256': 'a' * 64, 'ok': True}
+        legacy_low = {'extremum': 'low', 'groupKey': 'g', 'lowPeriodSha256': 'b' * 64, 'ok': True}
+        path.write_text(''.join(json.dumps(r) + '\n' for r in (legacy, legacy_low)))
+        self.assertEqual((VERIFY.previously_verified([path]), VERIFY.previously_verified([path], 'low')), (set(), set()))
+        self.assertEqual((ACCOUNT.load_verdicts([path]), ACCOUNT.load_low_verdicts([path])), ({}, {}))
+        path.write_text(''.join(json.dumps({**r, 'tzSource': VERIFY.TZ_SOURCE}) + '\n' for r in (legacy, legacy_low)))
+        self.assertEqual(VERIFY.previously_verified([path]), {('g', 'a' * 64)})
+        self.assertEqual(ACCOUNT.load_low_verdicts([path]), {('g', 'b' * 64): True})
+        self.assertEqual(ACCOUNT.TZ_SOURCE, VERIFY.TZ_SOURCE)
