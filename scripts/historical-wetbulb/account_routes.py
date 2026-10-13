@@ -17,6 +17,10 @@ Inputs are the frozen plan (plan_all_routes.py), one or more run_tile_backfill.p
   …plan statuses                  pending-acquisition, research-complete-unpublished and
                                   unavailable-identity-* carry over unchanged
 
+Routes with a sealed high period also get a separate `lowStatus` for the low-v1
+companion (lowest modeled hourly wet bulb), bound to its own digest and to the exact
+high bytes; high statuses and counts are computed exactly as before.
+
 Nothing here publishes, fetches or alters a value. The per-route file stays private;
 the summary (counts, verified total, review queue) is safe to commit.
 """
@@ -39,6 +43,14 @@ STATUS_MEANING = {
     'unavailable-incomplete-period': 'Source hours missing or period validation failed for this cell/group',
     'unavailable-identity-unmatched': 'No verified GeoNames identity/IANA timezone',
     'unavailable-identity-ambiguous': 'GeoNames identity shared by several canonical routes',
+}
+LOW_VERIFIED = 'low-verified-candidate-unpublished'
+LOW_STATUS_MEANING = {
+    LOW_VERIFIED: 'Complete low-v1 period from the same pinned hours, independently verified; publication approval pending',
+    'low-acquired-unverified': 'Complete low-v1 period; independent low verification pending',
+    'low-unavailable-verification-failed': 'Independent low recomputation disagreed; held for review',
+    'low-unavailable-incomplete-period': 'Low period validation failed in the tile; held for review',
+    'low-pending-backfill': 'High period sealed before lows existed; offline low backfill pending',
 }
 STATED_YEARS = (1950, 2025)
 REVIEW = ('unavailable-verification-failed', 'unavailable-masked-cell', 'unavailable-incomplete-period')
@@ -92,6 +104,59 @@ def load_runs(run_dirs, source, years=STATED_YEARS):
     return sealed, started - set(sealed), periods
 
 
+def load_low_runs(run_dirs, source, periods, years=STATED_YEARS):
+    """low-v1 companions of sealed tiles: groupKey → digests, plus per-group low failures."""
+    lows, failed = {}, {}
+    for run in run_dirs:
+        for status_path in sorted((Path(run) / 'tiles' / source).glob('t*-*/status.json')):
+            low_path = status_path.with_name('low-status.json')
+            if not low_path.exists():
+                continue
+            record = json.loads(low_path.read_text())
+            if record.get('lowSchema') != 'low-v1' or record.get('highStatusSha256') != sha256_file(status_path):
+                raise ValueError(f'{status_path.parent.name}: low-status.json is not bound to the sealed status')
+            for entry in record['failedLowGroups']:
+                failed[entry['groupKey']] = entry['reason']
+            for entry in record['lowPeriods']:
+                key = entry['groupKey']
+                folder = Path(run) / 'groups' / source / hashlib.sha256(key.encode()).hexdigest()[:20] / 'low-v1'
+                manifest = json.loads((folder / 'manifest.json').read_text())
+                if (manifest.get('groupKey') != key or manifest.get('lowPeriodSha256') != entry['lowPeriodSha256']
+                        or sha256_file(folder / 'period.json') != entry['lowPeriodSha256']):
+                    raise ValueError(f'{key}: low period bytes differ from the sealed low status')
+                if key not in periods or manifest.get('highPeriodSha256') != periods[key]['periodSha256']:
+                    raise ValueError(f'{key}: low period is not bound to the sealed high period')
+                if (manifest.get('publicationApproved') is not False or manifest.get('sourcePinned') is not True
+                        or (manifest.get('startYear'), manifest.get('endYear')) != tuple(years)):
+                    raise ValueError(f'{key}: low period is publishable, unpinned or not the stated span')
+                lows[key] = {'lowPeriodSha256': entry['lowPeriodSha256'], 'periodLow': manifest['periodLow']}
+    return lows, failed
+
+
+def load_low_verdicts(paths):
+    """(groupKey, lowPeriodSha256) → ok; any failure for a digest outranks a pass."""
+    verdicts = {}
+    for path in paths:
+        for line in Path(path).read_text().splitlines():
+            row = json.loads(line)
+            if row.get('extremum') != 'low' or not row.get('groupKey') or not row.get('lowPeriodSha256'):
+                continue
+            key = (row['groupKey'], row['lowPeriodSha256'])
+            verdicts[key] = verdicts.get(key, True) and row.get('ok') is True
+    return verdicts
+
+
+def low_status(group, lows, low_failed, low_verdicts):
+    if group in low_failed:
+        return {'lowStatus': 'low-unavailable-incomplete-period', 'lowReason': low_failed[group][:300]}
+    if group not in lows:
+        return {'lowStatus': 'low-pending-backfill'}
+    verdict = low_verdicts.get((group, lows[group]['lowPeriodSha256']))
+    return {'lowPeriodSha256': lows[group]['lowPeriodSha256'],
+            'lowStatus': LOW_VERIFIED if verdict is True else
+            'low-unavailable-verification-failed' if verdict is False else 'low-acquired-unverified'}
+
+
 def load_verdicts(paths):
     """(groupKey, periodSha256) → ok. Any failure for a digest outranks a pass for it."""
     verdicts = {}
@@ -100,14 +165,14 @@ def load_verdicts(paths):
             row = json.loads(line)
             if 'groupKey' not in row:
                 continue  # header line (reference-vector check)
-            if not row.get('periodSha256'):
-                continue  # legacy output without a digest cannot be bound to exact bytes
+            if row.get('extremum', 'high') != 'high' or not row.get('periodSha256'):
+                continue  # low rows, or legacy output without a digest that cannot be bound to exact bytes
             key = (row['groupKey'], row['periodSha256'])
             verdicts[key] = verdicts.get(key, True) and row.get('ok') is True
     return verdicts
 
 
-def account(plan_rows, sealed, started, periods, verdicts):
+def account(plan_rows, sealed, started, periods, verdicts, lows=None, low_failed=None, low_verdicts=None):
     rows = []
     for row in plan_rows:
         out = {k: row[k] for k in ('path', 'status', 'stage', 'group', 'tile') if k in row}
@@ -130,6 +195,8 @@ def account(plan_rows, sealed, started, periods, verdicts):
                     out['period'] = period
                     out['status'] = (VERIFIED if verdict is True else
                                      'unavailable-verification-failed' if verdict is False else 'acquired-unverified')
+                    if lows is not None:
+                        out.update(low_status(group, lows, low_failed or {}, low_verdicts or {}))
                 else:
                     raise ValueError(f'{row["path"]}: sealed tile {name} neither produced nor excluded group {group}')
             elif name in started:
@@ -144,7 +211,12 @@ def summarize(rows, plan_sha, inputs):
     for r in rows:
         by_stage[r.get('stage') or 'unstaged'][r['status']] += 1
     groups = {r['group'] for r in rows if r['status'] == VERIFIED}
+    low_counts = Counter(r['lowStatus'] for r in rows if 'lowStatus' in r)
     return {
+        'lowSchema': 'low-v1', 'lowVerifiedCandidateRoutes': low_counts[LOW_VERIFIED],
+        'lowVerifiedCandidateGroups': len({r['group'] for r in rows if r.get('lowStatus') == LOW_VERIFIED}),
+        'lowStatusCounts': dict(sorted(low_counts.items())),
+        'lowStatusMeaning': {s: LOW_STATUS_MEANING[s] for s in sorted(low_counts)},
         'schemaVersion': 1, 'planSha256': plan_sha, 'inputs': inputs, 'routes': len(rows),
         'verifiedCandidateRoutes': counts[VERIFIED], 'verifiedCandidateGroups': len(groups),
         'supportedRoutes': counts['supported'],
@@ -172,18 +244,20 @@ def main():
     if len({r['path'] for r in plan_rows}) != len(plan_rows):
         raise ValueError('Plan has duplicate routes')
     sealed, started, periods = load_runs(a.tile_run, a.source)
-    rows = account(plan_rows, sealed, started, periods, load_verdicts(a.verified))
+    lows, low_failed = load_low_runs(a.tile_run, a.source, periods)
+    rows = account(plan_rows, sealed, started, periods, load_verdicts(a.verified), lows, low_failed, load_low_verdicts(a.verified))
     if len(rows) != len(plan_rows):
         raise AssertionError('Every planned route must be accounted for exactly once')
     inputs = {'sealedTiles': len(sealed), 'startedUnsealedTiles': len(started), 'pinnedPeriods': len(periods),
-              'verifierFiles': len(a.verified)}
+              'lowPeriods': len(lows), 'lowFailedGroups': len(low_failed), 'verifierFiles': len(a.verified)}
     summary = summarize(rows, plan_sha, inputs)
     a.routes_out.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     a.routes_out.write_text(json.dumps({'schemaVersion': 1, 'planSha256': plan_sha, 'rows': rows}, sort_keys=True) + '\n')
     a.routes_out.chmod(0o600)
     a.summary_out.parent.mkdir(parents=True, exist_ok=True)
     a.summary_out.write_text(json.dumps(summary, indent=1, sort_keys=True, ensure_ascii=False) + '\n')
-    print(json.dumps({k: summary[k] for k in ('routes', 'verifiedCandidateRoutes', 'verifiedCandidateGroups', 'statusCounts')}))
+    print(json.dumps({k: summary[k] for k in ('routes', 'verifiedCandidateRoutes', 'verifiedCandidateGroups', 'statusCounts',
+                                              'lowVerifiedCandidateRoutes', 'lowVerifiedCandidateGroups', 'lowStatusCounts')}))
 
 
 if __name__ == '__main__':

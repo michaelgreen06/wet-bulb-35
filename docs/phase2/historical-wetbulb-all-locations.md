@@ -1,4 +1,4 @@
-# Historical modeled wet bulb highs: all-locations stage (issue #57, stage 2)
+# Historical modeled wet bulb highs and lows: all-locations stage (issue #57, stage 2)
 
 **Status, 2026-10-11: private acquisition and verification only. Nothing is published, merged or deployed. Supported (published) routes: 0 of 130,686.** Builds on the [stage 1 rollout](historical-wetbulb-issue57-rollout.md); method, source, wording and gates are unchanged.
 
@@ -13,6 +13,51 @@
 - **Digest-bound, incremental verification.** `verify_period_independent.py --tile-run` now records each period's `periodSha256`. It also folds a tzdata mismatch into `ok`, skips tiles that are not yet sealed, and can skip groups that already passed for the same digest (`--skip-verified`).
 - **The decoder dependency is checked before the ledger charges the first request.** A missing `numcodecs` now stops the run with nothing charged; previously the run failed after charging 16.7 KB of metadata.
 - **HEAD probe by stage** (`probe_chunk_sizes.py --stage`) to measure a stage's exact tiles before approving it.
+
+## Lows: the `low-v1` companion (2026-10-13)
+
+Michael approved adding lows on 2026-10-13. Each complete local calendar date now also gets its **lowest modeled hourly wet bulb**, plus monthly and stated-period lows with UTC and local winner timestamps. Lows use the same pinned Romps method, ERA5-Land cell, timezone and validated hourly temperature, dew point and surface pressure as the highs. Nothing is mixed in from stations or other models, and nothing is labeled an official record.
+
+**Legacy highs are immutable.** Every `y*.json`, `period.json`, `manifest.json` and tile `status.json` keeps its exact bytes. Lows are a versioned companion, never a silent rewrite:
+
+| File | Contents |
+|---|---|
+| `groups/<id>/low-v1/period.json` | daily (`MM-DD`), monthly (`lowC`, `lowUTC`, `lowLocalDate`) and `periodLow`, plus the same coverage as the high |
+| `groups/<id>/low-v1/manifest.json` | `lowPeriodSha256`; `highPeriodSha256` and `highManifestSha256` of the exact legacy bytes; the same `hourlyChunks`; annual low digests; `publicationApproved: false` |
+| `tiles/arco/<tile>/low-status.json` | low digests per group, bound to the SHA-256 of the sealed `status.json` and of every high file in the tile |
+
+Annual lows stay in memory, bound by digest, so they add ≈84 KB per group instead of another ≈4 MB of annual files.
+
+**One pass.** `aggregateHistoricalWetBulbExtrema` solves each hour once and returns `{high, low}`. `high` is byte-identical to the previous aggregator, pinned by golden digests from `09bfbf8` in `tests/historical-wetbulb-lows.test.mjs`. New tiles write highs and lows from the same reduction.
+
+**Offline backfill.** `backfill_lows.py` adds lows to tiles sealed before lows existed, from their retained checksummed chunks. It makes no provider call. It holds the output folder's run lock. For each tile, the re-reduction must:
+
+- reproduce every high file byte-for-byte (write-once);
+- reproduce the sealed status fields exactly;
+- leave the hash of every high file and of `status.json` unchanged before and after.
+
+Any difference stops the backfill with nothing written for that tile.
+
+**Semantics.**
+
+- **Ties:** the earliest hour wins, then the earliest day, then the earliest year, the same rule as for highs.
+- **Negative values:** valid lows. The per-hour bounds are the same as for highs (inputs 150–350 K, `d ≤ t + 1 K`, 10–110 kPa, wet bulb −120…90 °C); any violation makes the whole cell unavailable.
+- **Coverage:** a low must have the same coverage as its high. That covers DST 23/25-hour days, leap days, dateline-skipped dates (Apia 2011-12-30) and UTC+14/−12 year boundaries; a mismatch fails that group closed.
+- **Reproducibility:** monthly and period lows must be reproducible from the calendar-date lows.
+
+**Independent verification.** `verify_period_independent.py --extrema both` recomputes the minima in Python from the checksummed chunks, using zoneinfo local days and the bisection solver. Before checking any low, the solver must match 500 new cold heatindex 0.0.2 vectors (190–262 K, `romps-reference-vectors-cold.v1.json`). These were generated from the same pinned commit `ebe4a83`; that local build regenerates the existing fixture byte-for-byte.
+
+Each low verdict is keyed by `lowPeriodSha256` and carries `highPeriodSha256`, so high-only readers ignore it. A sealed tile without lows is a failing row.
+
+**Accounting.** High statuses and counts are computed exactly as before. Routes with a sealed high also get a `lowStatus`, one of:
+
+- `low-verified-candidate-unpublished`
+- `low-acquired-unverified`
+- `low-unavailable-verification-failed`
+- `low-unavailable-incomplete-period`
+- `low-pending-backfill`
+
+**Not publishable.** The renderer, page records and storage do not yet carry lows. Publishing them needs its own approval and renderer and storage validation.
 
 ## Measured, not estimated (2026-10-11)
 
@@ -60,7 +105,13 @@ The probe showed the full Top 50 does not fit the 5.6 GB ceiling. The run was bo
 - **Approval and ledger.** Each job gets its own approval file and ledger (≤ 10 GB). Chunk sets are budgeted at the worst probed size, 8.5 MB.
 - **Campaign ceiling.** 40 GB in total.
 - **Disk.** Projected disk use must leave ≥ 40 GB free; the runner rechecks before every tile.
-- **QA lag.** Independent vectorized QA of job *k* runs while job *k*+1 fetches. Job *k*+2 never starts unless QA *k* passed and route accounting succeeded.
+- **QA lag.** Independent vectorized QA of job *k* (highs and lows) runs while job *k*+1 fetches. Job *k*+2 never starts unless:
+  - QA *k* passed;
+  - every tile sealed when QA *k* started has a passing high **and** low verdict for its exact digests (coverage gate, `qa-coverage-gap`);
+  - route accounting succeeded.
+
+  A transient retry settles the previous QA and starts QA for the failed job's sealed tiles before fetching again.
+- **Lows present.** A sealed tile without `low-status.json` stops the campaign (`low-coverage-absent`). On every (re)start the supervisor first backfills lows offline, then runs a blocking catch-up QA and the coverage gate.
 
 **Stop conditions.** The campaign stops on any of these:
 
@@ -163,7 +214,16 @@ Annual files are 0.92 GB and raw hourly data is 2.04 GB. At full scale Tier A is
 - Approval of rules 1–7.
 - One interactive `rclone config` OAuth login, done by Michael.
 
-## Known gap: supervisor restart skips catch-up QA (found by Hermes review)
+## Fixed: supervisor restart and transient-retry QA gaps
+
+Both gaps below are fixed:
+
+- **Restart catch-up QA** (`09bfbf8`). On restart, a blocking catch-up QA sweep runs before any fetch.
+- **Transient-retry QA lag** (2026-10-13). On 2026-10-12, job-003 started after job-002's transient failure with QA job-001 still unsettled. A retry now settles the previous QA and starts QA for the failed job before fetching again; covered by a regression test.
+
+Re-freezes use `campaign_supervisor.py --refreeze REASON`. It requires `STOP` and a stopped supervisor, requires the frozen code to be committed, and archives the previous `frozen.json` with its SHA-256. The original description of the restart gap follows.
+
+### Original description (found by Hermes review)
 
 `run()` marks a running QA as `interrupted` but never replays it. After a restart, the next job's QA covers the gap, but that next job and the one after it start before the interrupted QA's groups pass. That breaks the "job *k*+2 waits for QA *k*" gate. The same happens if the supervisor dies between a job ending and its QA starting.
 
@@ -200,6 +260,9 @@ $V scripts/historical-wetbulb/run_tile_backfill.py --plan $Q/plan/all-routes-pla
   --approval $Q/approvals/top50-20261011.json --out $Q/pilot-pinned-20261011 --max-new-chunks 580 --execute
 python3 scripts/historical-wetbulb/verify_period_independent.py --tile-run $Q/pilot-pinned-20261011 --source arco \
   --skip-verified $Q/verification/verify-run1-20261011.ndjson > $Q/verification/verify-run2.ndjson
+$V scripts/historical-wetbulb/backfill_lows.py --out $Q/pilot-pinned-20261011 --workers 3   # offline lows
+$V scripts/historical-wetbulb/verify_period_independent.py --tile-run $Q/pilot-pinned-20261011 --source arco \
+  --extrema both --vectorized --workers 3 --skip-verified … > $Q/verification/verify-lows-backfill.ndjson
 python3 scripts/historical-wetbulb/account_routes.py --plan $Q/plan/all-routes-plan.json --tile-run $Q/pilot-pinned-20261011 \
   --verified $Q/verification/verify-run1-20261011.ndjson --verified $Q/verification/verify-run2.ndjson \
   --routes-out $Q/accounting/routes.json --summary-out docs/phase2/historical-wetbulb-route-accounting.v1.json

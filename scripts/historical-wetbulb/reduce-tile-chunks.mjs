@@ -9,8 +9,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { aggregateHistoricalWetBulb } from '../../lib/historical-wetbulb/aggregate.mjs';
+import { aggregateHistoricalWetBulbExtrema } from '../../lib/historical-wetbulb/aggregate.mjs';
 import { mergeHistoricalYears } from '../../lib/historical-wetbulb/merge.mjs';
+import { LOW_SCHEMA, mergeHistoricalLowYears } from '../../lib/historical-wetbulb/lows.mjs';
 import { assertCompleteStatedPeriod } from '../../lib/historical-wetbulb/publication.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
@@ -37,8 +38,8 @@ export function readChunk(dir, name) {
 }
 
 /**
- * Pure reduction over in-memory chunks; `emit(groupKey, year, summary)` per complete
- * window. A problem confined to one cell (gap, invalid input) makes that cell
+ * Pure reduction over in-memory chunks; `emit(groupKey, year, high, low)` per complete
+ * window, both extrema from one decode/solve pass over the same hours. A problem confined to one cell (gap, invalid input) makes that cell
  * unavailable with a reason instead of blocking the tile; chunk-level integrity
  * failures (checksum, contiguity) still stop.
  */
@@ -58,11 +59,11 @@ export function reduceChunks(chunks, { groups, startYear, endYear, dataStartMs, 
       const cell = cellKey.split(',').map(Number);
       const summaries = [];
       try {
-        for (const timeZone of groups[cellKey]) summaries.push([timeZone, aggregateHistoricalWetBulb(window, { timeZone, gridCell: cell, localYear: year })]);
+        for (const timeZone of groups[cellKey]) summaries.push([timeZone, aggregateHistoricalWetBulbExtrema(window, { timeZone, gridCell: cell, localYear: year })]);
       } catch (error) {
         return drop(cellKey, `invalid-input-${year}: ${error.message}`);
       }
-      for (const [timeZone, summary] of summaries) emit(`${cellKey}|${timeZone}`, year, summary);
+      for (const [timeZone, { high, low }] of summaries) emit(`${cellKey}|${timeZone}`, year, high, low);
       year++;
       const keepFrom = yearWindow(year, dataStartMs)[0];
       buffers.set(cellKey, rows.filter((r) => Date.parse(r.timeUTC) >= keepFrom));
@@ -121,11 +122,16 @@ export function reduceTile({ tileDir, groups, startYear, endYear, out }) {
   const pinned = heads.every((h) => h.source?.pinned === true);
   const hourlyChunks = heads.map((h, i) => ({ chunk: names[i], sha256: h.sha256, source: h.source }));
   let written = 0;
-  const result = reduceChunks(streamChunks(tileDir, names), { groups, startYear, endYear, dataStartMs, emit(key, year, summary) {
+  // Annual lows stay in memory (digest-bound in the low manifest) instead of doubling the
+  // per-group file count; only the compact low period + manifest are written.
+  const lowYears = new Map();
+  const result = reduceChunks(streamChunks(tileDir, names), { groups, startYear, endYear, dataStartMs, emit(key, year, summary, low) {
     const text = JSON.stringify({ ...summary, localYear: year, researchOnly: !pinned }) + '\n';
     written += writeOnce(path.join(out, groupId(key), `y${year}.json`), text);
+    if (!lowYears.has(key)) lowYears.set(key, []);
+    lowYears.get(key).push(JSON.stringify({ ...low, localYear: year, researchOnly: !pinned }) + '\n');
   } });
-  const periods = [], failed = [];
+  const periods = [], failed = [], lowPeriods = [], failedLow = [];
   const tzdata = process.versions.tz ?? null;
   for (const cellKey of result.seen) {
     if (!result.complete[cellKey]) continue;
@@ -141,8 +147,16 @@ export function reduceTile({ tileDir, groups, startYear, endYear, out }) {
         const manifest = { schemaVersion: 1, groupKey: key, gridCell: summary.gridCell, timeZone, researchOnly: !pinned,
           sourcePinned: pinned, tzdata, startYear, endYear, ...coverage, periodSha256: sha(period),
           annualDigests: texts.map((t, i) => ({ year: startYear + i, sha256: sha(t) })), hourlyChunks, periodHigh: summary.periodHigh };
-        writeOnce(path.join(dir, 'manifest.json'), JSON.stringify(manifest) + '\n');
+        const manifestText = JSON.stringify(manifest) + '\n';
+        writeOnce(path.join(dir, 'manifest.json'), manifestText);
         periods.push({ groupKey: key, completeDays: coverage.completeDays, periodSha256: manifest.periodSha256 });
+        try {
+          lowPeriods.push(writeLowPeriod({ key, dir, texts: lowYears.get(key) ?? [], high: summary, coverage, period, manifestText,
+            pinned, tzdata, startYear, endYear, hourlyChunks }));
+        } catch (error) {
+          if (/differs from retained/.test(error.message)) throw error;
+          failedLow.push({ groupKey: key, reason: error.message });
+        }
       } catch (error) {
         if (/differs from retained/.test(error.message)) throw error; // reproducibility failures always stop
         failed.push({ groupKey: key, reason: error.message });
@@ -150,7 +164,36 @@ export function reduceTile({ tileDir, groups, startYear, endYear, out }) {
     }
   }
   return { masked: result.masked, seen: result.seen, unavailableCells: result.unavailable, failedGroups: failed, tzdata,
-    newAnnualFiles: written, periods };
+    newAnnualFiles: written, periods, lowSchema: LOW_SCHEMA, lowPeriods, failedLowGroups: failedLow };
+}
+
+const COVERAGE_KEYS = ['years', 'validHours', 'completeDays', 'firstComplete', 'lastComplete', 'partialDays'];
+
+/**
+ * Companion low output for one group whose legacy high period is already sealed:
+ * <group>/low-v1/{period,manifest}.json. Same hours, coverage and identity as the high
+ * (checked, fail closed); bound to the exact legacy high period and manifest bytes.
+ * Never publishable here: publication needs its own approval and renderer validation.
+ */
+function writeLowPeriod({ key, dir, texts, high, coverage, period, manifestText, pinned, tzdata, startYear, endYear, hourlyChunks }) {
+  const summary = mergeHistoricalLowYears(texts.map((t) => JSON.parse(t)), { startYear, endYear });
+  const lowCoverage = assertCompleteStatedPeriod(summary);
+  for (const field of COVERAGE_KEYS) {
+    if (JSON.stringify(summary.coverage[field]) !== JSON.stringify(high.coverage[field])) throw new Error(`Low coverage ${field} differs from the high`);
+  }
+  if (JSON.stringify(lowCoverage) !== JSON.stringify(coverage) || summary.timeZone !== high.timeZone
+    || JSON.stringify(summary.gridCell) !== JSON.stringify(high.gridCell) || summary.methodVersion !== high.methodVersion) {
+    throw new Error('Low identity or stated-period coverage differs from the high');
+  }
+  const lowText = JSON.stringify({ groupKey: key, ...summary, sourcePinned: pinned }) + '\n';
+  writeOnce(path.join(dir, LOW_SCHEMA, 'period.json'), lowText);
+  const lowManifest = { schemaVersion: 1, extremum: 'low', lowSchema: LOW_SCHEMA, groupKey: key, gridCell: summary.gridCell,
+    timeZone: summary.timeZone, researchOnly: !pinned, sourcePinned: pinned, publicationApproved: false, tzdata, startYear, endYear,
+    ...lowCoverage, lowPeriodSha256: sha(lowText), highPeriodSha256: sha(period), highManifestSha256: sha(manifestText),
+    annualLowDigests: texts.map((t, i) => ({ year: startYear + i, sha256: sha(t) })), hourlyChunks, periodLow: summary.periodLow };
+  writeOnce(path.join(dir, LOW_SCHEMA, 'manifest.json'), JSON.stringify(lowManifest) + '\n');
+  return { groupKey: key, completeDays: lowCoverage.completeDays, lowPeriodSha256: lowManifest.lowPeriodSha256,
+    highPeriodSha256: lowManifest.highPeriodSha256 };
 }
 
 function main() {

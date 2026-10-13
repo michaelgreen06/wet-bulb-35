@@ -4,7 +4,9 @@
 Separate from the Node pipeline on purpose: Python zoneinfo local-day bounds
 (not Intl adjacency checks), a bisection Romps solver (not Brent) validated
 against the heatindex 0.0.2 reference vectors, and its own checksum/identity
-joins. Compares calendar-day, monthly and period highs plus coverage. No network.
+joins. Compares calendar-day, monthly and period highs plus coverage, and the same
+for the low-v1 companion (minima), recomputed here from the checksummed chunks and
+bound to the exact legacy high bytes. No network.
 """
 import argparse
 import hashlib
@@ -250,7 +252,10 @@ def load_year(job_dir, cell_key):
 
 
 def days_from_hours(hours, zone, year):
-    """Complete local-date highs for local `year` from {UTC datetime: wet bulb °C}."""
+    """Complete local dates of local `year` from {UTC datetime: wet bulb °C}.
+
+    Each day is (high, high UTC, hours, low, low UTC); ties go to the earliest hour.
+    """
     days, partial, odd = {}, [], []
     day = date(year, 1, 1)
     while day.year == year:
@@ -266,7 +271,9 @@ def days_from_hours(hours, zone, year):
         present = [s for s in stamps if s in hours]
         if expected and len(present) == expected:
             best = max(present, key=lambda s: (hours[s], -s.timestamp()))
-            days[day.isoformat()] = (hours[best], best.strftime('%Y-%m-%dT%H:00:00.000Z'), expected)
+            worst = min(present, key=lambda s: (hours[s], s.timestamp()))
+            days[day.isoformat()] = (hours[best], best.strftime('%Y-%m-%dT%H:00:00.000Z'), expected,
+                                     hours[worst], worst.strftime('%Y-%m-%dT%H:00:00.000Z'))
             if expected != 24:
                 odd.append((day.isoformat(), expected))
         elif present:
@@ -340,7 +347,15 @@ def parallel_map(fn, jobs, workers):
         return list(pool.map(fn, jobs))
 
 
-def compare_period(period, results, years, zone_name):
+# Where each extremum lives in a day tuple and in the pipeline's period JSON.
+EXTREMA = {
+    'high': {'value': 0, 'time': 1, 'month': ('highC', 'highUTC', 'highLocalDate'), 'period': 'periodHigh', 'sign': 1},
+    'low': {'value': 3, 'time': 4, 'month': ('lowC', 'lowUTC', 'lowLocalDate'), 'period': 'periodLow', 'sign': -1},
+}
+
+
+def compare_period(period, results, years, zone_name, extremum='high'):
+    spec = EXTREMA[extremum]
     all_days, partial, odd = {}, [], []
     for _, days, p, o in results:
         all_days.update(days)
@@ -348,9 +363,12 @@ def compare_period(period, results, years, zone_name):
         odd += o
     by_key, months = defaultdict(list), defaultdict(list)
     for iso, value in all_days.items():
-        by_key[iso[5:]].append((value[0], value[1], iso))
-        months[iso[5:7]].append((value[0], value[1], iso))
-    pick = lambda items: max(items, key=lambda v: (v[0], -datetime.fromisoformat(v[1][:-5]).timestamp()))
+        item = (value[spec['value']], value[spec['time']], iso)
+        by_key[iso[5:]].append(item)
+        months[iso[5:7]].append(item)
+    sign = spec['sign']
+    # Highest (or lowest) value; equal values go to the earliest hour.
+    pick = lambda items: max(items, key=lambda v: (sign * v[0], -datetime.fromisoformat(v[1][:-5]).timestamp()))
     mismatches, ties = [], 0
 
     def compare(label, mine, theirs_value, theirs_time, theirs_date):
@@ -365,11 +383,18 @@ def compare_period(period, results, years, zone_name):
             mismatches.append({'key': key, 'contributingYears': [len(items), entry and entry['contributingYears']]})
             continue
         compare(key, pick(items), entry['valueC'], entry['utcTime'], entry['localDate'])
+    value_f, time_f, date_f = spec['month']
     for month, items in months.items():
-        entry = period['monthly'][month]
-        compare(f'month-{month}', pick(items), entry['highC'], entry['highUTC'], entry['highLocalDate'])
+        entry = period['monthly'].get(month)
+        if entry is None:
+            mismatches.append({'key': f'month-{month}', 'missing': True})
+            continue
+        compare(f'month-{month}', pick(items), entry[value_f], entry[time_f], entry[date_f])
+    if set(period['monthly']) != set(months):
+        mismatches.append({'key': 'months', 'independent': sorted(months), 'pipeline': sorted(period['monthly'])})
     top = pick([v for items in by_key.values() for v in items])
-    compare('period', top, period['periodHigh']['valueC'], period['periodHigh']['utcTime'], period['periodHigh']['localDate'])
+    extreme = period[spec['period']]
+    compare('period', top, extreme['valueC'], extreme['utcTime'], extreme['localDate'])
     coverage = period['coverage']
     complete = sorted(all_days)
     skipped = skipped_dates(zone_name, coverage['firstComplete'], coverage['lastComplete'])
@@ -438,8 +463,7 @@ def load_tile_cell_rows(tile_dir, manifest):
     return rows
 
 
-def verify_tile_group(group_dir, tile_dir, workers, vectorized=False):
-    """Independent check of a tile-pipeline period (reduce-tile-chunks.mjs output)."""
+def load_high_group(group_dir):
     manifest = json.loads((group_dir / 'manifest.json').read_text())
     period_raw = (group_dir / 'period.json').read_bytes()
     if hashlib.sha256(period_raw).hexdigest() != manifest['periodSha256']:
@@ -452,6 +476,43 @@ def verify_tile_group(group_dir, tile_dir, workers, vectorized=False):
     for record in manifest['annualDigests']:
         if sha(group_dir / f"y{record['year']}.json") != record['sha256']:
             raise ValueError(f"Annual digest mismatch for {record['year']}")
+    return manifest, period
+
+
+LOW_SCHEMA = 'low-v1'
+COVERAGE_KEYS = ('years', 'validHours', 'completeDays', 'firstComplete', 'lastComplete', 'partialDays')
+
+
+def load_low_group(group_dir, manifest, high_period, expected_low_sha=None):
+    """low-v1 companion, joined to the exact legacy high bytes and the same hourly chunks."""
+    folder = group_dir / LOW_SCHEMA
+    low_manifest = json.loads((folder / 'manifest.json').read_text())
+    raw = (folder / 'period.json').read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != low_manifest['lowPeriodSha256'] or (expected_low_sha is not None and digest != expected_low_sha):
+        raise ValueError('Low period checksum mismatch')
+    low = json.loads(raw)
+    joins = {
+        'extremum': low_manifest.get('extremum') == 'low' == low.get('extremum'),
+        'schema': low_manifest.get('lowSchema') == LOW_SCHEMA == low.get('lowSchema'),
+        'identity': all(low_manifest.get(k) == manifest[k] and low.get(k, low_manifest.get(k)) == manifest[k]
+                        for k in ('groupKey', 'gridCell', 'timeZone')),
+        'highPeriodBytes': low_manifest.get('highPeriodSha256') == manifest['periodSha256'] == sha(group_dir / 'period.json'),
+        'highManifestBytes': low_manifest.get('highManifestSha256') == sha(group_dir / 'manifest.json'),
+        'sameHourlyChunks': low_manifest.get('hourlyChunks') == manifest['hourlyChunks'],
+        'span': all(low_manifest.get(k) == manifest[k] for k in ('startYear', 'endYear', 'first', 'last', 'completeDays')),
+        'provenance': low_manifest.get('sourcePinned') == manifest['sourcePinned'] and low.get('methodVersion') == high_period['methodVersion'],
+        'notPublishable': low_manifest.get('publicationApproved') is False,
+        'coverage': all(low['coverage'].get(k) == high_period['coverage'].get(k) for k in COVERAGE_KEYS),
+    }
+    if not all(joins.values()):
+        raise ValueError(f"Low companion join mismatch: {sorted(k for k, v in joins.items() if not v)}")
+    return low_manifest, low
+
+
+def tile_group_results(manifest, tile_dir, workers, vectorized):
+    """Independent per-year local-date extrema from the chunks the manifest names."""
+    cell, zone_name = manifest['gridCell'], manifest['timeZone']
     years = list(range(manifest['startYear'], manifest['endYear'] + 1))
     sampled = 0
     if vectorized:
@@ -459,28 +520,63 @@ def verify_tile_group(group_dir, tile_dir, workers, vectorized=False):
         # hours answers exactly the lookups the per-year windows would.
         hours, sampled = vector_wet_bulb_hours(*load_tile_cell_arrays(Path(tile_dir), manifest), manifest['periodSha256'])
         zone = ZoneInfo(zone_name)
-        results = [(year, *days_from_hours(hours, zone, year)) for year in years]
-    else:
-        rows = load_tile_cell_rows(Path(tile_dir), manifest)
-        jobs = []
-        for year in years:
-            lo = f'{year - 1}-12-31T00:00:00.000Z'
-            hi = f'{year + 1}-01-02T23:00:00.000Z'
-            jobs.append(([r for r in rows if lo <= r['timeUTC'] <= hi], cell, zone_name, year))
-        results = parallel_map(reduce_rows_year, jobs, workers)
+        return [(year, *days_from_hours(hours, zone, year)) for year in years], years, sampled
+    rows = load_tile_cell_rows(Path(tile_dir), manifest)
+    jobs = []
+    for year in years:
+        lo = f'{year - 1}-12-31T00:00:00.000Z'
+        hi = f'{year + 1}-01-02T23:00:00.000Z'
+        jobs.append(([r for r in rows if lo <= r['timeUTC'] <= hi], cell, zone_name, year))
+    return parallel_map(reduce_rows_year, jobs, workers), years, sampled
+
+
+def verify_tile_group(group_dir, tile_dir, workers, vectorized=False):
+    """Independent check of a tile-pipeline high period (reduce-tile-chunks.mjs output)."""
+    return verify_tile_group_extrema(group_dir, tile_dir, workers, vectorized, ('high',))[0]
+
+
+def verify_tile_group_extrema(group_dir, tile_dir, workers, vectorized=False, extrema=('high', 'low'), expected_low_sha=None):
+    """High and/or low verdict rows for one group from ONE independent hourly recomputation."""
+    group_dir = Path(group_dir)
+    manifest, period = load_high_group(group_dir)
+    low_manifest = low = None
+    if 'low' in extrema:
+        low_manifest, low = load_low_group(group_dir, manifest, period, expected_low_sha)
+    results, years, sampled = tile_group_results(manifest, tile_dir, workers, vectorized)
+    zone_name = manifest['timeZone']
     tz = {'python': python_tzdata_version(), 'pipeline': manifest.get('tzdata')}
-    result = compare_period(period, results, years, zone_name)
     tz_ok = tz['python'] is not None and tz['python'] == tz['pipeline']  # unknown on both sides is no evidence
-    result['ok'] = result['ok'] and tz_ok
-    # The digest binds this verdict to the exact period bytes, so later accounting can
-    # never credit a verification to a period that was rebuilt or replaced since.
-    return {'groupKey': manifest['groupKey'], 'periodSha256': manifest['periodSha256'], 'tzdata': tz,
-            'solver': {'mode': 'vectorized', 'scalarCrossChecks': sampled} if vectorized else {'mode': 'scalar'},
-            'tzdataMatches': tz_ok, **result}
+    solver = {'mode': 'vectorized', 'scalarCrossChecks': sampled} if vectorized else {'mode': 'scalar'}
+    rows = []
+    if 'high' in extrema:
+        result = compare_period(period, results, years, zone_name)
+        result['ok'] = result['ok'] and tz_ok
+        # The digest binds this verdict to the exact period bytes, so later accounting can
+        # never credit a verification to a period that was rebuilt or replaced since.
+        rows.append({'groupKey': manifest['groupKey'], 'periodSha256': manifest['periodSha256'], 'tzdata': tz,
+                     'solver': solver, 'tzdataMatches': tz_ok, **result})
+    if 'low' in extrema:
+        result = compare_period(low, results, years, zone_name, 'low')
+        tz_low = tz_ok and low_manifest.get('tzdata') == manifest.get('tzdata')
+        result['ok'] = result['ok'] and tz_low
+        # No `periodSha256` key: high-only readers can never mistake a low verdict for a high one.
+        rows.append({'extremum': 'low', 'lowSchema': LOW_SCHEMA, 'groupKey': manifest['groupKey'],
+                     'lowPeriodSha256': low_manifest['lowPeriodSha256'], 'highPeriodSha256': manifest['periodSha256'],
+                     'tzdata': tz, 'solver': solver, 'tzdataMatches': tz_low, **result})
+    return rows
 
 
-def previously_verified(paths):
-    """(groupKey, periodSha256) pairs that already passed in earlier verifier output."""
+def failed_low_row(group_key, low_sha, reason):
+    return {'extremum': 'low', 'lowSchema': LOW_SCHEMA, 'groupKey': group_key, 'lowPeriodSha256': low_sha,
+            'ok': False, 'error': str(reason)[:500]}
+
+
+def previously_verified(paths, extremum='high'):
+    """(groupKey, digest) pairs that already passed in earlier verifier output.
+
+    High rows are keyed by periodSha256 (legacy shape); low rows by lowPeriodSha256.
+    """
+    field = 'periodSha256' if extremum == 'high' else 'lowPeriodSha256'
     done = set()
     for path in paths:
         for line in Path(path).read_text().splitlines():
@@ -488,8 +584,10 @@ def previously_verified(paths):
                 row = json.loads(line)
             except json.JSONDecodeError:
                 continue  # a half-written line from a live run; skipping it can only re-verify
-            if row.get('ok') is True and row.get('groupKey') and row.get('periodSha256'):
-                done.add((row['groupKey'], row['periodSha256']))
+            if row.get('extremum', 'high') != extremum:
+                continue
+            if row.get('ok') is True and row.get('groupKey') and row.get(field):
+                done.add((row['groupKey'], row[field]))
     return done
 
 
@@ -513,45 +611,83 @@ def main():
                    help='Earlier --tile-run output; groups that passed with the same period digest are not recomputed')
     p.add_argument('--vectorized', action='store_true',
                    help='NumPy element-wise bisection, cross-checked against the scalar solver on sampled hours')
+    p.add_argument('--cold-vectors', type=Path,
+                   default=Path(__file__).resolve().parents[2] / 'tests/fixtures/romps-reference-vectors-cold.v1.json',
+                   help='190–262 K heatindex 0.0.2 vectors; required before any low is verified')
+    p.add_argument('--extrema', choices=('high', 'low', 'both'), default='both',
+                   help='--tile-run: which extrema to verify; with lows, a sealed tile lacking them fails')
     a = p.parse_args()
     count, worst = reference_vectors(a.vectors)
     if worst > 1e-6:
         raise SystemExit(f'Independent Romps solver disagrees with heatindex vectors by {worst} K')
-    print(json.dumps({'referenceVectors': count, 'maxAbsErrorK': worst}), flush=True)
+    header = {'referenceVectors': count, 'maxAbsErrorK': worst}
+    if a.tile_run and a.extrema != 'high':
+        cold, cold_worst = reference_vectors(a.cold_vectors)
+        if cold_worst > 1e-6:
+            raise SystemExit(f'Independent Romps solver disagrees with cold heatindex vectors by {cold_worst} K')
+        header.update(coldReferenceVectors=cold, coldMaxAbsErrorK=cold_worst)
+    print(json.dumps(header), flush=True)
     failed = False
     for rank in a.rank:
         result = verify(a.periods / f'r{rank:02d}-y1950-2025', a.jobs, rank, a.workers)
         failed |= not result['ok']
         print(json.dumps(result), flush=True)
     if a.tile_run:
-        tiles = {}
+        want_low = a.extrema in ('low', 'both')
+        tiles, low_tiles = {}, {}
         for status_path in sorted((a.tile_run / 'tiles' / a.source).glob('t*/status.json')):
             for period in json.loads(status_path.read_text())['periods']:
                 tiles[period['groupKey']] = status_path.parent
-        done = previously_verified(a.skip_verified)
+            if not want_low:
+                continue
+            low_path = status_path.with_name('low-status.json')
+            if not low_path.exists():
+                # Fail closed: a sealed tile without lows is a coverage gap, never a silent skip.
+                failed = True
+                print(json.dumps({'extremum': 'low', 'tile': status_path.parent.name, 'ok': False,
+                                  'error': 'sealed tile has no low-status.json (low coverage absent)'}), flush=True)
+                continue
+            low_status = json.loads(low_path.read_text())
+            if low_status.get('highStatusSha256') != sha(status_path) or low_status.get('lowSchema') != LOW_SCHEMA:
+                failed = True
+                print(json.dumps({'extremum': 'low', 'tile': status_path.parent.name, 'ok': False,
+                                  'error': 'low-status.json is not bound to this sealed status.json'}), flush=True)
+                continue
+            for entry in low_status['failedLowGroups']:
+                failed = True
+                print(json.dumps(failed_low_row(entry['groupKey'], None, f"pipeline low failed: {entry['reason']}")), flush=True)
+            for entry in low_status['lowPeriods']:
+                low_tiles[entry['groupKey']] = (status_path.parent, entry['lowPeriodSha256'])
+        done = previously_verified(a.skip_verified) if a.extrema in ('high', 'both') else None
+        done_low = previously_verified(a.skip_verified, 'low') if want_low else None
         pending = []
         for manifest_path in sorted((a.tile_run / 'groups' / a.source).glob('*/manifest.json')):
             manifest = json.loads(manifest_path.read_text())
             key = manifest['groupKey']
             if key not in tiles:
                 continue  # its tile has not been sealed yet; verify after the tile completes
-            if (key, manifest['periodSha256']) in done:
-                continue
-            pending.append((manifest_path.parent, tiles[key]))
+            extrema = []
+            if done is not None and (key, manifest['periodSha256']) not in done:
+                extrema.append('high')
+            if want_low and key in low_tiles and (key, low_tiles[key][1]) not in done_low:
+                extrema.append('low')
+            if extrema:
+                pending.append((manifest_path.parent, tiles[key], tuple(extrema), low_tiles.get(key, (None, None))[1]))
         if a.vectorized and a.workers > 1:
             # One group per process; each group is single-threaded NumPy.
             from concurrent.futures import as_completed
             with ProcessPoolExecutor(max_workers=a.workers) as pool:
-                futures = [pool.submit(verify_tile_group, group, tile, 1, True) for group, tile in pending]
+                futures = [pool.submit(verify_tile_group_extrema, group, tile, 1, True, extrema, low_sha)
+                           for group, tile, extrema, low_sha in pending]
                 for future in as_completed(futures):
-                    result = future.result()
+                    for result in future.result():
+                        failed |= not result['ok']
+                        print(json.dumps(result), flush=True)
+        else:
+            for group, tile, extrema, low_sha in pending:
+                for result in verify_tile_group_extrema(group, tile, a.workers, a.vectorized, extrema, low_sha):
                     failed |= not result['ok']
                     print(json.dumps(result), flush=True)
-        else:
-            for group, tile in pending:
-                result = verify_tile_group(group, tile, a.workers, a.vectorized)
-                failed |= not result['ok']
-                print(json.dumps(result), flush=True)
     sys.exit(1 if failed else 0)
 
 
