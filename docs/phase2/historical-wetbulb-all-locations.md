@@ -59,6 +59,55 @@ Each low verdict is keyed by `lowPeriodSha256` and carries `highPeriodSha256`, s
 
 **Not publishable.** The renderer, page records and storage do not yet carry lows. Publishing them needs its own approval and renderer and storage validation.
 
+## Timezone definitions: pinned IANA 2026c main data (found 2026-10-13)
+
+The first live low QA failed one group, `10.3,-6.1|Africa/Bamako`. The cause predates lows:
+
+- **Verifier.** It used Ubuntu's system zoneinfo (`2026c-0ubuntu0.24.04.1`), which is built with IANA **backzone**. There, Bamako is UTC−1 until 1960.
+- **Pipeline.** Node's ICU (`2026c`) uses IANA main data, where Bamako links to Abidjan and stays UTC+0.
+- **Why it passed.** Both sides report `2026c`, so the version-only `tzdataMatches` passed.
+- **Why only the low caught it.** Daily highs fall mid-afternoon and never hit the shifted boundary hour. Night-time lows do.
+- **Impact.** 22 of the plan's 368 zones differ before 1970: 1,430 of 76,509 plan groups, 56 of the 1,762 sealed groups.
+- **Superseded run.** Across 1,762 low verdicts, only the Bamako group failed.
+
+**Fix (`fb86ef1`).** The verifier now:
+
+- reads zones only from a vendored, hash-checked tree, `scripts/historical-wetbulb/tzdata-iana-2026c/` (pytz 2026.3.post1 = IANA 2026c main data, 604 files, tree SHA-256 `55fa9fa6…`, copied from the local uv cache);
+- requires, per zone, that those offsets equal the pipeline's ICU offsets at every UTC hour from 1949-12-30 to 2026-01-03 (`tz-offsets.mjs`). Before the fix, all 368 plan zones matched at 3-hourly sampling;
+- compares daily and monthly local-day hour totals;
+- stamps every verdict with `tzSource`. Earlier verdicts lack it, so the skip list, accounting and the supervisor no longer credit them; every sealed group is re-verified, high and low.
+
+The numeric recomputation is unchanged and independent. No high file changed.
+
+## Low rollout evidence (2026-10-13, offline; STOP still in place)
+
+**Replay copy.** A replay on a copy of real tile `t299-105` (19 America/Chicago groups) reproduced all 1,524 high files byte-for-byte. All 19 highs and 19 lows passed independent QA, with 0 mismatches. Each group showed 76 short and 76 long DST days and 19 leap days. Example: 29.9,−95.6 has a period low of −14.11 °C on 2021-02-16.
+
+**In-place backfill.** `backfill_lows.py --workers 3` ran 12:36–15:04Z with:
+
+- 152/152 sealed tiles backfilled;
+- 1,762 low periods written, 0 low failures;
+- the before/after per-file snapshot of every high file and raw chunk byte-identical (143,834 files, 22.78 GB; 3,047 raw chunks, 15.64 GB; tree `812ebf91…`), and identical again after QA;
+- no fetch and no deletion.
+
+**Readback.**
+
+- All 152 `low-status.json` files are bound to their `status.json`.
+- Each lists exactly the sealed groups.
+- Every low digest joins its exact high digests, with `publicationApproved: false`.
+- 463 groups have a negative period low.
+
+**Independent QA with pinned timezones.**
+
+- 1,762/1,762 high and 1,762/1,762 low verdicts pass.
+- All 41 sealed zones pass ICU parity.
+- 0 value mismatches.
+- The coverage gate reports 0 gaps across 152 tiles.
+
+**Accounting.** 6,407 high and 6,407 low verified-candidate routes (1,760 groups). Nothing is publishable.
+
+**Not done pending Hermes review:** re-freeze, removing `STOP`, and the bounded varied-regions restart.
+
 ## Measured, not estimated (2026-10-11)
 
 | Measure | Value | Source |
