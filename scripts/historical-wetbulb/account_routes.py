@@ -15,7 +15,10 @@ Inputs are the frozen plan (plan_all_routes.py), one or more run_tile_backfill.p
   unavailable-incomplete-period   the cell or group failed completeness/validation in the tile
   acquisition-incomplete          the tile was started, failed or bounded; a rerun resumes it
   …plan statuses                  pending-acquisition, research-complete-unpublished and
-                                  unavailable-identity-* carry over unchanged
+                                  unavailable-incomplete-period are resolved from the sealed
+                                  tile (pinned evidence supersedes PR #41's complete or
+                                  partial unpinned research years); unavailable-identity-*
+                                  and unavailable-masked-cell carry over unchanged
 
 Routes with a sealed high period also get a separate `lowStatus` for the low-v1
 companion (lowest modeled hourly wet bulb), bound to its own digest and to the exact
@@ -40,7 +43,8 @@ STATUS_MEANING = {
     'pending-acquisition': 'Mapped and planned; source data not yet acquired',
     'acquisition-incomplete': 'Tile started but not sealed (bounded, failed or in progress); a rerun resumes it',
     'unavailable-masked-cell': 'Nearest ERA5-Land cell has no land data',
-    'unavailable-incomplete-period': 'Source hours missing or period validation failed for this cell/group',
+    'unavailable-incomplete-period': 'Source hours missing or period validation failed for this cell/group '
+                                     '(or, before its tile is sealed, only partial PR #41 research years exist)',
     'unavailable-identity-unmatched': 'No verified GeoNames identity/IANA timezone',
     'unavailable-identity-ambiguous': 'GeoNames identity shared by several canonical routes',
 }
@@ -53,6 +57,9 @@ LOW_STATUS_MEANING = {
     'low-pending-backfill': 'High period sealed before lows existed; offline low backfill pending',
 }
 STATED_YEARS = (1950, 2025)
+# Plan statuses that describe PR #41's unpinned research (none, complete, or partial years)
+# rather than an identity or mask verdict: a sealed pinned tile is the evidence for them.
+RESOLVED_BY_TILE = ('pending-acquisition', 'research-complete-unpublished', 'unavailable-incomplete-period')
 # Verdicts count only when made with the verifier's pinned IANA 2026c main-data tree
 # (verify_period_independent.TZ_SOURCE); earlier output used the system backzone build.
 TZ_SOURCE = 'iana-2026c-main/pytz-2026.3.post1'
@@ -181,7 +188,7 @@ def account(plan_rows, sealed, started, periods, verdicts, lows=None, low_failed
     for row in plan_rows:
         out = {k: row[k] for k in ('path', 'status', 'stage', 'group', 'tile') if k in row}
         group, tile = row.get('group'), row.get('tile')
-        if group and tile and row['status'] in ('pending-acquisition', 'research-complete-unpublished'):
+        if group and tile and row['status'] in RESOLVED_BY_TILE:
             name = tile_name(tile)
             cell = group.split('|', 1)[0]
             status = sealed.get(name)

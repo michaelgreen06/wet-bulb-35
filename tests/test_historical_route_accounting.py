@@ -154,6 +154,24 @@ class TestRouteAccounting(unittest.TestCase):
         done = VERIFY.previously_verified([path])
         self.assertEqual(done, {(v['groupKey'], v['periodSha256']) for v in self.verdicts})
 
+    def test_partial_research_plan_status_is_superseded_by_the_sealed_pinned_tile(self):
+        """Regression: Houston's plan row said 'only partial PR #41 years' and stayed unavailable
+        although its pinned tile sealed and independently verified a complete period."""
+        plan = [
+            row('/a/houston/', 'unavailable-incomplete-period', '1.0,2.0|Asia/Kolkata', (1, 2)),
+            row('/a/coast/', 'unavailable-incomplete-period', '1.1,2.0|UTC', (1, 2)),
+            row('/b/later/', 'unavailable-incomplete-period', '5.0,5.0|UTC', (9, 9), stage='top50'),
+        ]
+        sealed, started, periods = ACCOUNT.load_runs([self.out], 'arco', years=(1950, 1951))
+        verdicts = ACCOUNT.load_verdicts([self.write_verdicts(self.verdicts)])
+        rows = {r['path']: r for r in ACCOUNT.account(plan, sealed, started, periods, verdicts)}
+        self.assertEqual(rows['/a/houston/']['status'], 'verified-candidate-unpublished')
+        self.assertEqual(rows['/a/houston/']['period']['first'], '1950-01-03')
+        self.assertEqual(rows['/a/coast/']['status'], 'unavailable-masked-cell', 'tile evidence, not the plan guess')
+        self.assertEqual(rows['/b/later/']['status'], 'unavailable-incomplete-period', 'unsealed: plan status kept')
+        rows = {r['path']: r for r in ACCOUNT.account(plan, sealed, started, periods, {})}
+        self.assertEqual(rows['/a/houston/']['status'], 'acquired-unverified')
+
 
 
 try:

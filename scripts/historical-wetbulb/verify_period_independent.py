@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Independently recompute a private research period from retained hourly inputs.
 
-Separate from the Node pipeline on purpose: Python zoneinfo local-day bounds from a
-pinned, vendored IANA 2026c main-data tree (tzdata-iana-2026c/, never the system's
-backzone build), checked hour-by-hour against the pipeline's ICU offsets per zone
-(not Intl adjacency checks), a bisection Romps solver (not Brent) validated
+Separate from the Node pipeline on purpose: Python zoneinfo per-instant local dates
+from a pinned, vendored IANA 2026c main-data tree (tzdata-iana-2026c/, never the
+system's backzone build), checked hour-by-hour against the pipeline's ICU offsets per
+zone (not Intl adjacency checks), a bisection Romps solver (not Brent) validated
 against the heatindex 0.0.2 reference vectors, and its own checksum/identity
 joins. Compares calendar-day, monthly and period highs plus coverage, and the same
 for the low-v1 companion (minima), recomputed here from the checksummed chunks and
@@ -324,6 +324,28 @@ def load_year(job_dir, cell_key):
     return status, rows
 
 
+def local_day_stamps(day, zone):
+    """Every whole UTC hour whose instant falls on local calendar date `day`.
+
+    Assigned by instant, exactly as the pipeline buckets hours, never by assuming a
+    local date is one contiguous UTC span between two midnights: when a fallback
+    happens just after midnight (Newfoundland ended DST at 00:01, 1987–2010) the date
+    recurs after a one-minute sliver, so with a :30 offset the hour after the sliver
+    belongs to the previous date although it lies between that date's midnights.
+    The midnight bounds only pad the search window (a local date lasts ≤ 25 h and
+    starts within an hour of its nominal midnight).
+    """
+    start, end = local_day_bounds(day, zone)
+    at = start.replace(minute=0, second=0) - timedelta(hours=2)
+    stop = end + timedelta(hours=2)
+    stamps = []
+    while at < stop:
+        if at.astimezone(zone).date() == day:
+            stamps.append(at)
+        at += timedelta(hours=1)
+    return stamps
+
+
 def days_from_hours(hours, zone, year):
     """Complete local dates of local `year` from {UTC datetime: wet bulb °C}.
 
@@ -332,14 +354,7 @@ def days_from_hours(hours, zone, year):
     days, partial, odd = {}, [], []
     day = date(year, 1, 1)
     while day.year == year:
-        start, end = local_day_bounds(day, zone)
-        # Every whole UTC hour whose instant falls in [local midnight, next local
-        # midnight); with :30/:45 offsets the first sample is after midnight.
-        first = start.replace(minute=0, second=0) + (timedelta(hours=1) if start.minute or start.second else timedelta())
-        stamps = []
-        while first < end:
-            stamps.append(first)
-            first += timedelta(hours=1)
+        stamps = local_day_stamps(day, zone)
         expected = len(stamps)
         present = [s for s in stamps if s in hours]
         if expected and len(present) == expected:
