@@ -129,6 +129,11 @@ class ArcoPinnedSource:
         """`ledger` (run_tile_backfill.ApprovalLedger) is charged for every request, metadata included."""
         self.token = token or self._token()
         self.get, self.ledger = get, ledger
+        if decode is None:
+            try:
+                from numcodecs import Blosc  # noqa: F401  (the C codec itself; checked before the first charge)
+            except ImportError:
+                raise SystemExit('ARCO decoding needs numcodecs (private research venv); nothing was charged') from None
         self.decode = decode or self._blosc
         raw = {url: self._fetch(url + '/.zmetadata', limit=2_000_000) for url in (TEMP_URL, PRESS_URL)}
         self.metadata_sha256 = {url: hashlib.sha256(raw[url]).hexdigest() for url in raw}

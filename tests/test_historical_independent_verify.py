@@ -2,7 +2,7 @@ import hashlib
 import json
 import tempfile
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
@@ -55,6 +55,23 @@ class TestIndependentVerifier(unittest.TestCase):
         _, days, _, odd = MOD.reduce_year((str(folder), [40.7, -74.0], 'America/New_York', 2021))
         self.assertEqual(odd, [('2021-03-14', 23), ('2021-11-07', 25)])
         self.assertEqual(days['2021-03-14'][2], 23)
+
+    def test_a_fallback_just_after_midnight_keeps_each_hour_on_its_instant_date(self):
+        """Regression: Newfoundland ended DST at 00:01 (1987–2010). Local 1993-10-31 began at
+        02:30Z, lasted one minute, and resumed at 03:30Z; so 1993-10-31T03:00Z is 23:30 NST on
+        10-30. The midnight-bounds model gave 10-30 24 hours and 10-31 25; by instant (as the
+        pipeline buckets) it is 25 and 24, and the two days' extrema move accordingly."""
+        zone = MOD.pinned_zone('America/St_Johns')
+        self.assertEqual(datetime(1993, 10, 31, 3, tzinfo=timezone.utc).astimezone(zone).date().isoformat(), '1993-10-30')
+        hours = {datetime(1993, 10, 28, tzinfo=timezone.utc) + timedelta(hours=h): float(h) for h in range(24 * 6)}
+        days, partial, odd = MOD.days_from_hours(hours, zone, 1993)
+        self.assertEqual((days['1993-10-30'][2], days['1993-10-31'][2]), (25, 24))
+        self.assertEqual(days['1993-10-30'][1], '1993-10-31T03:00:00.000Z', 'latest hour of the 25-hour day')
+        self.assertEqual(days['1993-10-31'][4], '1993-10-31T04:00:00.000Z', 'earliest hour of the next day')
+        self.assertIn(('1993-10-30', 25), odd)
+        for day in ('1993-10-29', '1993-10-30', '1993-10-31', '1993-11-01'):
+            stamps = MOD.local_day_stamps(date.fromisoformat(day), zone)
+            self.assertEqual(stamps, sorted(s for s in hours if s.astimezone(zone).date().isoformat() == day), day)
 
     def test_missing_hour_makes_only_its_local_date_partial(self):
         drop = datetime(2021, 6, 1, 12, tzinfo=timezone.utc)

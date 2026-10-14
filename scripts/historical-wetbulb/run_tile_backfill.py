@@ -417,6 +417,90 @@ def require_self_check(out):
     return longest
 
 
+LOW_SCHEMA = 'low-v1'
+LOW_STATUS = 'low-status.json'
+
+
+def group_id(key):
+    return hashlib.sha256(key.encode()).hexdigest()[:20]
+
+
+def reduce_tile_dir(tile_dir, groups_file, out, source_name, start_year, end_year):
+    node = shutil.which('node')
+    if not node:
+        raise OSError('Node.js is required for the pinned Romps reduction')
+    return subprocess.run([node, '--experimental-strip-types', str(Path(__file__).with_name('reduce-tile-chunks.mjs')),
+                           '--tile-dir', str(tile_dir), '--groups', str(groups_file), '--start-year', str(start_year),
+                           '--end-year', str(end_year), '--out', str(out / 'groups' / source_name)],
+                          cwd=REPO, capture_output=True, text=True)
+
+
+def high_outputs_digest(out, source_name, groups):
+    """One SHA-256 over every legacy high file of a tile's groups (annual, period, manifest)."""
+    listing = []
+    for cell, zones in sorted(groups.items()):
+        for zone in zones:
+            folder = out / 'groups' / source_name / group_id(f'{cell}|{zone}')
+            if folder.is_dir():
+                listing += [[f'{folder.name}/{p.name}', sha256_file(p)] for p in sorted(folder.glob('*.json'))]
+    return sha256_bytes(json.dumps(listing).encode())
+
+
+def write_low_status(tile_dir, status, reduced, high_digest):
+    """Deterministic companion of status.json; bound to its exact bytes and the high files."""
+    record = {'schemaVersion': 1, 'lowSchema': LOW_SCHEMA, 'tile': status['tile'], 'source': status['source'],
+              'groups': status['groups'], 'highStatusSha256': sha256_file(tile_dir / 'status.json'),
+              'highOutputsSha256': high_digest, 'lowPeriods': reduced['lowPeriods'],
+              'failedLowGroups': reduced['failedLowGroups'], 'tzdata': reduced['tzdata']}
+    if reduced.get('lowSchema') != LOW_SCHEMA:
+        raise ValueError(f'{tile_dir.name}: reducer did not produce {LOW_SCHEMA} lows')
+    sealed = {p['groupKey']: p['periodSha256'] for p in status['periods']}
+    lows = {p['groupKey']: p['highPeriodSha256'] for p in reduced['lowPeriods']}
+    if any(sealed.get(k) != v for k, v in lows.items()) or set(lows) | {f['groupKey'] for f in reduced['failedLowGroups']} != set(sealed):
+        raise ValueError(f'{tile_dir.name}: low periods do not cover exactly the sealed high periods')
+    path = tile_dir / LOW_STATUS
+    if path.exists():
+        retained = json.loads(path.read_text())
+        if retained == record:
+            return record
+        # A re-sealed tile has a new status.json (timestamp); only that binding may change.
+        substance = lambda r: {k: v for k, v in r.items() if k != 'highStatusSha256'}
+        if substance(retained) != substance(record):
+            raise ValueError(f'{tile_dir.name}: low status differs from retained {LOW_STATUS}')
+    durable_write(path, record)
+    return record
+
+
+def backfill_tile_lows(tile_dir, out, *, start_year, end_year):
+    """Offline low backfill of a sealed tile from its retained, checksummed chunks.
+
+    Re-runs the deterministic reducer, which must reproduce every legacy high file
+    byte-for-byte (write-once) and the sealed status exactly; the high files are also
+    hashed before and after. No fetch, no change to status.json or any high output.
+    """
+    status_path = tile_dir / 'status.json'
+    status = json.loads(status_path.read_text())
+    source_name = status['source']
+    reduce_groups = {c: z for c, z in status['groups'].items() if c not in status['notInSourceCells']}
+    groups_file = tile_dir / 'groups.json'
+    if json.loads(groups_file.read_text()) != reduce_groups:
+        raise ValueError(f'{tile_dir.name}: retained groups.json differs from the sealed status')
+    status_before = sha256_file(status_path)
+    before = high_outputs_digest(out, source_name, status['groups'])
+    result = reduce_tile_dir(tile_dir, groups_file, out, source_name, start_year, end_year)
+    if result.returncode:
+        raise ValueError(f'{tile_dir.name}: low backfill re-reduction failed: {result.stderr[-1500:]}')
+    reduced = json.loads(result.stdout.strip().splitlines()[-1])
+    expected = {'reducedCells': 'seen', 'maskedCells': 'masked', 'unavailableCells': 'unavailableCells',
+                'failedGroups': 'failedGroups', 'periods': 'periods', 'tzdata': 'tzdata'}
+    drift = [k for k, r in expected.items() if status[k] != reduced[r]]
+    if drift or reduced['newAnnualFiles']:
+        raise ValueError(f'{tile_dir.name}: re-reduction differs from the sealed tile status: {drift or "new annual files"}')
+    if high_outputs_digest(out, source_name, status['groups']) != before or sha256_file(status_path) != status_before:
+        raise ValueError(f'{tile_dir.name}: legacy high outputs differ after low backfill')
+    return write_low_status(tile_dir, status, reduced, before)
+
+
 def run_tile(tile, groups, source, out, *, start_year, end_year, budget, pause, archive=None, ledger=None):
     # Each source keeps its own chunks and outputs; a restart never mixes provenance.
     tile_dir = out / 'tiles' / source.name / f't{tile[0]:03d}-{tile[1]:03d}'
@@ -425,6 +509,8 @@ def run_tile(tile, groups, source, out, *, start_year, end_year, budget, pause, 
         status = json.loads(status_path.read_text())
         if status.get('groups') != groups or status.get('source') != source.name:
             raise ValueError(f'{tile_dir.name}: retained tile status differs from the current plan or source')
+        if not (tile_dir / LOW_STATUS).exists():  # sealed before lows existed, or crashed in between
+            backfill_tile_lows(tile_dir, out, start_year=start_year, end_year=end_year)
         return status, 0
     fetched = 0
     cells = sorted(groups)
@@ -463,13 +549,7 @@ def run_tile(tile, groups, source, out, *, start_year, end_year, budget, pause, 
     reduce_groups = {c: z for c, z in groups.items() if c in present}
     groups_file = tile_dir / 'groups.json'
     groups_file.write_text(json.dumps(reduce_groups, sort_keys=True) + '\n')
-    node = shutil.which('node')
-    if not node:
-        raise OSError('Node.js is required for the pinned Romps reduction')
-    result = subprocess.run([node, '--experimental-strip-types', str(Path(__file__).with_name('reduce-tile-chunks.mjs')),
-                             '--tile-dir', str(tile_dir), '--groups', str(groups_file), '--start-year', str(start_year),
-                             '--end-year', str(end_year), '--out', str(out / 'groups' / source.name)],
-                            cwd=REPO, capture_output=True, text=True)
+    result = reduce_tile_dir(tile_dir, groups_file, out, source.name, start_year, end_year)
     if result.returncode:
         # Tile-level integrity failure: record it for review and let other tiles proceed; a rerun retries.
         (tile_dir / 'failed.json').write_text(json.dumps({'tile': list(tile), 'stderr': result.stderr[-2000:],
@@ -485,6 +565,9 @@ def run_tile(tile, groups, source, out, *, start_year, end_year, budget, pause, 
     tmp.write_text(json.dumps(status, sort_keys=True) + '\n')
     os.chmod(tmp, 0o600)
     os.replace(tmp, status_path)
+    # Highs and lows came from this one reduction pass; a crash before this line leaves a
+    # sealed tile without lows, which the next run (or backfill_lows.py) completes offline.
+    write_low_status(tile_dir, status, reduced, high_outputs_digest(out, source.name, groups))
     return status, fetched
 
 
@@ -511,8 +594,9 @@ def main():
     p.add_argument('--max-new-chunks', type=int, required=True)
     p.add_argument('--pause-seconds', type=float, default=2.5)
     p.add_argument('--execute', action='store_true')
+    p.add_argument('--min-free-gb', type=float, default=10, help='Stop before a tile when free disk falls below this')
     a = p.parse_args()
-    if not (a.start_year == 1950 and a.start_year <= a.end_year <= 2025) or a.max_new_chunks < 1:
+    if not (a.start_year == 1950 and a.start_year <= a.end_year <= 2025) or a.max_new_chunks < 1 or a.min_free_gb < 10:
         raise ValueError('Unsupported period or chunk budget')
     out = check_private_out(a.out)
     plan_sha = sha256_file(a.plan)
@@ -564,8 +648,8 @@ def main():
         outcome, error = 'finished', None
         try:
             for tile, groups in tiles.items():
-                if shutil.disk_usage(out).free < 10_000_000_000:
-                    raise OSError('Stopped: less than 10 GB free')
+                if shutil.disk_usage(out).free < a.min_free_gb * 1e9:
+                    raise OSError(f'Stopped: less than {a.min_free_gb:g} GB free')
                 status, fetched = run_tile(tile, groups, source, out, start_year=a.start_year, end_year=a.end_year,
                                            budget=budget, pause=a.pause_seconds if a.source == 'arco' else 0,
                                            archive=archive, ledger=ledger)
