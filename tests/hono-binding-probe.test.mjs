@@ -93,12 +93,12 @@ test("binding fixture is generated through production collision identity", () =>
     const sourceCities = JSON.parse(fs.readFileSync(fixtureSource, "utf8"));
     const result = buildHonoBindingAssets({ sourceCities, outDir: directory });
     assert.deepEqual(result, { files: 3, countries: 2, rows: 3, collisionGroups: 1, collisionRows: 2 });
-    assert.equal(
-      fs.readFileSync(path.join(directory, "locations/shards/armenia.json"), "utf8"),
-      fs.readFileSync(path.join(fixtureAssets, "locations/shards/armenia.json"), "utf8"),
-    );
-    assert.match(fs.readFileSync(path.join(directory, "locations/shards/armenia.json"), "utf8"), /metsamor-40-0723-44-2917/);
-    assert.match(fs.readFileSync(path.join(directory, "locations/shards/armenia.json"), "utf8"), /metsamor-40-1445-44-1167/);
+    const shard = JSON.parse(fs.readFileSync(path.join(directory, "locations/shards/armenia/armavir.json"), "utf8"));
+    const legacy = JSON.parse(fs.readFileSync(path.join(fixtureAssets, "locations/shards/armenia.json"), "utf8"));
+    assert.equal(shard.v, 2);
+    assert.deepEqual(shard.r, legacy.r);
+    assert.match(JSON.stringify(shard), /metsamor-40-0723-44-2917/);
+    assert.match(JSON.stringify(shard), /metsamor-40-1445-44-1167/);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }

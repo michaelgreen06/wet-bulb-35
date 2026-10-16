@@ -100,7 +100,7 @@ test("Popular-40 pages keep the reviewed pilot record even if all-location data 
   assert.match(baseline, /IANA timezone/);
 });
 
-test("climate travels through a per-country shard with a local cell table into crawler HTML", async () => {
+test("climate travels through a per-region shard with a local cell table into crawler HTML", async () => {
   const rows = inventory(city, other);
   const [a, b] = rows.map((row) => `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`);
   const climateContext = artifact(rows, { [a]: [26, null], [b]: [26, 0] }, { exclusions: { koppen: {}, nasaPower: { cellEdgeTie: [a] } } });
@@ -108,7 +108,7 @@ test("climate travels through a per-country shard with a local cell table into c
   try {
     buildHonoBindingAssets({ sourceCities: [city, other], outDir: out, climateContext });
     const asset = (pathname) => path.join(out, pathname);
-    const shard = JSON.parse(fs.readFileSync(asset("/locations/shards/united-states.json")));
+    const shard = JSON.parse(fs.readFileSync(asset("/locations/shards/united-states/colorado.json")));
     const manifest = JSON.parse(fs.readFileSync(asset("/locations/route-manifest.json")));
     assert.deepEqual(shard.c, [cellRow]);
     assert.deepEqual(shard.r.map((row) => row.slice(6)), [[null, [26, null]], [null, [26, 0]]]);
@@ -124,7 +124,7 @@ test("climate travels through a per-country shard with a local cell table into c
     assert.match(boulder, /climate classification \(Dfb\)/);
     assert.doesNotMatch(boulder, /highest wet bulb/);
     assert.equal(providerCalls, 0);
-    fs.writeFileSync(asset("/locations/shards/united-states.json"), JSON.stringify({ ...shard, c: [] }));
+    fs.writeFileSync(asset("/locations/shards/united-states/colorado.json"), JSON.stringify({ ...shard, c: [] }));
     const broken = await createHonoPageRenderer().fetch(new Request(`https://www.wetbulb35.com${b}`), env);
     assert.equal(broken.status, 500);
   } finally { fs.rmSync(out, { recursive: true, force: true }); }

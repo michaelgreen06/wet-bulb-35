@@ -63,7 +63,7 @@ test('browser clock renders the location time zone and refreshes on tab resume w
   } finally {dom.window.close();}
 });
 
-test('build-time facts travel through a country shard into crawler-readable HTML only', async () => {
+test('build-time facts travel through a region shard into crawler-readable HTML only', async () => {
   const city = {...baseCity};
   const route = routePathForCity(city);
   const facts = {v: 1, source: {dataset: 'GeoNames cities1000', snapshot: '2026-09-29', sha256: LOCATION_FACTS_SHA256, populationReferenceYear: null}, byPath: {[route]: [5574991, 108250, 'America/Denver', 1655, 'dem']}};
@@ -74,7 +74,7 @@ test('build-time facts travel through a country shard into crawler-readable HTML
     const asset = (pathname) => path.join(out, pathname);
     const binding = {async fetch(request) {const name = asset(new URL(request.url).pathname);return fs.existsSync(name) ? new Response(fs.readFileSync(name), {status: 200}) : new Response('Missing', {status: 404});}};
     const manifest = JSON.parse(fs.readFileSync(asset('/locations/route-manifest.json')));
-    const shard = JSON.parse(fs.readFileSync(asset('/locations/shards/united-states.json')));
+    const shard = JSON.parse(fs.readFileSync(asset('/locations/shards/united-states/colorado.json')));
     assert.equal(manifest.factsSource.snapshot, '2026-09-29');
     assert.deepEqual(shard.r[0][6], facts.byPath[route]);
     let providerCalls = 0;
