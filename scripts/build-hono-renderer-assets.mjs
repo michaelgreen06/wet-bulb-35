@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
-import { buildHonoBindingAssets } from "./build-hono-binding-assets.mjs";
+import { buildHonoBindingAssets, MAX_ASSET_FILES } from "./build-hono-binding-assets.mjs";
 import { createRouteIdentityIndex } from "./probe-location-route-identity.mjs";
 import { validateLegacyRedirectArtifact } from "./generate-legacy-city-route-redirects.mjs";
 import { loadCityPopulation } from "../lib/city-population.mjs";
@@ -23,10 +23,21 @@ export function buildHonoRendererAssets({ sourceCities, outDir, placesApiKey = "
   const identity = createRouteIdentityIndex(sourceCities);
   const manifestPath = path.join(root, "locations/route-manifest.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const counts = new Map();
+  for (const row of identity.rows) {
+    if (!counts.has(row.countrySlug)) counts.set(row.countrySlug, { total: 0, regions: new Map() });
+    const entry = counts.get(row.countrySlug);
+    entry.total++;
+    entry.regions.set(row.stateSlug, (entry.regions.get(row.stateSlug) ?? 0) + 1);
+  }
   for (const country of manifest.countries) {
-    const rows = identity.rows.filter((row) => row.countrySlug === country.countrySlug);
-    country.count = rows.length;
-    for (const state of country.states) state.count = rows.filter((row) => row.stateSlug === state.slug).length;
+    const entry = counts.get(country.countrySlug);
+    if (!entry) throw new Error(`Missing country inventory: ${country.countrySlug}`);
+    country.count = entry.total;
+    for (const state of country.states) state.count = entry.regions.get(state.slug) ?? 0;
+    if (country.states.reduce((total, state) => total + state.count, 0) !== entry.total) {
+      throw new Error(`Region inventory mismatch: ${country.countrySlug}`);
+    }
   }
   if (legacyArtifact) {
     const legacyShards = new Map();
@@ -60,7 +71,15 @@ export function buildHonoRendererAssets({ sourceCities, outDir, placesApiKey = "
     url: `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`,
     lat: Number(row.latitude), lon: Number(row.longitude),
   }))));
-  return result;
+  let assetFiles = 0;
+  const pending = [root];
+  while (pending.length) {
+    for (const entry of fs.readdirSync(pending.pop(), { withFileTypes: true })) {
+      if (entry.isDirectory()) pending.push(path.join(entry.parentPath, entry.name));
+      else if (++assetFiles > MAX_ASSET_FILES) throw new Error("Worker assets exceed the Workers Free file limit");
+    }
+  }
+  return { ...result, assetFiles };
 }
 
 function main() {

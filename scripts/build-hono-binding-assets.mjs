@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRouteIdentityIndex } from "./probe-location-route-identity.mjs";
 import { tier1ByCanonicalPath } from "../lib/page-renderer.mjs";
 import { compactNearby, computeNearby } from "../lib/nearby.mjs";
+import { cityBucket } from "../lib/location-buckets.mjs";
 import { loadCityPopulation } from "../lib/city-population.mjs";
 import { loadLocationFacts, validateLocationFacts } from "../lib/location-facts.mjs";
 import { loadClimateContext, validateClimateContext } from "../lib/climate-context.mjs";
@@ -14,6 +15,19 @@ import { loadClimateContext, validateClimateContext } from "../lib/climate-conte
 const GENERATOR_ID = "wetbulb35-hono-assets";
 // Cloudflare Workers static assets reject files over 25 MiB; keep headroom.
 export const MAX_SHARD_BYTES = 24 * 1024 * 1024;
+export const MAX_ASSET_FILES = 20_000;
+const CITY_BUCKET_TARGET_ROWS = 48;
+const CITY_BUCKET_MAX_ROWS = 96;
+function partitionCityRows(rows) {
+  if (rows.length <= CITY_BUCKET_MAX_ROWS) return null;
+  let count = Math.ceil(rows.length / CITY_BUCKET_TARGET_ROWS);
+  for (; count <= rows.length; count++) {
+    const buckets = Array.from({ length: count }, () => []);
+    for (const row of rows) buckets[cityBucket(row[4], count)].push(row);
+    if (buckets.every((bucket) => bucket.length > 0 && bucket.length <= CITY_BUCKET_MAX_ROWS)) return buckets;
+  }
+  throw new Error('Cannot partition a region into bounded city shards');
+}
 const REPOSITORY_ROOT = fs.realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."));
 
 function realOutputPath(target) {
@@ -82,18 +96,27 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
       countries.set(row.countrySlug, {
         country: row.resolvedCountryName,
         countrySlug: row.countrySlug,
-        file: `${row.countrySlug}.json`,
         states: new Map(),
-        rows: [],
-        // Each shard carries only the NASA POWER cells its own rows reference.
-        cells: new Map(),
+        count: 0,
       });
     }
     const country = countries.get(row.countrySlug);
-    country.states.set(row.stateSlug, row.resolvedAdmin1Code);
+    if (!country.states.has(row.stateSlug)) {
+      country.states.set(row.stateSlug, {
+        slug: row.stateSlug,
+        name: row.resolvedAdmin1Code,
+        file: `${row.countrySlug}/${row.stateSlug}.json`,
+        rows: [],
+        // Each region shard carries only the NASA POWER cells its rows use.
+        cells: new Map(),
+      });
+    }
+    const state = country.states.get(row.stateSlug);
+    if (state.name !== row.resolvedAdmin1Code) throw new Error(`Conflicting region identity: ${row.countrySlug}/${row.stateSlug}`);
     const route = `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`;
     if (tier1.has(route)) resolvedTier1.add(route);
-    country.rows.push([
+    country.count++;
+    state.rows.push([
       row.name,
       row.resolvedAdmin1Code,
       row.latitude,
@@ -101,24 +124,31 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
       row.outputCitySlug,
       compactNearby(row, nearby.get(route) ?? []),
       ...(locationFacts || climateContext ? [locationFacts ? locationFacts.byPath[route] : null] : []),
-      ...(climateContext ? [localClimateTuple(climateContext, route, country.cells)] : []),
+      ...(climateContext ? [localClimateTuple(climateContext, route, state.cells)] : []),
     ]);
   }
 
+  for (const country of countries.values()) for (const state of country.states.values()) {
+    state.buckets = partitionCityRows(state.rows);
+  }
   const manifest = [...countries.values()]
     .sort((a, b) => a.countrySlug.localeCompare(b.countrySlug))
-    .map(({ country, countrySlug, file, states }) => ({
+    .map(({ country, countrySlug, count, states }) => ({
       country,
       countrySlug,
-      file,
-      count: countries.get(countrySlug).rows.length,
+      count,
       // Rendered country cards are ordered by display name, not route slug.
-      states: [...states].sort(([, a], [, b]) => a.localeCompare(b)).map(([slug, name]) => ({
-        slug,
-        name,
-        count: countries.get(countrySlug).rows.filter((row) => row[1] === name).length,
+      states: [...states.values()].sort((a, b) => a.name.localeCompare(b.name)).map((state) => ({
+        slug: state.slug,
+        name: state.name,
+        file: state.file,
+        count: state.rows.length,
+        ...(state.buckets ? { buckets: state.buckets.length } : {}),
       })),
     }));
+  const regionCount = [...countries.values()].reduce((total, country) => total + country.states.size, 0);
+  const bucketCount = [...countries.values()].reduce((total, country) => total + [...country.states.values()].reduce((n, state) => n + (state.buckets?.length ?? 0), 0), 0);
+  if (regionCount + bucketCount + 1 > MAX_ASSET_FILES) throw new Error("Region shards exceed the Workers Free static asset file limit");
   if (tier1.size && resolvedTier1.size !== tier1.size) throw new Error("Every Tier-1 manifest path must resolve exactly once from inventory");
   const popularCities = identity.rows
     .map((row) => ({ row, featured: tier1.get(`/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`) }))
@@ -126,17 +156,38 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
     .sort((a, b) => a.row.name.localeCompare(b.row.name) || a.featured.path.localeCompare(b.featured.path))
     .map(({ row }) => ({ name: row.name, stateName: row.resolvedAdmin1Code, countryName: row.resolvedCountryName, path: `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/` }));
   fs.writeFileSync(path.join(locations, "route-manifest.json"), JSON.stringify({
-    v: 1, generator: GENERATOR_ID, countries: manifest, popularCities,
+    v: 2, generator: GENERATOR_ID, countries: manifest, popularCities,
     ...(locationFacts ? { factsSource: { snapshot: locationFacts.source.snapshot, sha256: locationFacts.source.sha256 } } : {}),
     ...(climateContext ? { climateSource: climateSourceSummary(climateContext) } : {}),
   }));
-  for (const country of countries.values()) {
-    const body = JSON.stringify({ v: 1, r: country.rows, ...(climateContext ? { c: [...country.cells.keys()].map((index) => climateContext.cells[index]) } : {}) });
-    if (Buffer.byteLength(body) > MAX_SHARD_BYTES) throw new Error(`Country shard exceeds the asset size limit: ${country.file}`);
-    fs.writeFileSync(path.join(shards, country.file), body);
+  for (const country of countries.values()) for (const state of country.states.values()) {
+    const body = JSON.stringify({ v: 2, r: state.rows, ...(climateContext ? { c: [...state.cells.keys()].map((index) => climateContext.cells[index]) } : {}) });
+    if (Buffer.byteLength(body) > MAX_SHARD_BYTES) throw new Error(`Region shard exceeds the asset size limit: ${state.file}`);
+    const filename = path.join(shards, state.file);
+    fs.mkdirSync(path.dirname(filename), { recursive: true });
+    fs.writeFileSync(filename, body);
+    if (state.buckets) {
+      const sourceCells = [...state.cells.keys()];
+      state.buckets.forEach((bucket, index) => {
+        const localCells = new Map();
+        const rows = bucket.map((row) => {
+          if (!climateContext || row[7][1] === null) return row;
+          const sourceCell = sourceCells[row[7][1]];
+          if (!localCells.has(sourceCell)) localCells.set(sourceCell, localCells.size);
+          const copy = [...row];
+          copy[7] = [row[7][0], localCells.get(sourceCell)];
+          return copy;
+        });
+        const cityFile = filename.replace(/\.json$/, `.city-${index}.json`);
+        const cityBody = JSON.stringify({ v: 2, r: rows,
+          ...(climateContext ? { c: [...localCells.keys()].map((cell) => climateContext.cells[cell]) } : {}) });
+        if (Buffer.byteLength(cityBody) > MAX_SHARD_BYTES) throw new Error(`City shard exceeds the asset size limit: ${cityFile}`);
+        fs.writeFileSync(cityFile, cityBody);
+      });
+    }
   }
   return {
-    files: manifest.length + 1,
+    files: regionCount + bucketCount + 1,
     countries: manifest.length,
     rows: identity.rows.length,
     collisionGroups: identity.collisionGroups,

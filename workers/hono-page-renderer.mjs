@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { pageHtml, renderBrowsePage, renderCountryPage, renderGlobalGridHotspotPage, renderHomePage, renderHotspotPage, renderHotspotUnavailablePage, renderStatePage } from "../lib/page-renderer.mjs";
 import { expandNearby } from "../lib/nearby.mjs";
+import { cityBucket } from "../lib/location-buckets.mjs";
 import { createClimateExpander, validCell, validClimateTuple } from "../lib/climate-classes.mjs";
 import { hotspotSnapshotState } from "../lib/hotspots/snapshot.ts";
 import { forecastResponse, SNAPSHOT_FORECAST_UNAVAILABLE } from "./forecast-edge.ts";
@@ -186,9 +187,13 @@ function validManifest(value) {
     && /^[a-f0-9]{64}$/.test(value.climateSource.beckSha256)
     && (value.climateSource.nasaPower === null || (value.climateSource.nasaPower && /^\d{4}-\d{2}-\d{2}$/.test(value.climateSource.nasaPower.accessedDate)
       && /^v2\.\d+\.\d+$/.test(value.climateSource.nasaPower.apiVersion) && /^[a-f0-9]{64}$/.test(value.climateSource.nasaPower.sourceLockSha256))));
-  return value && value.v === 1 && Array.isArray(value.countries) && popularCitiesValid && factsSourceValid && climateSourceValid && value.countries.every((country) => country && typeof country.country === "string"
-    && typeof country.countrySlug === "string" && typeof country.file === "string" && Array.isArray(country.states)
-    && country.states.every((state) => state && typeof state.name === "string" && typeof state.slug === "string"));
+  return value && (value.v === 1 || value.v === 2) && Array.isArray(value.countries) && popularCitiesValid && factsSourceValid && climateSourceValid && value.countries.every((country) => country && typeof country.country === "string"
+    && /^[a-z0-9-]+$/.test(country.countrySlug) && (value.v === 2 || typeof country.file === "string") && Array.isArray(country.states)
+    && country.states.every((state) => state && typeof state.name === "string" && /^[a-z0-9-]+$/.test(state.slug)
+      && (value.v === 1 || (state.file === `${country.countrySlug}/${state.slug}.json`
+        && Number.isSafeInteger(state.count) && state.count > 0
+        && (state.buckets === undefined || (Number.isSafeInteger(state.buckets) && state.buckets > 1
+          && state.buckets <= Math.min(state.count, 4096)))))));
 }
 function validFactRow(facts) {
   if (facts === null) return true;
@@ -199,9 +204,9 @@ function validFactRow(facts) {
     && typeof timeZone === "string" && timeZone.length > 0 && timeZone.length <= 80
     && (elevation === null ? source === null : Number.isInteger(elevation) && elevation >= -1000 && elevation <= 9000 && (source === "elevation" || source === "dem"));
 }
-function validShard(value, hasFacts = false, hasClimate = false) {
+function validShard(value, hasFacts = false, hasClimate = false, schemaVersion = 1) {
   if (hasClimate && !(Array.isArray(value?.c) && value.c.every(validCell))) return false;
-  return value && value.v === 1 && Array.isArray(value.r) && value.r.every((row) => Array.isArray(row)
+  return value && value.v === schemaVersion && Array.isArray(value.r) && value.r.every((row) => Array.isArray(row)
     && typeof row[0] === "string" && typeof row[1] === "string" && Number.isFinite(row[2]) && Number.isFinite(row[3]) && typeof row[4] === "string"
     && (hasClimate ? row.length === 8 && validNearby(row[5]) && validFactRow(row[6]) && validClimateTuple(row[7], value.c.length)
       : hasFacts ? row.length === 7 && validNearby(row[5]) && validFactRow(row[6]) : row.length >= 5 && row.length <= 6 && (row.length < 6 || validNearby(row[5]))));
@@ -274,29 +279,33 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     }
     return manifestPromise;
   }
-  async function shard(request, assets, country, factsSource = null, climateSource = null) {
-    const cached = parsedShards.get(country.file);
+  async function shard(request, assets, country, state, citySlug, factsSource = null, climateSource = null) {
+    const bucket = state.buckets && citySlug ? cityBucket(citySlug, state.buckets) : null;
+    const file = bucket === null ? state.file ?? country.file : state.file.replace(/\.json$/, `.city-${bucket}.json`);
+    const cached = parsedShards.get(file);
     if (cached) {
-      touchParsedShard(country.file, cached);
+      touchParsedShard(file, cached);
       return cached;
     }
-    const inFlight = inFlightShards.get(country.file);
+    const inFlight = inFlightShards.get(file);
     if (inFlight) return inFlight;
-    const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${country.file}`)
+    const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${file}`)
       .then((countryShard) => {
-        if (!validShard(countryShard, Boolean(factsSource), Boolean(climateSource))) throw new InternalMetadataError();
+        if (!validShard(countryShard, Boolean(factsSource), Boolean(climateSource), state.file ? 2 : 1)
+          || (state.file && countryShard.r.some((row) => row[1] !== state.name
+            || (bucket !== null && cityBucket(row[4], state.buckets) !== bucket)))) throw new InternalMetadataError();
         return indexCountryShard(country, countryShard.r, factsSource?.snapshot, climateSource ? countryShard.c : null);
       })
       .then((index) => {
         if (!index) return null;
-        touchParsedShard(country.file, index);
+        touchParsedShard(file, index);
         trimParsedShards();
         return index;
       });
-    inFlightShards.set(country.file, promise);
+    inFlightShards.set(file, promise);
     promise.then(
-      () => { if (inFlightShards.get(country.file) === promise) inFlightShards.delete(country.file); },
-      () => { if (inFlightShards.get(country.file) === promise) inFlightShards.delete(country.file); },
+      () => { if (inFlightShards.get(file) === promise) inFlightShards.delete(file); },
+      () => { if (inFlightShards.get(file) === promise) inFlightShards.delete(file); },
     );
     return promise;
   }
@@ -336,11 +345,12 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     if (!validManifest(index)) throw new InternalMetadataError();
     if (parts.length === 1) return { kind: "browse", index };
     const country = index.countries.find((item) => item.countrySlug === parts[1]);
-    if (!country || typeof country.file !== "string") return null;
+    if (!country) return null;
     if (parts.length === 2) return { kind: "country", country };
     const stateRecord = country.states?.find((item) => item.slug === parts[2]);
     if (!stateRecord || typeof stateRecord.name !== "string") return null;
-    const countryIndex = await shard(request, assets, country, index.factsSource, index.climateSource);
+    if (parts[3] && !/^[a-z0-9-]+$/.test(parts[3])) return null;
+    const countryIndex = await shard(request, assets, country, stateRecord, parts[3], index.factsSource, index.climateSource);
     if (!countryIndex) return null;
     const state = stateFromIndex(country, stateRecord, countryIndex);
     if (!state?.cities.length) return null;
