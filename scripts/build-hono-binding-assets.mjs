@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRouteIdentityIndex } from "./probe-location-route-identity.mjs";
 import { tier1ByCanonicalPath } from "../lib/page-renderer.mjs";
 import { compactNearby, computeNearby } from "../lib/nearby.mjs";
+import { cityBucket } from "../lib/location-buckets.mjs";
 import { loadCityPopulation } from "../lib/city-population.mjs";
 import { loadLocationFacts, validateLocationFacts } from "../lib/location-facts.mjs";
 import { loadClimateContext, validateClimateContext } from "../lib/climate-context.mjs";
@@ -15,6 +16,18 @@ const GENERATOR_ID = "wetbulb35-hono-assets";
 // Cloudflare Workers static assets reject files over 25 MiB; keep headroom.
 export const MAX_SHARD_BYTES = 24 * 1024 * 1024;
 export const MAX_ASSET_FILES = 20_000;
+const CITY_BUCKET_TARGET_ROWS = 48;
+const CITY_BUCKET_MAX_ROWS = 96;
+function partitionCityRows(rows) {
+  if (rows.length <= CITY_BUCKET_MAX_ROWS) return null;
+  let count = Math.ceil(rows.length / CITY_BUCKET_TARGET_ROWS);
+  for (; count <= rows.length; count++) {
+    const buckets = Array.from({ length: count }, () => []);
+    for (const row of rows) buckets[cityBucket(row[4], count)].push(row);
+    if (buckets.every((bucket) => bucket.length > 0 && bucket.length <= CITY_BUCKET_MAX_ROWS)) return buckets;
+  }
+  throw new Error('Cannot partition a region into bounded city shards');
+}
 const REPOSITORY_ROOT = fs.realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."));
 
 function realOutputPath(target) {
@@ -115,6 +128,9 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
     ]);
   }
 
+  for (const country of countries.values()) for (const state of country.states.values()) {
+    state.buckets = partitionCityRows(state.rows);
+  }
   const manifest = [...countries.values()]
     .sort((a, b) => a.countrySlug.localeCompare(b.countrySlug))
     .map(({ country, countrySlug, count, states }) => ({
@@ -127,10 +143,12 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
         name: state.name,
         file: state.file,
         count: state.rows.length,
+        ...(state.buckets ? { buckets: state.buckets.length } : {}),
       })),
     }));
   const regionCount = [...countries.values()].reduce((total, country) => total + country.states.size, 0);
-  if (regionCount + 1 > MAX_ASSET_FILES) throw new Error("Region shards exceed the Workers Free static asset file limit");
+  const bucketCount = [...countries.values()].reduce((total, country) => total + [...country.states.values()].reduce((n, state) => n + (state.buckets?.length ?? 0), 0), 0);
+  if (regionCount + bucketCount + 1 > MAX_ASSET_FILES) throw new Error("Region shards exceed the Workers Free static asset file limit");
   if (tier1.size && resolvedTier1.size !== tier1.size) throw new Error("Every Tier-1 manifest path must resolve exactly once from inventory");
   const popularCities = identity.rows
     .map((row) => ({ row, featured: tier1.get(`/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`) }))
@@ -148,9 +166,28 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
     const filename = path.join(shards, state.file);
     fs.mkdirSync(path.dirname(filename), { recursive: true });
     fs.writeFileSync(filename, body);
+    if (state.buckets) {
+      const sourceCells = [...state.cells.keys()];
+      state.buckets.forEach((bucket, index) => {
+        const localCells = new Map();
+        const rows = bucket.map((row) => {
+          if (!climateContext || row[7][1] === null) return row;
+          const sourceCell = sourceCells[row[7][1]];
+          if (!localCells.has(sourceCell)) localCells.set(sourceCell, localCells.size);
+          const copy = [...row];
+          copy[7] = [row[7][0], localCells.get(sourceCell)];
+          return copy;
+        });
+        const cityFile = filename.replace(/\.json$/, `.city-${index}.json`);
+        const cityBody = JSON.stringify({ v: 2, r: rows,
+          ...(climateContext ? { c: [...localCells.keys()].map((cell) => climateContext.cells[cell]) } : {}) });
+        if (Buffer.byteLength(cityBody) > MAX_SHARD_BYTES) throw new Error(`City shard exceeds the asset size limit: ${cityFile}`);
+        fs.writeFileSync(cityFile, cityBody);
+      });
+    }
   }
   return {
-    files: regionCount + 1,
+    files: regionCount + bucketCount + 1,
     countries: manifest.length,
     rows: identity.rows.length,
     collisionGroups: identity.collisionGroups,

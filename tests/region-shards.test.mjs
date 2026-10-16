@@ -55,3 +55,36 @@ test('v2 build emits one bounded shard per region and resolves without loading i
     fs.rmSync(out, { recursive: true, force: true });
   }
 });
+
+test('large regions resolve cold city pages from bounded buckets, but directories retain every city', async () => {
+  const many = Array.from({ length: 140 }, (_, i) => ({ name: `Town ${i}`, resolvedCountryName: 'Exampleland',
+    resolvedAdmin1Code: 'Large Region', latitude: 20 + i / 1000, longitude: 30 + i / 1000 }));
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'region-buckets-'));
+  try {
+    buildHonoBindingAssets({ sourceCities: many, outDir: out });
+    const manifest = JSON.parse(fs.readFileSync(path.join(out, 'locations/route-manifest.json')));
+    const state = manifest.countries[0].states[0];
+    assert.ok(state.buckets > 1);
+    const requested = [];
+    const assets = { async fetch(request) {
+      const pathname = new URL(request.url).pathname;
+      requested.push(pathname);
+      const file = path.join(out, pathname);
+      return fs.existsSync(file) ? new Response(fs.readFileSync(file)) : new Response('missing', { status: 404 });
+    } };
+    const request = new Request('https://region.test');
+    const city = await createLocationResolver()(request, assets,
+      ['wetbulb-temperature', 'exampleland', 'large-region', 'town-17']);
+    assert.equal(city.kind, 'city');
+    assert.equal(city.city.name, 'Town 17');
+    assert.equal(requested.length, 2, 'cold city needs only the manifest and one bounded bucket');
+    assert.match(requested[1], /\.city-\d+\.json$/);
+    requested.length = 0;
+    const directory = await createLocationResolver()(request, assets,
+      ['wetbulb-temperature', 'exampleland', 'large-region']);
+    assert.equal(directory.state.cities.length, 140);
+    assert.equal(requested[1], `/locations/shards/${state.file}`);
+  } finally {
+    fs.rmSync(out, { recursive: true, force: true });
+  }
+});
