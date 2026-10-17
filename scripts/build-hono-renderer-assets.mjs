@@ -12,6 +12,7 @@ import { loadCityPopulation } from "../lib/city-population.mjs";
 import { loadLocationFacts } from "../lib/location-facts.mjs";
 import { loadClimateContext } from "../lib/climate-context.mjs";
 import { clientRuntimeSource } from "../lib/page-renderer.mjs";
+import { publicAssetHeadersFile } from "../lib/public-asset-routing.mjs";
 
 export function buildHonoRendererAssets({ sourceCities, outDir, placesApiKey = "", publicDir = "public", tier1Manifest = null, population = null, locationFacts = null, climateContext = null, legacyArtifactPath = "scripts/legacy-city-route-redirects.v1.json" }) {
   const legacyArtifact = legacyArtifactPath
@@ -60,6 +61,8 @@ export function buildHonoRendererAssets({ sourceCities, outDir, placesApiKey = "
     url: `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`,
     lat: Number(row.latitude), lon: Number(row.longitude),
   }))));
+  // Headers for allowlisted assets served before the Worker; the asset layer never serves this file itself.
+  fs.writeFileSync(path.join(root, "_headers"), publicAssetHeadersFile());
   return result;
 }
 

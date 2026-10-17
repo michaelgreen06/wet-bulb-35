@@ -11,6 +11,10 @@ As of **September 27, 2026**, production has no Vercel fallback and no Cloudflar
 
 Historical cutover and Vercel documents remain historical records only; they are not operational instructions.
 
+### Asset routing (issue #77; takes effect only on the next approved release)
+
+`run_worker_first` is `/*` minus the exact paths in `lib/public-asset-routing.mjs` (CSS, JS, search index, favicon, logo, OpenWeather logo, social image). Those are served by the asset layer with Worker-identical headers from the generated `worker-assets/_headers`; everything else, including private `/locations/*` metadata, HTML, redirects, APIs, robots and sitemaps, still enters the Worker. The release guard rejects any other `run_worker_first` value. One intentional difference: non-GET/HEAD requests to an allowlisted asset return `405` from the asset layer instead of the Worker's `404`.
+
 ## Production deployment
 
 Only the reviewed production wrapper may deploy the weather Worker:
