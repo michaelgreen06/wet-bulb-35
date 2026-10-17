@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import { performance } from "node:perf_hooks";
 import net from "node:net";
 import fs from "node:fs";
@@ -18,6 +19,7 @@ import {
   renderStatePage,
 } from "../scripts/prototype-static-generator.mjs";
 import { createHonoPageRenderer, createLocationResolver } from "../workers/hono-page-renderer.mjs";
+import { PUBLIC_ASSET_FIRST_PATHS, PUBLIC_ASSET_RUN_WORKER_FIRST, publicAssetFirstHeaders, publicAssetHeadersFile } from "../lib/public-asset-routing.mjs";
 import { attachDetachedCleanup, spawnDetached, stopDetached } from "./helpers/detached-process-registry.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -45,7 +47,7 @@ function localFetch(port, pathname, init) {
 }
 
 function writeBrowserFixture(fixtureDir) {
-  for (const relative of ["favicon.svg", "logo.svg", "images/wetbulb-default.jpg"]) {
+  for (const relative of ["favicon.svg", "logo.svg", "openweather-logo.png", "images/wetbulb-default.jpg", "window.svg", "robots.txt", "sitemap.xml"]) {
     const source = path.join(root, "public", relative);
     const destination = path.join(fixtureDir, relative);
     fs.mkdirSync(path.dirname(destination), { recursive: true });
@@ -716,6 +718,148 @@ test("Wrangler serves renderer pages and public assets while hiding metadata", {
     for (const pathname of ["/locations/route-manifest.json", "/locations/shards/andorra.json", "/not-a-real-page"]) {
       assert.equal((await localFetch(port, pathname)).status, 404, pathname);
     }
+  } finally {
+    await stopDetached(child);
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("public asset-first allowlist is exact, public, and shared by production and staging", () => {
+  assert.deepEqual(PUBLIC_ASSET_RUN_WORKER_FIRST, ["/*", ...PUBLIC_ASSET_FIRST_PATHS.map((pathname) => `!${pathname}`)]);
+  for (const pathname of PUBLIC_ASSET_FIRST_PATHS) {
+    assert.match(pathname, /^\/[A-Za-z0-9/_.-]+\.[a-z]+$/, "exact file paths only, no wildcards or placeholders");
+    assert.doesNotMatch(pathname, /^\/(?:locations|api|wetbulb-temperature|sitemaps)\b|^\/(?:robots\.txt|sitemap\.xml|_headers)$/, pathname);
+  }
+  for (const pathname of ["/favicon.svg", "/logo.svg", "/openweather-logo.png", "/images/wetbulb-default.jpg"]) assert.ok(fs.existsSync(path.join(root, "public", pathname)), pathname);
+  const rendered = pageHtml(fixtureCities[0], options);
+  for (const reference of ["/assets/app.css", "/assets/app.js", "/favicon.svg", "/logo.svg", "/openweather-logo.png", "/images/wetbulb-default.jpg"]) assert.ok(rendered.includes(reference), reference);
+  const line = `run_worker_first = [${PUBLIC_ASSET_RUN_WORKER_FIRST.map((pattern) => JSON.stringify(pattern)).join(", ")}]`;
+  for (const config of ["wrangler.weather-production-domain.toml", "wrangler.weather-staging.toml"]) {
+    const source = fs.readFileSync(path.join(root, config), "utf8");
+    assert.equal(source.split("\n").filter((entry) => entry.startsWith("run_worker_first")).join("\n"), line, config);
+  }
+});
+
+test("asset-first _headers match Worker public asset headers byte-for-byte", async () => {
+  const app = createHonoPageRenderer();
+  const assets = { async fetch() { return new Response("asset", { status: 200, headers: { "content-type": "text/plain" } }); } };
+  for (const pathname of PUBLIC_ASSET_FIRST_PATHS) {
+    const response = await app.fetch(new Request(`${base}${pathname}`), { ASSETS: assets });
+    assert.equal(response.status, 200, pathname);
+    const expected = publicAssetFirstHeaders(pathname);
+    for (const [name, value] of Object.entries(expected)) assert.equal(response.headers.get(name), value, `${pathname} ${name}`);
+    assert.ok(publicAssetHeadersFile().includes(`${pathname}\n${Object.entries(expected).map(([name, value]) => `  ${name}: ${value}`).join("\n")}\n`), pathname);
+  }
+  assert.throws(() => publicAssetFirstHeaders("/locations/route-manifest.json"));
+});
+
+test("Wrangler serves allowlisted assets before the Worker with Worker-identical bytes and headers", { timeout: 90_000 }, async (t) => {
+  attachDetachedCleanup(t);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hono-renderer-asset-first-"));
+  const assetDir = path.join(tempDir, "served-assets");
+  const browserFixtureDir = path.join(tempDir, "browser-public");
+  const markerPath = path.join(tempDir, "marked-worker.mjs");
+  const configPath = path.join(tempDir, "wrangler.toml");
+  const marker = "x-test-worker-invoked";
+  let child;
+  try {
+    writeBrowserFixture(browserFixtureDir);
+    buildHonoRendererAssets({ sourceCities: fixtureCities, outDir: assetDir, publicDir: browserFixtureDir, legacyArtifactPath: null });
+    assert.equal(fs.readFileSync(path.join(assetDir, "_headers"), "utf8"), publicAssetHeadersFile());
+    const shard = JSON.parse(fs.readFileSync(path.join(assetDir, "locations/route-manifest.json"), "utf8")).countries[0].file;
+    // Test-only wrapper: production Worker code, plus a header proving the Worker ran.
+    fs.writeFileSync(markerPath, [
+      `import renderer from ${JSON.stringify(path.join(root, "workers/hono-page-renderer.mjs"))};`,
+      "export default { async fetch(request, env, context) {",
+      "  const response = await renderer.fetch(request, env, context);",
+      "  const headers = new Headers(response.headers);",
+      `  headers.set(${JSON.stringify(marker)}, "1");`,
+      "  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });",
+      "} };",
+      "",
+    ].join("\n"));
+    const requests = [
+      ...PUBLIC_ASSET_FIRST_PATHS.flatMap((pathname) => [[pathname, "GET"], [pathname, "HEAD"]]),
+      ["/assets/app.js?v=cache-bust", "GET"],
+      ["/locations", "GET"], ["/locations/route-manifest.json", "GET"], ["/locations/route-manifest.json", "HEAD"], [`/locations/shards/${shard}`, "GET"],
+      ["/_headers", "GET"], ["/assets/missing.css", "GET"], ["/window.svg", "GET"], ["/robots.txt", "GET"], ["/sitemap.xml", "GET"], ["/sitemap-index.xml", "GET"],
+      ["/", "GET"], ["/wetbulb-temperature/andorra/encamp/vila", "GET"], ["/wetbulb-temperature/andorra/encamp/vila/", "GET"], ["/wetbulb-temperature/andorra/encamp/vila/", "HEAD"],
+      ["/api/weather?lat=1&lon=2", "GET"], ["/api/forecast?path=/wetbulb-temperature/andorra/encamp/vila/", "GET"], ["/not-a-real-page", "GET"],
+    ];
+    const compared = ["content-type", "cache-control", "content-disposition", "strict-transport-security", "access-control-allow-origin", "etag", "location", "retry-after"];
+    const observe = async (runWorkerFirst) => {
+      fs.writeFileSync(configPath, [
+        'name = "wetbulb35-hono-renderer-asset-first-test"',
+        `main = ${JSON.stringify(markerPath)}`,
+        'compatibility_date = "2026-09-08"',
+        "[assets]",
+        `directory = ${JSON.stringify(assetDir)}`,
+        'binding = "ASSETS"',
+        `run_worker_first = ${JSON.stringify(runWorkerFirst)}`,
+        "[version_metadata]",
+        'binding = "CF_VERSION_METADATA"',
+        "[vars]",
+        'CANONICAL_ORIGIN = "https://www.wetbulb35.com"',
+        'GOOGLE_ANALYTICS_ID = "G-LNPWV0JL7S"',
+        'OBSERVABILITY_DISABLED = "true"',
+        "",
+      ].join("\n"));
+      const port = await reservePort();
+      await startWrangler(configPath, port, (spawned) => { child = spawned; });
+      try {
+        const results = new Map();
+        for (const [pathname, method] of requests) {
+          const response = await localFetch(port, pathname, { method, redirect: "manual" });
+          const body = Buffer.from(await response.arrayBuffer());
+          results.set(`${method} ${pathname}`, {
+            status: response.status,
+            invoked: response.headers.get(marker) === "1",
+            headers: Object.fromEntries(compared.map((name) => [name, response.headers.get(name)?.replace(`127.0.0.1:${port}`, "HOST") ?? null])),
+            sha256: crypto.createHash("sha256").update(body).digest("hex"),
+            bytes: body.length,
+          });
+        }
+        const css = results.get("GET /assets/app.css");
+        results.set("conditional", (await localFetch(port, "/assets/app.css", { headers: { "if-none-match": css.headers.etag } })).status);
+        const post = await localFetch(port, "/assets/app.css", { method: "POST" });
+        results.set("post", { status: post.status, invoked: post.headers.get(marker) === "1" });
+        return results;
+      } finally {
+        await stopDetached(child);
+        child = undefined;
+      }
+    };
+    const workerFirst = await observe(true);
+    const allowlist = await observe([...PUBLIC_ASSET_RUN_WORKER_FIRST]);
+    for (const [pathname, method] of requests) {
+      const key = `${method} ${pathname}`;
+      const before = workerFirst.get(key);
+      const after = allowlist.get(key);
+      const assetFirst = PUBLIC_ASSET_FIRST_PATHS.includes(pathname.split("?")[0]);
+      assert.equal(before.invoked, true, `${key} baseline enters the Worker`);
+      assert.equal(after.invoked, !assetFirst, `${key} Worker invocation`);
+      const { invoked: _before, ...beforeComparable } = before;
+      const { invoked: _after, ...afterComparable } = after;
+      assert.deepEqual(afterComparable, beforeComparable, `${key} status, bytes and headers are unchanged`);
+      if (assetFirst) {
+        assert.equal(after.status, 200, key);
+        assert.ok(after.headers["content-type"], key);
+        for (const [name, value] of Object.entries(publicAssetFirstHeaders(pathname.split("?")[0]))) assert.equal(after.headers[name], value, `${key} ${name}`);
+        if (method === "GET") assert.ok(after.bytes > 0, key);
+      }
+    }
+    for (const key of ["GET /locations", "GET /locations/route-manifest.json", "HEAD /locations/route-manifest.json", `GET /locations/shards/${shard}`, "GET /_headers"]) {
+      assert.equal(allowlist.get(key).status, 404, `${key} stays private`);
+    }
+    assert.equal(allowlist.get("GET /wetbulb-temperature/andorra/encamp/vila").status, 308);
+    assert.equal(allowlist.get("GET /wetbulb-temperature/andorra/encamp/vila").headers.location, "http://HOST/wetbulb-temperature/andorra/encamp/vila/");
+    assert.equal(allowlist.get("GET /wetbulb-temperature/andorra/encamp/vila/").headers["cache-control"], "public, max-age=0, must-revalidate");
+    assert.equal(allowlist.get("GET /api/weather?lat=1&lon=2").status, 500, "weather API stays Worker-gated and fails closed locally");
+    assert.equal(workerFirst.get("conditional"), 304);
+    assert.equal(allowlist.get("conditional"), 304);
+    // Known, intentional difference: non-GET/HEAD on an allowlisted asset is answered by the asset layer.
+    assert.deepEqual(workerFirst.get("post"), { status: 404, invoked: true });
+    assert.deepEqual(allowlist.get("post"), { status: 405, invoked: false });
   } finally {
     await stopDetached(child);
     fs.rmSync(tempDir, { recursive: true, force: true });

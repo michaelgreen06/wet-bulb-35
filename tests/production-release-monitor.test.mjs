@@ -193,6 +193,23 @@ test("deployment guard accepts only the exact custom domain", () => {
   assert.throws(() => validateProductionConfig(valid.replace("custom_domain = true }", "custom_domain = true }, { pattern = \"other.example\", custom_domain = true }")));
 });
 
+test("deployment guard accepts only the exact public asset-first allowlist", () => {
+  const valid = fs.readFileSync(path.join(root, "wrangler.weather-production-domain.toml"), "utf8");
+  const line = valid.split("\n").find((entry) => entry.startsWith("run_worker_first"));
+  for (const replacement of [
+    "run_worker_first = true",
+    "run_worker_first = false",
+    'run_worker_first = ["/*"]',
+    line.replace('"/*", ', ""),
+    line.replace("]", ', "!/locations/*"]'),
+    line.replace("]", ', "!/locations/route-manifest.json"]'),
+    line.replace('"!/assets/app.css"', '"!/assets/*"'),
+    `${line}\nrun_worker_first = true`,
+    "run_worker_first = [\n  \"/*\",\n]",
+  ]) assert.throws(() => validateProductionConfig(valid.replace(line, replacement)), /exact public asset allowlist/, replacement);
+  assert.throws(() => validateProductionConfig(valid.replace(`${line}\n`, "")), /exact public asset allowlist/);
+});
+
 test("meta and HTTP noindex directives are rejected across quoting and attribute order", () => {
   for (const html of ['<meta name="robots" content="noindex, follow">', "<META CONTENT='none' NAME='Googlebot'>", '<meta name=bingbot content=noindex>']) {
     assert.equal(indexable(html, new Response()), false, html);

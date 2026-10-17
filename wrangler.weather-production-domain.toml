@@ -10,7 +10,9 @@ routes = [{ pattern = "www.wetbulb35.com", custom_domain = true }]
 [assets]
 directory = "worker-assets"
 binding = "ASSETS"
-run_worker_first = true
+# Worker-first except the exact public asset allowlist in lib/public-asset-routing.mjs.
+# Private /locations metadata, HTML, redirects, APIs, robots and sitemaps still enter the Worker.
+run_worker_first = ["/*", "!/assets/app.css", "!/assets/app.js", "!/assets/locations.json", "!/favicon.svg", "!/logo.svg", "!/openweather-logo.png", "!/images/wetbulb-default.jpg"]
 
 [durable_objects]
 bindings = [{ name = "WEATHER_GATE", class_name = "WeatherGate" }]
