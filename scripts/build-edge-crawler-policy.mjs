@@ -35,7 +35,7 @@ export function buildEdgePolicy({ cities, artifact }) {
     if (legacySources.some((source) => edgeRedirectTarget(source))) throw new Error(`Legacy alias would be hijacked: ${country}`);
   }
   const countryExpression = EDGE_COUNTRIES.map((slug) => `starts_with(http.request.uri.path, "${PREFIX}${slug}/")`).join(" or ");
-  const expression = `http.host eq "${HOST}" and http.request.method in {"GET" "HEAD"} and not ends_with(http.request.uri.path, "/") and not (http.request.uri.path contains "//") and (${countryExpression})`;
+  const expression = `http.host eq "${HOST}" and http.request.method in {"GET" "HEAD"} and not (lower(http.user_agent) contains "shapbot") and not ends_with(http.request.uri.path, "/") and not (http.request.uri.path contains "//") and (${countryExpression})`;
   if (expression.length > 4096) throw new Error("Cloudflare expression exceeds 4,096-character limit");
   const canonicalRoutes = identity.rows.filter((row) => EDGE_COUNTRIES.includes(row.countrySlug)).length;
   return {

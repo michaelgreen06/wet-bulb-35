@@ -56,5 +56,6 @@ test("WAF block excludes verified search engines; search skip affects only rate 
   assert.ok(redirect.expression.length < 4096);
   assert.match(redirect.expression, /http\.request\.method in \{"GET" "HEAD"\}/);
   assert.match(redirect.expression, /http\.host eq "www\.wetbulb35\.com"/);
+  assert.match(redirect.expression, /not \(lower\(http\.user_agent\) contains "shapbot"\)/);
   assert.match(redirect.action_parameters.from_value.target_url.expression, /concat\("https:\/\/www\.wetbulb35\.com", http\.request\.uri\.path, "\/"\)/);
 });
