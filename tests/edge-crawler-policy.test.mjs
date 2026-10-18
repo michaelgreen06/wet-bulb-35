@@ -44,7 +44,8 @@ test("candidate redirects known country-first city routes but never private asse
 
 test("WAF block excludes verified search engines; search skip affects only rate limiting", () => {
   const { wafCustomRules: [block, skip], singleRedirectRule: redirect } = buildEdgePolicy({ cities, artifact });
-  assert.match(block.expression, /cf\.client\.bot/);
+  assert.match(block.expression, /lower\(http\.user_agent\) contains "shapbot"/);
+  assert.doesNotMatch(block.expression, /cf\.client\.bot/, "block both verified ShapBot and unverified imitators");
   assert.match(block.expression, /cf\.verified_bot_category ne "Search Engine Crawler"/);
   assert.match(block.expression, /shapbot/);
   assert.equal(block.action, "block");

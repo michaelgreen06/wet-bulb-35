@@ -43,9 +43,9 @@ export function buildEdgePolicy({ cities, artifact }) {
     analysis: { currentRoutes: identity.rows.length, eligibleCityRoutes: canonicalRoutes, countryCount: EDGE_COUNTRIES.length, legacySources: legacySources.length },
     wafCustomRules: [
       {
-        ref: "block_verified_shapbot_wetbulb35",
-        description: "Block verified ShapBot before either WetBulb35 Worker; search engines never match",
-        expression: '(http.host in {"wetbulb35.com" "www.wetbulb35.com"} and cf.client.bot and cf.verified_bot_category ne "Search Engine Crawler" and lower(http.user_agent) contains "shapbot")',
+        ref: "block_shapbot_wetbulb35",
+        description: "Block self-identified ShapBot before either WetBulb35 Worker, including unverified copies; verified search engines are excluded",
+        expression: '(http.host in {"wetbulb35.com" "www.wetbulb35.com"} and cf.verified_bot_category ne "Search Engine Crawler" and lower(http.user_agent) contains "shapbot")',
         action: "block",
       },
       {
