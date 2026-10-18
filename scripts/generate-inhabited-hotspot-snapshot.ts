@@ -23,6 +23,16 @@ import {
 type FetchImplementation = (input: string | URL, init?: RequestInit) => Promise<Response>;
 type ManifestCity = Omit<HotspotCandidate, "selectionReason" | "grid">;
 
+export type HotspotCandidateCensus = {
+  schemaVersion: 1;
+  initialization: string;
+  discoveredCandidates: number;
+  excludedControls: number;
+  totalLocations: number;
+  locationLimit: number;
+  selection: { marginC: number; thresholdC: number; dilationRings: number };
+};
+
 type CandidateDocument = {
   schemaVersion: number;
   model: { source: string; initialization: string; steps: number[] };
@@ -305,6 +315,7 @@ export async function generateHotspotSnapshot({
   generatedAt = new Date().toISOString().replace(".000Z", "Z"),
   downloadMetadata,
   pinnedFiveDay = false,
+  onCandidateCensus,
 }: {
   candidateDocument: unknown;
   cityManifest: unknown;
@@ -317,12 +328,22 @@ export async function generateHotspotSnapshot({
   generatedAt?: string;
   downloadMetadata?: unknown;
   pinnedFiveDay?: boolean;
+  onCandidateCensus?: (record: HotspotCandidateCensus) => void;
 }): Promise<HotspotSnapshot> {
   const parsed = parseCandidateDocument(candidateDocument);
   if (downloadMetadata !== undefined) parsed.discovery = applyDownloadTiming(parsed.discovery, downloadMetadata);
   const manifest = parseCityManifest(cityManifest);
   const controls = selectExcludedControls(manifest, parsed.candidates, parsed.discovery.initialization, excludedControlSampleSize);
   const candidates = [...parsed.candidates, ...controls];
+  onCandidateCensus?.({
+    schemaVersion: 1,
+    initialization: parsed.discovery.initialization,
+    discoveredCandidates: parsed.candidates.length,
+    excludedControls: controls.length,
+    totalLocations: candidates.length,
+    locationLimit: dailyLocationLimit,
+    selection: { marginC: parsed.discovery.marginC, thresholdC: parsed.discovery.thresholdC, dilationRings: parsed.discovery.dilationRings },
+  });
   if (!Number.isSafeInteger(dailyLocationLimit) || dailyLocationLimit <= 0 || candidates.length > dailyLocationLimit) {
     throw new RangeError("Hotspot candidate and validation-control count exceeds the configured per-run location limit.");
   }
@@ -381,6 +402,7 @@ async function main(): Promise<void> {
   const downloadMetadataPath = args.get("download-metadata");
   const downloadMetadata = downloadMetadataPath ? JSON.parse(fs.readFileSync(path.resolve(downloadMetadataPath), "utf8")) : undefined;
   const cityManifest = JSON.parse(fs.readFileSync(path.resolve(manifestPath), "utf8"));
+  const censusPath = args.get("candidate-census-output");
   const snapshot = await generateHotspotSnapshot({
     candidateDocument,
     cityManifest,
@@ -392,6 +414,16 @@ async function main(): Promise<void> {
     options,
     generatedAt: args.get("generated-at") ?? new Date().toISOString().replace(".000Z", "Z"),
     downloadMetadata,
+    onCandidateCensus: (record) => {
+      console.log(JSON.stringify({ kind: "hotspot-candidate-census", ...record }));
+      if (censusPath) {
+        const resolved = path.resolve(censusPath);
+        fs.mkdirSync(path.dirname(resolved), { recursive: true });
+        const temporary = `${resolved}.tmp-${process.pid}`;
+        fs.writeFileSync(temporary, `${JSON.stringify(record, null, 2)}\n`);
+        fs.renameSync(temporary, resolved);
+      }
+    },
   });
   const validation = validateHotspotSnapshot(snapshot);
   if (!validation.success) throw new TypeError(`Hotspot snapshot validation failed: ${validation.error.message}`);

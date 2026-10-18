@@ -195,8 +195,18 @@ jobs:
             --candidates .hotspots/candidates.json \
             --city-manifest .hotspots/cities.json \
             --output .hotspots/snapshot.json \
+            --candidate-census-output .hotspots/candidate-census.json \
             --download-metadata .hotspots/ecmwf-download.json \
             --batch-size 100
+
+      - name: Retain candidate counts even when refinement exceeds the safety cap
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hotspot-candidate-census-${{ github.run_id }}
+          path: .hotspots/candidate-census.json
+          if-no-files-found: ignore
+          retention-days: 90
 
       - name: Rank every global model-grid cell from the same initialization
         if: steps.download.outputs.downloaded == 'true'
