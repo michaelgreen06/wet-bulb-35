@@ -1,0 +1,21 @@
+name = "wetbulb35-region-shards-staging"
+main = "workers/hono-page-renderer.mjs"
+compatibility_date = "2026-09-08"
+# Isolated CPU probe. No routes, custom domains, provider secrets,
+# weather Durable Object or R2 bindings; weather/forecast parity is out of scope.
+# Not publicly reachable: Wrangler enables workers.dev when this key is absent. Keep both
+# false until Cloudflare Access covers any hostname used for hosted CPU measurement.
+workers_dev = false
+preview_urls = false
+
+[assets]
+directory = "worker-assets"
+binding = "ASSETS"
+run_worker_first = true
+
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[vars]
+CANONICAL_ORIGIN = "https://www.wetbulb35.com"
+GOOGLE_ANALYTICS_ID = ""

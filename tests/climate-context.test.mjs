@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { pageHtml, routePathForCity } from "../lib/page-renderer.mjs";
 import { createClimateExpander } from "../lib/climate-classes.mjs";
+import { cityBucket } from "../lib/location-buckets.mjs";
 import { BECK_ZIP_SHA256, expandClimate, inventorySha256, KOPPEN_CLASSES, loadClimateContext, validateClimateContext } from "../lib/climate-context.mjs";
 import { buildHonoBindingAssets } from "../scripts/build-hono-binding-assets.mjs";
 import { createRouteIdentityIndex } from "../scripts/probe-location-route-identity.mjs";
@@ -100,7 +101,7 @@ test("Popular-40 pages keep the reviewed pilot record even if all-location data 
   assert.match(baseline, /IANA timezone/);
 });
 
-test("climate travels through a per-country shard with a local cell table into crawler HTML", async () => {
+test("climate travels through a per-region shard with a local cell table into crawler HTML", async () => {
   const rows = inventory(city, other);
   const [a, b] = rows.map((row) => `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`);
   const climateContext = artifact(rows, { [a]: [26, null], [b]: [26, 0] }, { exclusions: { koppen: {}, nasaPower: { cellEdgeTie: [a] } } });
@@ -108,7 +109,7 @@ test("climate travels through a per-country shard with a local cell table into c
   try {
     buildHonoBindingAssets({ sourceCities: [city, other], outDir: out, climateContext });
     const asset = (pathname) => path.join(out, pathname);
-    const shard = JSON.parse(fs.readFileSync(asset("/locations/shards/united-states.json")));
+    const shard = JSON.parse(fs.readFileSync(asset("/locations/shards/united-states/colorado.json")));
     const manifest = JSON.parse(fs.readFileSync(asset("/locations/route-manifest.json")));
     assert.deepEqual(shard.c, [cellRow]);
     assert.deepEqual(shard.r.map((row) => row.slice(6)), [[null, [26, null]], [null, [26, 0]]]);
@@ -124,9 +125,35 @@ test("climate travels through a per-country shard with a local cell table into c
     assert.match(boulder, /climate classification \(Dfb\)/);
     assert.doesNotMatch(boulder, /highest wet bulb/);
     assert.equal(providerCalls, 0);
-    fs.writeFileSync(asset("/locations/shards/united-states.json"), JSON.stringify({ ...shard, c: [] }));
+    fs.writeFileSync(asset("/locations/shards/united-states/colorado.json"), JSON.stringify({ ...shard, c: [] }));
     const broken = await createHonoPageRenderer().fetch(new Request(`https://www.wetbulb35.com${b}`), env);
     assert.equal(broken.status, 500);
+  } finally { fs.rmSync(out, { recursive: true, force: true }); }
+});
+
+test("city-bucket climate indexes remap to each bucket's own NASA cell table", () => {
+  const cities = Array.from({ length: 120 }, (_, i) => ({ ...city, name: `Place ${i}`, latitude: 40 + i / 1000, longitude: -105 }));
+  const rows = inventory(...cities);
+  const byPath = Object.fromEntries(rows.map((row, i) => [
+    `/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`, [26, i % 2],
+  ]));
+  const second = [...cellRow];
+  second[0] += 10;
+  const context = artifact(rows, byPath, { cells: [cellRow, second], source: { ...nasa, cells: 2 } });
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), "bucket-climate-assets-"));
+  try {
+    buildHonoBindingAssets({ sourceCities: cities, outDir: out, climateContext: context });
+    const state = JSON.parse(fs.readFileSync(path.join(out, "locations/route-manifest.json"))).countries[0].states[0];
+    assert.ok(state.buckets > 1);
+    for (let bucket = 0; bucket < state.buckets; bucket++) {
+      const file = state.file.replace(/\.json$/, `.city-${bucket}.json`);
+      const shard = JSON.parse(fs.readFileSync(path.join(out, "locations/shards", file)));
+      for (const row of shard.r) {
+        assert.equal(cityBucket(row[4], state.buckets), bucket);
+        const route = `/wetbulb-temperature/united-states/colorado/${row[4]}/`;
+        assert.deepEqual(expandClimate(row[7], shard.c), expandClimate(byPath[route], context.cells), route);
+      }
+    }
   } finally { fs.rmSync(out, { recursive: true, force: true }); }
 });
 
