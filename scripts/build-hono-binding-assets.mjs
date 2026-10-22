@@ -5,9 +5,9 @@ import path from "node:path";
 import os from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRouteIdentityIndex } from "./probe-location-route-identity.mjs";
-import { tier1ByCanonicalPath } from "../lib/page-renderer.mjs";
+import { compareStateCities, renderStateCityCards, tier1ByCanonicalPath } from "../lib/page-renderer.mjs";
 import { compactNearby, computeNearby } from "../lib/nearby.mjs";
-import { cityBucket } from "../lib/location-buckets.mjs";
+import { cityBucket, MAX_DIRECTORY_CHARS } from "../lib/location-buckets.mjs";
 import { loadCityPopulation } from "../lib/city-population.mjs";
 import { loadLocationFacts, validateLocationFacts } from "../lib/location-facts.mjs";
 import { loadClimateContext, validateClimateContext } from "../lib/climate-context.mjs";
@@ -148,7 +148,9 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
     }));
   const regionCount = [...countries.values()].reduce((total, country) => total + country.states.size, 0);
   const bucketCount = [...countries.values()].reduce((total, country) => total + [...country.states.values()].reduce((n, state) => n + (state.buckets?.length ?? 0), 0), 0);
-  if (regionCount + bucketCount + 1 > MAX_ASSET_FILES) throw new Error("Region shards exceed the Workers Free static asset file limit");
+  // Each bucketed region also gets one directory-card file.
+  const directoryCount = [...countries.values()].reduce((total, country) => total + [...country.states.values()].filter((state) => state.buckets).length, 0);
+  if (regionCount + bucketCount + directoryCount + 1 > MAX_ASSET_FILES) throw new Error("Region shards exceed the Workers Free static asset file limit");
   if (tier1.size && resolvedTier1.size !== tier1.size) throw new Error("Every Tier-1 manifest path must resolve exactly once from inventory");
   const popularCities = identity.rows
     .map((row) => ({ row, featured: tier1.get(`/wetbulb-temperature/${row.countrySlug}/${row.stateSlug}/${row.outputCitySlug}/`) }))
@@ -167,6 +169,15 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
     fs.mkdirSync(path.dirname(filename), { recursive: true });
     fs.writeFileSync(filename, body);
     if (state.buckets) {
+      // Same city fields, order and card markup the Worker would derive from the full region shard.
+      const cards = renderStateCityCards(state.rows
+        .map((row) => ({ name: row[0], resolvedAdmin1Code: row[1], resolvedCountryName: country.country, outputCitySlug: row[4] }))
+        .sort(compareStateCities));
+      const directoryBody = JSON.stringify({ v: 1, path: `/wetbulb-temperature/${country.countrySlug}/${state.slug}/`, n: state.rows.length, h: cards });
+      if (cards.length > MAX_DIRECTORY_CHARS || Buffer.byteLength(directoryBody) > MAX_SHARD_BYTES) {
+        throw new Error(`Region directory exceeds the asset size limit: ${state.file}`);
+      }
+      fs.writeFileSync(filename.replace(/\.json$/, ".directory.json"), directoryBody);
       const sourceCells = [...state.cells.keys()];
       state.buckets.forEach((bucket, index) => {
         const localCells = new Map();
@@ -187,7 +198,7 @@ export function buildHonoBindingAssets({ sourceCities, outDir, tier1Manifest = n
     }
   }
   return {
-    files: regionCount + bucketCount + 1,
+    files: regionCount + bucketCount + directoryCount + 1,
     countries: manifest.length,
     rows: identity.rows.length,
     collisionGroups: identity.collisionGroups,

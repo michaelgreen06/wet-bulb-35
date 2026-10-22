@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { pageHtml, renderBrowsePage, renderCountryPage, renderGlobalGridHotspotPage, renderHomePage, renderHotspotPage, renderHotspotUnavailablePage, renderStatePage } from "../lib/page-renderer.mjs";
+import { compareStateCities, pageHtml, renderBrowsePage, renderCountryPage, renderGlobalGridHotspotPage, renderHomePage, renderHotspotPage, renderHotspotUnavailablePage, renderStatePage } from "../lib/page-renderer.mjs";
 import { expandNearby } from "../lib/nearby.mjs";
-import { cityBucket } from "../lib/location-buckets.mjs";
+import { cityBucket, MAX_DIRECTORY_CHARS } from "../lib/location-buckets.mjs";
 import { createClimateExpander, validCell, validClimateTuple } from "../lib/climate-classes.mjs";
 import { hotspotSnapshotState } from "../lib/hotspots/snapshot.ts";
 import { forecastResponse, SNAPSHOT_FORECAST_UNAVAILABLE } from "./forecast-edge.ts";
@@ -68,7 +68,7 @@ function indexCountryShard(country, rows, factsSnapshot = null, climateCells = n
       ...(climate ? { climate } : {}),
     });
   }
-  for (const cities of states.values()) cities.sort((a, b) => a.name.localeCompare(b.name) || a.outputCitySlug.localeCompare(b.outputCitySlug));
+  for (const cities of states.values()) cities.sort(compareStateCities);
   return new Map([...states].map(([stateName, cities]) => [stateName, {
     cities,
     citiesBySlug: new Map(cities.map((city) => [city.outputCitySlug, city])),
@@ -211,6 +211,14 @@ function validShard(value, hasFacts = false, hasClimate = false, schemaVersion =
     && (hasClimate ? row.length === 8 && validNearby(row[5]) && validFactRow(row[6]) && validClimateTuple(row[7], value.c.length)
       : hasFacts ? row.length === 7 && validNearby(row[5]) && validFactRow(row[6]) : row.length >= 5 && row.length <= 6 && (row.length < 6 || validNearby(row[5]))));
 }
+// Cards come from our own build, but a fragment must still match its region and city count exactly.
+function validDirectory(value, country, state) {
+  if (!(value && value.v === 1 && value.path === `/wetbulb-temperature/${country.countrySlug}/${state.slug}/`
+    && value.n === state.count && typeof value.h === "string" && value.h.length > 0 && value.h.length <= MAX_DIRECTORY_CHARS)) return false;
+  let cards = 0;
+  for (let at = value.h.indexOf("</a>"); at !== -1; at = value.h.indexOf("</a>", at + 4)) cards++;
+  return cards === value.n;
+}
 function validNearby(value) {
   return Array.isArray(value) && value.every((entry) => Array.isArray(entry) && entry.length === 5 && /^[a-z0-9-]*$/.test(entry[0])
     && /^[a-z0-9-]*$/.test(entry[1]) && /^[a-z0-9-]+$/.test(entry[2]) && typeof entry[3] === "string" && Number.isInteger(entry[4]));
@@ -279,9 +287,7 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     }
     return manifestPromise;
   }
-  async function shard(request, assets, country, state, citySlug, factsSource = null, climateSource = null) {
-    const bucket = state.buckets && citySlug ? cityBucket(citySlug, state.buckets) : null;
-    const file = bucket === null ? state.file ?? country.file : state.file.replace(/\.json$/, `.city-${bucket}.json`);
+  async function cachedShard(file, load) {
     const cached = parsedShards.get(file);
     if (cached) {
       touchParsedShard(file, cached);
@@ -289,18 +295,12 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     }
     const inFlight = inFlightShards.get(file);
     if (inFlight) return inFlight;
-    const promise = readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${file}`)
-      .then((countryShard) => {
-        if (!validShard(countryShard, Boolean(factsSource), Boolean(climateSource), state.file ? 2 : 1)
-          || (state.file && countryShard.r.some((row) => row[1] !== state.name
-            || (bucket !== null && cityBucket(row[4], state.buckets) !== bucket)))) throw new InternalMetadataError();
-        return indexCountryShard(country, countryShard.r, factsSource?.snapshot, climateSource ? countryShard.c : null);
-      })
-      .then((index) => {
-        if (!index) return null;
-        touchParsedShard(file, index);
+    const promise = load()
+      .then((value) => {
+        if (!value) return null;
+        touchParsedShard(file, value);
         trimParsedShards();
-        return index;
+        return value;
       });
     inFlightShards.set(file, promise);
     promise.then(
@@ -308,6 +308,26 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
       () => { if (inFlightShards.get(file) === promise) inFlightShards.delete(file); },
     );
     return promise;
+  }
+  async function shard(request, assets, country, state, citySlug, factsSource = null, climateSource = null) {
+    const bucket = state.buckets && citySlug ? cityBucket(citySlug, state.buckets) : null;
+    const file = bucket === null ? state.file ?? country.file : state.file.replace(/\.json$/, `.city-${bucket}.json`);
+    return cachedShard(file, () => readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${file}`)
+      .then((countryShard) => {
+        if (!validShard(countryShard, Boolean(factsSource), Boolean(climateSource), state.file ? 2 : 1)
+          || (state.file && countryShard.r.some((row) => row[1] !== state.name
+            || (bucket !== null && cityBucket(row[4], state.buckets) !== bucket)))) throw new InternalMetadataError();
+        return indexCountryShard(country, countryShard.r, factsSource?.snapshot, climateSource ? countryShard.c : null);
+      }));
+  }
+  // Bucketed regions render directories from build-time cards instead of indexing every city on a cold request.
+  async function directory(request, assets, country, state) {
+    const file = state.file.replace(/\.json$/, ".directory.json");
+    return cachedShard(file, () => readAssetJson(request, assets, `${LOCATION_ROOT}/shards/${file}`)
+      .then((value) => {
+        if (!validDirectory(value, country, state)) throw new InternalMetadataError();
+        return value.h;
+      }));
   }
   async function legacyAlias(request, assets, pathname) {
     const match = pathname.match(/^\/wetbulb-temperature\/([a-z0-9-]+)\/([a-z0-9-]+)\/([a-z0-9-]+)$/);
@@ -350,6 +370,10 @@ export function createLocationResolver({ maxCachedShards = DEFAULT_MAX_CACHED_SH
     const stateRecord = country.states?.find((item) => item.slug === parts[2]);
     if (!stateRecord || typeof stateRecord.name !== "string") return null;
     if (parts[3] && !/^[a-z0-9-]+$/.test(parts[3])) return null;
+    if (parts.length === 3 && stateRecord.buckets) {
+      const cityCardsHtml = await directory(request, assets, country, stateRecord);
+      return { kind: "state", state: { countryName: country.country, countrySlug: country.countrySlug, stateName: stateRecord.name, stateSlug: stateRecord.slug, cityCardsHtml } };
+    }
     const countryIndex = await shard(request, assets, country, stateRecord, parts[3], index.factsSource, index.climateSource);
     if (!countryIndex) return null;
     const state = stateFromIndex(country, stateRecord, countryIndex);
