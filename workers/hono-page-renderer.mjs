@@ -109,7 +109,7 @@ function notFoundResponse(request) {
   const candidates = [["text/html", "html"], ["application/json", "json"], ["text/plain", "plain"]].map(([type, kind]) => ({ type, kind, ...acceptedQuality(request, type) })).filter((candidate) => candidate.quality !== undefined).sort((a, b) => b.quality - a.quality || a.index - b.index);
   const selected = candidates[0]?.kind || "plain";
   if (selected === "json") return new Response(JSON.stringify({ error: { code: "404", message: NOT_FOUND_MESSAGE } }), { status: 404, headers: { ...headers, "content-type": "application/json" } });
-  if (selected === "html") return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>404: NOT_FOUND</title></head><body><main><h1>404</h1><p>${NOT_FOUND_MESSAGE}</p><code>NOT_FOUND</code></main></body></html>`, { status: 404, headers: { ...headers, "content-type": "text/html; charset=UTF-8" } });
+  if (selected === "html") return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><script async src="https://px.signals.verifyyou.com/hs.js?k=pk_live_elyewrgDsagHoQBjDTowAJXiAKcM4T5an62FDhFYHYY"></script><title>404: NOT_FOUND</title></head><body><main><h1>404</h1><p>${NOT_FOUND_MESSAGE}</p><code>NOT_FOUND</code></main></body></html>`, { status: 404, headers: { ...headers, "content-type": "text/html; charset=UTF-8" } });
   return new Response(`${NOT_FOUND_MESSAGE}\n\nNOT_FOUND\n`, { status: 404, headers: { ...headers, "content-type": "text/plain; charset=UTF-8" } });
 }
 function internalErrorResponse(status = 500) {

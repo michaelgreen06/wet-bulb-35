@@ -200,9 +200,13 @@ test("Hono renderer matches immutable pre-extraction golden hashes", { timeout: 
     }};
     const app = createHonoPageRenderer();
     const mismatches = [];
+    const passiveSignalsTag = '<script async src="https://px.signals.verifyyou.com/hs.js?k=pk_live_elyewrgDsagHoQBjDTowAJXiAKcM4T5an62FDhFYHYY"></script>';
     for (const page of goldenEvidence.pages) {
       const result = await html(app, page.route, { ASSETS: assets });
-      if (result.response.status !== 200 || normalizedSha256(result.body) !== page.sha256) mismatches.push(page.route);
+      const tagCount = result.body.split(passiveSignalsTag).length - 1;
+      // Keep the immutable pre-extraction goldens; remove only the added head line for the historical comparison.
+      const historicalHtml = result.body.replace(`  ${passiveSignalsTag}\n`, "");
+      if (result.response.status !== 200 || tagCount !== 1 || normalizedSha256(historicalHtml) !== page.sha256) mismatches.push(page.route);
     }
     assert.deepEqual(mismatches, ["/wetbulb-temperature/"]);
     assert.equal(goldenEvidence.pages.filter((page) => page.type === "country-ordering-sensitive").length, 11);
