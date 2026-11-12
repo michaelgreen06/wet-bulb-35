@@ -84,16 +84,29 @@ describe("hotspot generation pipeline", () => {
     expect(snapshot.validation.excludedControlSample).toBe(1);
   });
 
-  it("fails rather than silently truncating when the candidate budget is exceeded", async () => {
+  it("records sanitized candidate and control counts before failing the budget gate without provider requests", async () => {
+    const census: unknown[] = [];
+    let providerCalls = 0;
     await expect(generateHotspotSnapshot({
       candidateDocument,
       cityManifest,
       batchSize: 50,
       dailyLocationLimit: 1,
       excludedControlSampleSize: 1,
-      fetchImplementation: async (url) => responseFor(url),
+      onCandidateCensus: (record) => census.push(record),
+      fetchImplementation: async (url) => { providerCalls++; return responseFor(url); },
       options: {},
     })).rejects.toThrow(/exceeds/);
+    expect(providerCalls).toBe(0);
+    expect(census).toEqual([{
+      schemaVersion: 1,
+      initialization: "2026-09-22T00:00:00Z",
+      discoveredCandidates: 1,
+      excludedControls: 1,
+      totalLocations: 2,
+      locationLimit: 1,
+      selection: { marginC: 2, thresholdC: 26, dilationRings: 1 },
+    }]);
   });
 
   it("rejects discovery data that is not one exact 24-hour sequence", async () => {
