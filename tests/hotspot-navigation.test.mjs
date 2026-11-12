@@ -16,6 +16,16 @@ const PAGES = [
   ["state", "/wetbulb-temperature/andorra/encamp/"],
   ["city", "/wetbulb-temperature/andorra/encamp/vila/"],
 ];
+const PASSIVE_SIGNALS_TAG = '<script async src="https://px.signals.verifyyou.com/hs.js?k=pk_live_elyewrgDsagHoQBjDTowAJXiAKcM4T5an62FDhFYHYY"></script>';
+
+function assertPassiveSignalsInHead(html, label) {
+  const headStart = html.indexOf("<head>");
+  const headEnd = html.indexOf("</head>");
+  const tagStart = html.indexOf(PASSIVE_SIGNALS_TAG);
+  assert.ok(headStart >= 0 && headEnd > headStart, `${label} lacks an HTML head`);
+  assert.ok(tagStart > headStart && tagStart < headEnd, `${label} lacks the exact tag in its head`);
+  assert.equal(html.split("https://px.signals.verifyyou.com/hs.js?").length - 1, 1, `${label} has duplicate scripts`);
+}
 
 function assets() {
   return {
@@ -63,6 +73,32 @@ test("every rendered page carries a crawler-visible Top 50 link while the inhabi
       assert.ok(body.includes(`<link rel="canonical" href="${canonical}">`), `${label} canonical changed`);
     }
   }
+}));
+
+test("every public HTML page emits Passive Signals exactly once inside its server-rendered head", withoutProviderCalls(async () => {
+  const env = {
+    ASSETS: assets(),
+    HOTSPOT_FEATURE_MODE: "enabled",
+    HOTSPOT_SNAPSHOT_ASSET_PATH: "/missing-hotspots.json",
+    GLOBAL_GRID_HOTSPOT_FEATURE_MODE: "enabled",
+    GLOBAL_GRID_HOTSPOT_SNAPSHOT_ASSET_PATH: "/missing-global-grid.json",
+    OBSERVABILITY_DISABLED: "true",
+  };
+  for (const [label, pathname] of [
+    ...PAGES,
+    ["inhabited unavailable", "/wetbulb-temperature/forecast/global-hotspots/"],
+    ["global grid unavailable", "/wetbulb-temperature/forecast/global-grid-hotspots/"],
+  ]) {
+    const { body } = await render(pathname, env);
+    assertPassiveSignalsInHead(body, label);
+  }
+
+  const app = createHonoPageRenderer({ cache, cacheVersion: () => "passive-signals-404" });
+  const response = await app.fetch(new Request("https://www.wetbulb35.com/not-a-real-page", {
+    headers: { accept: "text/html" },
+  }), env);
+  assert.equal(response.status, 404);
+  assertPassiveSignalsInHead(await response.text(), "HTML 404");
 }));
 
 test("navigation is omitted while the inhabited product gate is off, so it never points to a 404", withoutProviderCalls(async () => {
